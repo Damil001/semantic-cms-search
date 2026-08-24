@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CMS Semantic Search</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f1ea;
+        --ink: #1c1917;
+        --muted: #78716c;
+        --card: #fff;
+        --line: #e7e5e4;
+        --accent: #0f766e;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        line-height: 1.45;
+      }
+      main { max-width: 880px; margin: 0 auto; padding: 40px 20px 80px; }
+      h1 { font-size: 1.5rem; margin: 0 0 8px; }
+      p.lead { color: var(--muted); margin: 0 0 28px; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      button, .btn {
+        appearance: none;
+        border: 0;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+        padding: 10px 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+      }
+      button.secondary { background: #44403c; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
+      input, select {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font: inherit;
+      }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .collection h2 { font-size: 1rem; margin: 0 0 12px; }
+      .status { font-size: 14px; color: var(--muted); min-height: 1.4em; }
+      code { background: #e7e5e4; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+      .hidden { display: none; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Webflow CMS semantic search</h1>
+      <p class="lead">
+        Connect a site, map collections, then index. We host embeddings and search.
+        After you add CMS items, click Re-index.
+      </p>
+
+      <div id="gate" class="card">
+        <p>Authorize this app in Webflow to read CMS collections.</p>
+        <a class="btn" href="/api/oauth/start">Connect Webflow</a>
+      </div>
+
+      <div id="app" class="hidden">
+        <div class="card">
+          <label>Site</label>
+          <select id="site"></select>
+          <p class="status" id="siteMeta"></p>
+          <p>
+            Search URL: <code id="searchUrl"></code><br />
+            Designer script: <code id="scriptUrl"></code><br />
+            Wrapper attributes:
+            <code>data-search-endpoint</code> (search URL) and
+            <code>data-search-site</code> (site id below)
+          </p>
+          <p><code id="siteId"></code></p>
+        </div>
+        <div id="collections"></div>
+        <div class="card">
+          <button id="save" type="button">Save mappings</button>
+          <button id="index" type="button">Index CMS</button>
+          <button id="reindex" class="secondary" type="button">Re-index</button>
+          <p class="status" id="log"></p>
+        </div>
+      </div>
+    </main>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let me = null;
+      let collections = [];
+
+      function fieldSelect(fields, name, value) {
+        const opts = ['<option value="">—</option>']
+          .concat(
+            fields.map(
+              (f) =>
+                `<option value="${f.slug}" ${f.slug === value ? "selected" : ""}>${f.displayName} (${f.slug})</option>`
+            )
+          )
+          .join("");
+        return `<label>${name}</label><select data-field="${name}">${opts}</select>`;
+      }
+
+      function renderCollections() {
+        $("collections").innerHTML = collections
+          .map((c, i) => {
+            const f = c.fields || [];
+            const m = c.mapping || {};
+            return `<div class="card collection" data-i="${i}">
+              <h2><input type="checkbox" data-enabled ${c.enabled ? "checked" : ""} /> ${c.name}</h2>
+              <div class="row">
+                <div><label>Content type (filter key)</label>
+                  <input data-type value="${c.contentType || ""}" /></div>
+                <div><label>Public URL pattern</label>
+                  <input data-url value="${c.urlPattern || ""}" /></div>
+              </div>
+              <div class="row">
+                <div>${fieldSelect(f, "title", m.title)}</div>
+                <div>${fieldSelect(f, "body", m.body)}</div>
+              </div>
+              <div class="row">
+                <div>${fieldSelect(f, "excerpt", m.excerpt)}</div>
+                <div>${fieldSelect(f, "slug", m.slug)}</div>
+              </div>
+              <div class="row">
+                <div>${fieldSelect(f, "image", m.image)}</div>
+                <div>${fieldSelect(f, "date", m.date)}</div>
+              </div>
+            </div>`;
+          })
+          .join("");
+      }
+
+      function readMaps() {
+        return collections.map((c, i) => {
+          const el = document.querySelector(`.collection[data-i="${i}"]`);
+          const mapping = {};
+          el.querySelectorAll("[data-field]").forEach((sel) => {
+            mapping[sel.getAttribute("data-field")] = sel.value;
+          });
+          return {
+            collectionId: c.collectionId,
+            collectionName: c.name,
+            contentType: el.querySelector("[data-type]").value,
+            enabled: el.querySelector("[data-enabled]").checked,
+            urlPattern: el.querySelector("[data-url]").value,
+            mapping,
+          };
+        });
+      }
+
+      async function loadCollections() {
+        const res = await fetch("/api/app/collections");
+        const data = await res.json();
+        collections = data.collections || [];
+        renderCollections();
+      }
+
+      async function saveMaps() {
+        const res = await fetch("/api/app/maps", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ maps: readMaps() }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Save failed");
+      }
+
+      async function indexAll() {
+        const log = $("log");
+        await saveMaps();
+        const enabled = readMaps().filter((m) => m.enabled);
+        let n = 0;
+        for (const m of enabled) {
+          let offset = 0;
+          let done = false;
+          while (!done) {
+            log.textContent = `Indexing ${m.collectionName || m.collectionId} @ ${offset}…`;
+            const res = await fetch("/api/app/index", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ collectionId: m.collectionId, offset }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Index failed");
+            n += data.processed || 0;
+            offset = data.nextOffset;
+            done = data.done;
+          }
+        }
+        log.textContent = `Done. Indexed ${n} items. Add data-search-site="${me.siteId}" in Webflow.`;
+      }
+
+      async function boot() {
+        const res = await fetch("/api/app/me");
+        me = await res.json();
+        if (!me.connected) return;
+        $("gate").classList.add("hidden");
+        $("app").classList.remove("hidden");
+        $("searchUrl").textContent = me.searchEndpoint;
+        $("scriptUrl").textContent = me.scriptUrl;
+        $("siteId").textContent = me.siteId;
+        $("siteMeta").textContent = me.lastIndexedAt
+          ? `Last indexed ${new Date(me.lastIndexedAt).toLocaleString()}`
+          : "Not indexed yet";
+        $("site").innerHTML = (me.sites || [])
+          .map(
+            (s) =>
+              `<option value="${s.id}" ${s.id === me.siteId ? "selected" : ""}>${s.name}</option>`
+          )
+          .join("");
+        await loadCollections();
+      }
+
+      $("site").addEventListener("change", async (e) => {
+        await fetch("/api/app/select-site", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ siteId: e.target.value }),
+        });
+        location.reload();
+      });
+      $("save").addEventListener("click", async () => {
+        $("log").textContent = "Saving…";
+        try {
+          await saveMaps();
+          $("log").textContent = "Mappings saved.";
+        } catch (err) {
+          $("log").textContent = err.message;
+        }
+      });
+      $("index").addEventListener("click", () =>
+        indexAll().catch((err) => ($("log").textContent = err.message))
+      );
+      $("reindex").addEventListener("click", () =>
+        indexAll().catch((err) => ($("log").textContent = err.message))
+      );
+
+      boot().catch((err) => {
+        $("log").textContent = err.message;
+      });
+    </script>
+  </body>
+</html>
