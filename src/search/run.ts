@@ -7,6 +7,12 @@ const CANDIDATES = 40;
 const RRF_K = 60;
 const MAX_LIMIT = 50;
 const DEFAULT_LIMIT = 10;
+/** Drop semantic-only hits below this cosine similarity (text-embedding-3-small). */
+const MIN_SEMANTIC_SIM = 0.34;
+/** With no keyword matches, require the best semantic hit at least this strong. */
+const MIN_SEMANTIC_TOP = 0.36;
+/** After ranking, drop tail results below this fraction of the top RRF score. */
+const MIN_RRF_RELATIVE = 0.55;
 
 interface RpcRow {
   chunk_id: string;
@@ -90,35 +96,69 @@ export async function runSearch(opts: {
   const semanticRows = (semanticRes.data ?? []) as RpcRow[];
   const keywordRows = (keywordRes.data ?? []) as RpcRow[];
 
-  const byChunk = new Map<string, SearchHit>();
+  const itemSemantic = new Map<string, number>();
   for (const row of semanticRows) {
-    byChunk.set(row.chunk_id, toHit(row, row.similarity ?? 0));
+    const sim = row.similarity ?? 0;
+    itemSemantic.set(
+      row.item_id,
+      Math.max(itemSemantic.get(row.item_id) ?? 0, sim)
+    );
+  }
+  const keywordItems = new Set(keywordRows.map((r) => r.item_id));
+  const topSemantic =
+    semanticRows.length > 0 ? (semanticRows[0].similarity ?? 0) : 0;
+
+  if (keywordRows.length === 0 && topSemantic < MIN_SEMANTIC_TOP) {
+    return [];
+  }
+
+  const semanticForFusion = semanticRows.filter(
+    (r) => (r.similarity ?? 0) >= MIN_SEMANTIC_SIM
+  );
+
+  const byChunk = new Map<string, SearchHit & { semanticSim: number }>();
+  for (const row of semanticForFusion) {
+    byChunk.set(row.chunk_id, {
+      ...toHit(row, row.similarity ?? 0),
+      semanticSim: row.similarity ?? 0,
+    });
   }
   for (const row of keywordRows) {
-    if (!byChunk.has(row.chunk_id)) {
-      byChunk.set(row.chunk_id, toHit(row, row.rank ?? 0));
-    }
+    const existing = byChunk.get(row.chunk_id);
+    if (existing) continue;
+    byChunk.set(row.chunk_id, {
+      ...toHit(row, row.rank ?? 0),
+      semanticSim: itemSemantic.get(row.item_id) ?? 0,
+    });
   }
+
+  if (byChunk.size === 0) return [];
 
   const fused = reciprocalRankFusion(
     [
-      semanticRows.map((r) => r.chunk_id),
+      semanticForFusion.map((r) => r.chunk_id),
       keywordRows.map((r) => r.chunk_id),
     ],
     RRF_K
   );
 
+  const topRrf = fused[0]?.score ?? 0;
+  const minRrf = topRrf * MIN_RRF_RELATIVE;
+
   const orderedHits = fused
     .map((f) => {
       const hit = byChunk.get(f.id);
-      if (!hit) return null;
+      if (!hit || f.score < minRrf) return null;
       return { ...hit, score: f.score };
     })
-    .filter((h): h is SearchHit => h !== null);
+    .filter((h): h is SearchHit & { semanticSim: number } => h !== null);
 
-  const collapsed = collapseToItems(orderedHits).slice(0, limit);
+  const collapsed = collapseToItems(orderedHits).filter((hit) => {
+    if (keywordItems.has(hit.itemId)) return true;
+    return (itemSemantic.get(hit.itemId) ?? 0) >= MIN_SEMANTIC_SIM;
+  });
 
-  return collapsed.map((hit) => ({
+  return collapsed.slice(0, limit).map((hit) => ({
     id: hit.itemId,
     type: hit.contentType,
     title: hit.title,
