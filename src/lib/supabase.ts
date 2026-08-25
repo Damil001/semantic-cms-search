@@ -1,4 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { WebSocket as NodeWebSocket } from "ws";
+
+if (typeof globalThis.WebSocket === "undefined") {
+  Object.assign(globalThis, { WebSocket: NodeWebSocket });
+}
 
 export function getServiceClient(): SupabaseClient {
   const url = process.env.SUPABASE_URL;

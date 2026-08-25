@@ -10,14 +10,16 @@
     "typecheck": "tsc --noEmit"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=22"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
-    "openai": "^4.58.1"
+    "openai": "^4.58.1",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/node": "^22.5.4",
+    "@types/ws": "^8.5.13",
     "@vercel/node": "^3.2.18",
     "dotenv": "^16.4.5",
     "tsx": "^4.19.0",
