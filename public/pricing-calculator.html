@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Semantic CMS Search — Pricing & Unit Economics</title>
+    <style>
+      :root {
+        --bg: #0f1419;
+        --card: #1a2332;
+        --line: #2d3a4f;
+        --text: #e7ecf3;
+        --muted: #8b9cb3;
+        --accent: #14b8a6;
+        --accent-dim: #0d9488;
+        --warn: #fbbf24;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+      }
+      .wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+      h1 { font-size: 1.75rem; margin: 0 0 0.25rem; }
+      .sub { color: var(--muted); margin: 0 0 2rem; font-size: 0.95rem; }
+      h2 {
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin: 2rem 0 1rem;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 0.5rem;
+      }
+      .grid { display: grid; gap: 1rem; }
+      @media (min-width: 720px) {
+        .grid-2 { grid-template-columns: 1fr 1fr; }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1.25rem;
+      }
+      .card h3 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+      .card p { margin: 0; color: var(--muted); font-size: 0.875rem; }
+      .price { font-size: 2rem; font-weight: 700; color: var(--accent); margin: 0.5rem 0 0; }
+      .price span { font-size: 0.9rem; font-weight: 400; color: var(--muted); }
+      table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+      th, td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--line); }
+      th { color: var(--muted); font-weight: 600; }
+      label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.25rem; }
+      input, select {
+        width: 100%;
+        padding: 0.5rem 0.65rem;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--bg);
+        color: var(--text);
+        font: inherit;
+      }
+      .field { margin-bottom: 0.85rem; }
+      .out-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 0.45rem 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 0.875rem;
+      }
+      .out-row:last-child { border-bottom: 0; }
+      .out-row strong { color: var(--accent); }
+      .out-row.total {
+        margin-top: 0.5rem;
+        padding-top: 0.75rem;
+        border-top: 2px solid var(--line);
+        font-size: 1rem;
+      }
+      .pill {
+        display: inline-block;
+        background: rgba(20, 184, 166, 0.15);
+        color: var(--accent);
+        font-size: 0.7rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 999px;
+        margin-left: 0.35rem;
+      }
+      .note {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 1rem;
+        padding: 0.75rem;
+        background: rgba(251, 191, 36, 0.08);
+        border-radius: 8px;
+        border-left: 3px solid var(--warn);
+      }
+      ul.compact { margin: 0.5rem 0 0; padding-left: 1.2rem; color: var(--muted); font-size: 0.85rem; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Semantic CMS Search</h1>
+      <p class="sub">MVP pricing & unit economics — OpenAI text-embedding-3-small, shared Supabase + Vercel</p>
+
+      <h2>Client pricing (recommended)</h2>
+      <div class="grid grid-3">
+        <div class="card">
+          <h3>Starter</h3>
+          <p>≤3 collections, one search page, 2 re-indexes/mo</p>
+          <div class="price">$999 <span>setup</span></div>
+          <div class="price" style="font-size:1.35rem;margin-top:0.25rem">$69 <span>/ mo</span></div>
+          <ul class="compact">
+            <li>OAuth connect + field mapping</li>
+            <li>Hosted search API + index</li>
+            <li>Designer attributes + script</li>
+          </ul>
+        </div>
+        <div class="card" style="border-color:var(--accent)">
+          <h3>Growth <span class="pill">Popular</span></h3>
+          <p>≤8 collections, filters, 4 re-indexes/mo</p>
+          <div class="price">$1,499 <span>setup</span></div>
+          <div class="price" style="font-size:1.35rem;margin-top:0.25rem">$99 <span>/ mo</span></div>
+          <ul class="compact">
+            <li>Everything in Starter</li>
+            <li>Type filters + styled results</li>
+            <li>Priority re-index</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Scale</h3>
+          <p>Custom collections, SLA, quarterly review</p>
+          <div class="price">$2,500+ <span>setup</span></div>
+          <div class="price" style="font-size:1.35rem;margin-top:0.25rem">$199+ <span>/ mo</span></div>
+          <ul class="compact">
+            <li>Dedicated support</li>
+            <li>Custom relevance tuning</li>
+            <li>Agency / multi-brand options</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2>Add-ons</h2>
+      <table>
+        <thead>
+          <tr><th>Item</th><th>Price</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Extra CMS collection (mapping + index)</td><td>$150–300 each</td></tr>
+          <tr><td>Extra re-index (beyond plan)</td><td>$50 each</td></tr>
+          <tr><td>Second search page / locale</td><td>$400</td></tr>
+          <tr><td>Custom relevance thresholds</td><td>$300 one-time</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Cost calculator</h2>
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Site inputs</h3>
+          <div class="field">
+            <label>CMS items indexed</label>
+            <input type="number" id="items" value="150" min="1" />
+          </div>
+          <div class="field">
+            <label>Avg chunks per item (~400 words each)</label>
+            <input type="number" id="chunks" value="2" min="1" step="0.5" />
+          </div>
+          <div class="field">
+            <label>Full re-indexes per month</label>
+            <input type="number" id="reindexes" value="2" min="0" />
+          </div>
+          <div class="field">
+            <label>Search queries per month</label>
+            <input type="number" id="searches" value="5000" min="0" />
+          </div>
+          <div class="field">
+            <label>Collections mapped</label>
+            <input type="number" id="collections" value="3" min="1" />
+          </div>
+          <div class="field">
+            <label>Clients on your shared stack</label>
+            <input type="number" id="clients" value="5" min="1" title="Split Supabase + Vercel across sites" />
+          </div>
+          <div class="field">
+            <label>Your setup hours (for margin check)</label>
+            <input type="number" id="hours" value="6" min="1" step="0.5" />
+          </div>
+          <div class="field">
+            <label>Your target hourly ($)</label>
+            <input type="number" id="hourly" value="75" min="1" />
+          </div>
+        </div>
+        <div class="card">
+          <h3>Your costs (monthly)</h3>
+          <div id="costs"></div>
+          <div class="note" id="margin-note"></div>
+        </div>
+      </div>
+
+      <h2>Formula reference</h2>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>Component</th><th>Assumption</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>OpenAI embed (ingest)</td><td>~500 tokens/chunk × $0.02 / 1M tokens (text-embedding-3-small)</td></tr>
+            <tr><td>OpenAI embed (query)</td><td>~15 tokens/query × same rate</td></tr>
+            <tr><td>Supabase</td><td>$25/mo Pro (shared) ÷ # clients</td></tr>
+            <tr><td>Vercel</td><td>$20/mo Pro (shared) ÷ # clients</td></tr>
+            <tr><td>Suggested MRR</td><td>max($69, your cost × 4) tier-adjusted by collections</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <script>
+      var EMBED_PER_1M = 0.02;
+      var TOKENS_PER_CHUNK = 500;
+      var TOKENS_PER_QUERY = 15;
+      var SUPABASE_MO = 25;
+      var VERCEL_MO = 20;
+
+      function $(id) { return document.getElementById(id); }
+
+      function tierSetup(collections) {
+        if (collections <= 3) return 999;
+        if (collections <= 8) return 1499;
+        return 2500;
+      }
+
+      function tierMrr(collections, floor) {
+        if (collections <= 3) return Math.max(69, floor);
+        if (collections <= 8) return Math.max(99, floor);
+        return Math.max(199, floor);
+      }
+
+      function calc() {
+        var items = +$("items").value || 0;
+        var chunks = +$("chunks").value || 1;
+        var reindexes = +$("reindexes").value || 0;
+        var searches = +$("searches").value || 0;
+        var collections = +$("collections").value || 1;
+        var clients = Math.max(1, +$("clients").value || 1);
+        var hours = +$("hours").value || 0;
+        var hourly = +$("hourly").value || 0;
+
+        var ingestTokens = items * chunks * TOKENS_PER_CHUNK * reindexes;
+        var queryTokens = searches * TOKENS_PER_QUERY;
+        var openaiMo = ((ingestTokens + queryTokens) / 1e6) * EMBED_PER_1M;
+        var infraShare = (SUPABASE_MO + VERCEL_MO) / clients;
+        var totalMo = openaiMo + infraShare;
+        var setupCost = hours * hourly;
+        var suggestedSetup = tierSetup(collections);
+        var suggestedMrr = tierMrr(collections, Math.ceil(totalMo * 4));
+        var year1Rev = suggestedSetup + suggestedMrr * 12;
+        var year1Cost = totalMo * 12;
+        var year1Labor = setupCost;
+        var grossInfra = year1Rev - year1Cost - year1Labor;
+
+        $("costs").innerHTML =
+          row("OpenAI (embed + queries)", fmt(openaiMo)) +
+          row("Infra share (Supabase + Vercel)", fmt(infraShare)) +
+          row("Total your cost / mo", fmt(totalMo), true) +
+          row("Suggested client setup", fmt(suggestedSetup)) +
+          row("Suggested client MRR", fmt(suggestedMrr) + "/mo") +
+          row("Year 1 revenue (setup + 12× MRR)", fmt(year1Rev)) +
+          row("Year 1 infra cost", fmt(year1Cost)) +
+          row("Year 1 setup labor (your hours)", fmt(year1Labor)) +
+          row("Year 1 after infra + setup labor", fmt(grossInfra), true);
+
+        var marginPct = year1Rev > 0 ? Math.round((grossInfra / year1Rev) * 100) : 0;
+        $("margin-note").textContent =
+          marginPct >= 50
+            ? "Rough year-1 margin (after your setup hours): ~" + marginPct + "%. Healthy for MVP."
+            : "Rough year-1 margin: ~" + marginPct + "%. Raise setup/MRR or reduce scope — labor dominates at this tier.";
+      }
+
+      function row(label, val, total) {
+        return '<div class="out-row' + (total ? " total" : "") + '"><span>' + label + '</span><strong>' + val + "</strong></div>";
+      }
+
+      function fmt(n) {
+        if (n < 0.01 && n > 0) return "< $0.01";
+        return "$" + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      }
+
+      ["items", "chunks", "reindexes", "searches", "collections", "clients", "hours", "hourly"].forEach(function (id) {
+        $(id).addEventListener("input", calc);
+      });
+      calc();
+    </script>
+  </body>
+</html>
