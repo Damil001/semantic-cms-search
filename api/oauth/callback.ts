@@ -41,7 +41,11 @@ export default async function handler(
       access_token: accessToken,
       session_token: sessionToken,
     });
-    if (error) throw new Error(error.message);
+    if (error) {
+      throw new Error(
+        `Supabase (${error.code ?? "error"}): ${error.message}. Check SUPABASE_URL is https://YOURPROJECT.supabase.co (no /rest/v1) and that you ran migration 20240825000003_webflow_app.sql.`
+      );
+    }
 
     setCookie(res, SESSION_COOKIE, sessionToken);
     res.redirect(302, "/app.html");
