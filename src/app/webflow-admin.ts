@@ -4,7 +4,7 @@ async function wf<T>(token: string, path: string): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      "accept-version": "2.0.0",
+      Accept: "application/json",
     },
   });
   if (!res.ok) {
