@@ -20,6 +20,7 @@
         <div class="skeleton-tabs">
           <div class="skeleton-tab"></div>
           <div class="skeleton-tab"></div>
+          <div class="skeleton-tab"></div>
         </div>
         <div class="skeleton-line skeleton-line--caption mb-md"></div>
         <div class="skeleton-stat-grid mb-lg">
@@ -87,6 +88,7 @@
       <div id="mainApp" class="hidden">
         <div class="tab-rail">
           <button type="button" class="active" data-tab="insights">Insights</button>
+          <button type="button" data-tab="intelligence">Content intelligence</button>
           <button type="button" data-tab="setup">Setup &amp; index</button>
         </div>
 
@@ -130,68 +132,6 @@
           <div class="demo-grid mb-lg" id="stats"></div>
 
           <div class="feature-card mb-lg">
-            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px">
-              <div>
-                <h3 class="title-sm mb-md" style="margin-bottom:4px">Content intelligence</h3>
-                <p class="body-md text-muted" style="margin:0">
-                  Analyze up to 15,000 past searches for topic trends and content ideas for your marketing team.
-                </p>
-              </div>
-              <button type="button" class="btn btn-primary" id="analyzeBtn">Analyze trends</button>
-            </div>
-            <p class="status-line" id="analyzeStatus"></p>
-          </div>
-
-          <div id="contentInsights" class="hidden mb-lg">
-            <div id="contentInsightsSkeleton">
-              <div class="cream-callout mb-lg skeleton-block">
-                <div class="skeleton-line skeleton-line--title mb-md"></div>
-                <div class="skeleton-line" style="width:95%"></div>
-                <div class="skeleton-line mt-sm" style="width:80%"></div>
-              </div>
-              <div class="feature-card mb-lg">
-                <div class="skeleton-line skeleton-line--title mb-md"></div>
-                <div class="skeleton-insights-grid">
-                  <div class="skeleton-block skeleton-insight-card">
-                    <div class="skeleton-line" style="width:40%"></div>
-                    <div class="skeleton-line"></div>
-                    <div class="skeleton-line"></div>
-                  </div>
-                  <div class="skeleton-block skeleton-insight-card">
-                    <div class="skeleton-line" style="width:35%"></div>
-                    <div class="skeleton-line"></div>
-                    <div class="skeleton-line"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div id="contentInsightsBody" class="hidden">
-            <div class="cream-callout mb-lg">
-              <h3 class="title-sm mb-md">Summary</h3>
-              <p class="body-md" id="insightSummary"></p>
-              <p class="caption mt-sm" id="insightMeta"></p>
-            </div>
-
-            <div class="feature-card mb-lg">
-              <h3 class="title-sm mb-md">Topic trends</h3>
-              <div id="insightTrends"></div>
-            </div>
-
-            <div class="feature-card mb-lg">
-              <h3 class="title-sm mb-md">Content gaps</h3>
-              <p class="body-md text-muted mb-md">Searches with weak or no results — opportunities to create new content.</p>
-              <div id="insightGaps"></div>
-            </div>
-
-            <div class="signature-coral-card">
-              <h3 class="title-sm mb-md" style="color:#fff">Marketing suggestions</h3>
-              <p class="body-md mb-md" style="color:rgba(255,255,255,0.9)">Recommended pieces your team could write next.</p>
-              <div id="insightSuggestions"></div>
-            </div>
-            </div>
-          </div>
-
-          <div class="feature-card mb-lg">
             <h3 class="title-sm mb-md">Top searches</h3>
             <table class="data-table">
               <thead>
@@ -222,6 +162,80 @@
               <tbody id="recentQueries"></tbody>
             </table>
           </div>
+          </div>
+        </section>
+
+        <section id="tab-intelligence" class="hidden">
+          <div class="hero-card-dark mb-lg">
+            <h2 class="title-lg mb-md">Content intelligence</h2>
+            <p class="body-md mb-lg" style="color: rgba(255,255,255,0.85); margin-bottom: 24px; max-width: 56ch">
+              Analyze up to 15,000 past searches to uncover topic trends, content gaps, and marketing ideas for your team.
+            </p>
+            <button type="button" class="btn btn-secondary-on-dark" id="analyzeBtn">Analyze search trends</button>
+            <p class="status-line mt-md" id="analyzeStatus" style="color: rgba(255,255,255,0.75)"></p>
+          </div>
+
+          <div id="contentInsightsEmpty" class="feature-card mb-lg">
+            <h3 class="title-sm mb-md">Ready when you are</h3>
+            <p class="body-md text-muted" style="margin:0">
+              Run an analysis to see what visitors are searching for, where content is missing, and what your marketing team should write next.
+            </p>
+          </div>
+
+          <div id="contentInsightsSkeleton" class="hidden">
+            <div class="cream-callout mb-lg skeleton-block">
+              <div class="skeleton-line skeleton-line--title mb-md"></div>
+              <div class="skeleton-line" style="width:95%"></div>
+              <div class="skeleton-line mt-sm" style="width:80%"></div>
+            </div>
+            <div class="feature-card mb-lg">
+              <div class="skeleton-line skeleton-line--title mb-md"></div>
+              <div class="skeleton-insights-grid">
+                <div class="skeleton-block skeleton-insight-card">
+                  <div class="skeleton-line" style="width:40%"></div>
+                  <div class="skeleton-line"></div>
+                  <div class="skeleton-line"></div>
+                </div>
+                <div class="skeleton-block skeleton-insight-card">
+                  <div class="skeleton-line" style="width:35%"></div>
+                  <div class="skeleton-line"></div>
+                  <div class="skeleton-line"></div>
+                </div>
+              </div>
+            </div>
+            <div class="feature-card skeleton-block">
+              <div class="skeleton-line skeleton-line--title mb-md"></div>
+              <div class="skeleton-table-row skeleton-table-row--3">
+                <div class="skeleton-line skeleton-line--cell"></div>
+                <div class="skeleton-line skeleton-line--cell-short"></div>
+                <div class="skeleton-line skeleton-line--cell"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="contentInsightsBody" class="hidden">
+            <div class="cream-callout mb-lg">
+              <h3 class="title-sm mb-md">Summary</h3>
+              <p class="body-md" id="insightSummary"></p>
+              <p class="caption mt-sm" id="insightMeta"></p>
+            </div>
+
+            <div class="feature-card mb-lg">
+              <h3 class="title-sm mb-md">Topic trends</h3>
+              <div id="insightTrends"></div>
+            </div>
+
+            <div class="feature-card mb-lg">
+              <h3 class="title-sm mb-md">Content gaps</h3>
+              <p class="body-md text-muted mb-md">Searches with weak or no results — opportunities to create new content.</p>
+              <div id="insightGaps"></div>
+            </div>
+
+            <div class="signature-coral-card">
+              <h3 class="title-sm mb-md" style="color:#fff">Marketing suggestions</h3>
+              <p class="body-md mb-md" style="color:rgba(255,255,255,0.9)">Recommended pieces your team could write next.</p>
+              <div id="insightSuggestions"></div>
+            </div>
           </div>
         </section>
 
@@ -318,6 +332,7 @@
           b.classList.toggle("active", b.getAttribute("data-tab") === name);
         });
         $("tab-insights").classList.toggle("hidden", name !== "insights");
+        $("tab-intelligence").classList.toggle("hidden", name !== "intelligence");
         $("tab-setup").classList.toggle("hidden", name !== "setup");
         if (name === "insights") loadAnalytics();
       }
@@ -542,9 +557,9 @@
         const btn = $("analyzeBtn");
         btn.disabled = true;
         $("analyzeStatus").textContent = "Analyzing up to 15,000 past searches… this may take 30–60 seconds.";
-        $("contentInsights").classList.remove("hidden");
-        $("contentInsightsSkeleton").classList.remove("hidden");
+        $("contentInsightsEmpty").classList.add("hidden");
         $("contentInsightsBody").classList.add("hidden");
+        $("contentInsightsSkeleton").classList.remove("hidden");
         try {
           const res = await fetch("/api/app/content-insights", { method: "POST" });
           const data = await res.json();
@@ -554,7 +569,8 @@
           $("contentInsightsBody").classList.remove("hidden");
           $("analyzeStatus").textContent = "Analysis complete.";
         } catch (err) {
-          $("contentInsights").classList.add("hidden");
+          $("contentInsightsSkeleton").classList.add("hidden");
+          $("contentInsightsEmpty").classList.remove("hidden");
           $("analyzeStatus").textContent = err.message;
         } finally {
           btn.disabled = false;
