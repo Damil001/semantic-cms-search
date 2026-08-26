@@ -15,11 +15,14 @@
  * Fields:   data-search-result-title | -type | -snippet | -image
  * States:   data-search-loading | data-search-empty
  * Filters:  data-search-filter="blog"
+ * Mode:     data-search-mode="submit" (default, Enter to search) | "live" (typeahead)
+ * Submit:   data-search-submit  (optional button; form submit also works)
  */
 (function () {
   "use strict";
 
   var DEBOUNCE_MS = 250;
+  var DEFAULT_MODE = "submit";
 
   function qs(root, sel) {
     return root.querySelector(sel);
@@ -171,7 +174,18 @@
       "[data-search-filter]",
       "[fs-cmssearch-filter]",
     ]);
+    var submitBtn = first(root, [
+      "[data-search-submit]",
+      '[fs-cmssearch-element="submit"]',
+    ]);
+    var mode = (
+      root.getAttribute("data-search-mode") ||
+      root.getAttribute("fs-cmssearch-mode") ||
+      DEFAULT_MODE
+    ).toLowerCase();
+    var liveMode = mode === "live";
     var abortCtrl = null;
+    var lastQuery = "";
 
     setHidden(loadingEl, true);
     setHidden(emptyEl, true);
@@ -239,8 +253,11 @@
       });
     }
 
-    function search() {
-      var q = (input.value || "").trim();
+    function search(queryOverride) {
+      var q =
+        queryOverride !== undefined
+          ? String(queryOverride).trim()
+          : (input.value || "").trim();
       if (!q) {
         if (abortCtrl) abortCtrl.abort();
         setHidden(loadingEl, true);
@@ -285,15 +302,48 @@
         });
     }
 
-    var debounced = debounce(search, DEBOUNCE_MS);
-    input.addEventListener("input", debounced);
-    input.addEventListener("search", search);
+    function submitSearch() {
+      var q = (input.value || "").trim();
+      if (!q) return;
+      lastQuery = q;
+      search(q);
+    }
+
+    function clearResults() {
+      lastQuery = "";
+      search("");
+    }
+
+    if (liveMode) {
+      var debounced = debounce(search, DEBOUNCE_MS);
+      input.addEventListener("input", debounced);
+      input.addEventListener("search", search);
+    } else {
+      input.setAttribute("enterkeyhint", "search");
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          submitSearch();
+        }
+      });
+      input.addEventListener("search", function () {
+        if (!(input.value || "").trim()) clearResults();
+      });
+    }
 
     var form = input.form || input.closest("form");
     if (form) {
       form.addEventListener("submit", function (e) {
         e.preventDefault();
-        search();
+        if (liveMode) search();
+        else submitSearch();
+      });
+    }
+
+    if (submitBtn) {
+      submitBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        submitSearch();
       });
     }
 
@@ -306,7 +356,7 @@
         var next = btn.getAttribute("aria-pressed") !== "true";
         btn.setAttribute("aria-pressed", next ? "true" : "false");
         btn.classList.toggle("is-active", next);
-        search();
+        if (lastQuery) search(lastQuery);
       });
     });
   }
