@@ -619,6 +619,11 @@ select.text-input:focus {
   margin-top: var(--space-sm);
 }
 
+.is-syncing {
+  opacity: 0.72;
+  transition: opacity 0.2s ease;
+}
+
 code {
   font-size: 12px;
   background: var(--color-surface-soft);

@@ -127,11 +127,15 @@
           </div>
 
           <div id="insightsContent">
-          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
-            <p class="caption" id="analyticsMeta" style="margin:0">Last 30 days</p>
+          <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
+            <div>
+              <p class="caption" id="analyticsMeta" style="margin:0">Last 30 days</p>
+              <p class="caption text-muted" id="analyticsUpdated" style="margin:4px 0 0"></p>
+            </div>
             <button type="button" class="btn btn-ghost hidden" id="refreshAnalytics" style="padding:4px 10px;font-size:13px">Refresh</button>
           </div>
 
+          <div id="insightsData">
           <div class="demo-grid mb-lg" id="stats"></div>
 
           <div class="feature-card mb-lg">
@@ -164,6 +168,7 @@
               </thead>
               <tbody id="recentQueries"></tbody>
             </table>
+          </div>
           </div>
           </div>
         </section>
@@ -304,9 +309,14 @@
       let me = null;
       let collections = [];
       let analyticsCache = null;
+      let analyticsFetchedAt = 0;
       let analyticsLoadPromise = null;
+      let analyticsPollTimer = null;
+      let analyticsClockTimer = null;
+      let activeTab = "insights";
       let collectionsLoaded = false;
       const statSurfaces = ["peach", "mint", "mustard"];
+      const ANALYTICS_STALE_MS = 2 * 60 * 1000;
 
       function setSkeleton(id, show) {
         const el = $(id);
@@ -334,12 +344,73 @@
       }
 
       function showTab(name) {
+        activeTab = name;
         document.querySelectorAll(".tab-rail button").forEach((b) => {
           b.classList.toggle("active", b.getAttribute("data-tab") === name);
         });
         $("tab-insights").classList.toggle("hidden", name !== "insights");
         $("tab-intelligence").classList.toggle("hidden", name !== "intelligence");
         $("tab-setup").classList.toggle("hidden", name !== "setup");
+        if (name === "insights") ensureAnalyticsFresh();
+      }
+
+      function isAnalyticsStale() {
+        return !analyticsFetchedAt || Date.now() - analyticsFetchedAt > ANALYTICS_STALE_MS;
+      }
+
+      function relativeUpdatedTime() {
+        if (!analyticsFetchedAt) return "";
+        const sec = Math.floor((Date.now() - analyticsFetchedAt) / 1000);
+        if (sec < 15) return "Updated just now";
+        if (sec < 60) return `Updated ${sec}s ago`;
+        if (sec < 3600) return `Updated ${Math.floor(sec / 60)} min ago`;
+        return `Updated ${fmtDate(new Date(analyticsFetchedAt).toISOString())}`;
+      }
+
+      function updateAnalyticsTimestamp(syncing) {
+        const el = $("analyticsUpdated");
+        if (!analyticsFetchedAt) {
+          el.textContent = "";
+          return;
+        }
+        el.textContent = syncing
+          ? `${relativeUpdatedTime()} · refreshing…`
+          : relativeUpdatedTime();
+      }
+
+      function setAnalyticsSyncing(syncing) {
+        $("insightsData").classList.toggle("is-syncing", syncing);
+        $("refreshAnalytics").disabled = syncing;
+        updateAnalyticsTimestamp(syncing);
+      }
+
+      function ensureAnalyticsFresh() {
+        if (!analyticsCache) {
+          loadAnalytics({ showSkeleton: true });
+          return;
+        }
+        renderAnalytics(analyticsCache);
+        updateAnalyticsTimestamp(false);
+        if (isAnalyticsStale()) {
+          loadAnalytics({ background: true });
+        }
+      }
+
+      function startAnalyticsWatchers() {
+        if (analyticsClockTimer) return;
+        analyticsClockTimer = setInterval(() => {
+          if (analyticsFetchedAt) updateAnalyticsTimestamp(false);
+        }, 15000);
+        analyticsPollTimer = setInterval(() => {
+          if (isAnalyticsStale()) {
+            loadAnalytics({ background: true });
+          }
+        }, ANALYTICS_STALE_MS);
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible" && isAnalyticsStale()) {
+            loadAnalytics({ background: true });
+          }
+        });
       }
 
       document.querySelectorAll(".tab-rail button").forEach((b) => {
@@ -492,21 +563,30 @@
           )
           .join("");
         $("refreshAnalytics").classList.remove("hidden");
+        updateAnalyticsTimestamp(false);
       }
 
       async function loadAnalytics(options = {}) {
+        const background = options.background === true;
         const force = options.force === true;
-        if (analyticsCache && !force) {
+
+        if (analyticsLoadPromise) {
+          await analyticsLoadPromise;
+          if (!force) return;
+        }
+
+        const hasCache = !!analyticsCache;
+        if (hasCache && !force && !isAnalyticsStale()) {
           renderAnalytics(analyticsCache);
           return;
         }
-        if (analyticsLoadPromise && !force) {
-          await analyticsLoadPromise;
-          return;
-        }
 
-        const showSkeleton = options.showSkeleton !== false && !analyticsCache;
-        if (showSkeleton) showInsightsLoading(true);
+        const showSkeleton = !hasCache && options.showSkeleton !== false && !background;
+        if (showSkeleton) {
+          showInsightsLoading(true);
+        } else if (hasCache) {
+          setAnalyticsSyncing(true);
+        }
 
         analyticsLoadPromise = (async () => {
           try {
@@ -514,9 +594,11 @@
             if (!res.ok) return;
             const d = await res.json();
             analyticsCache = d;
+            analyticsFetchedAt = Date.now();
             renderAnalytics(d);
           } finally {
             if (showSkeleton) showInsightsLoading(false);
+            setAnalyticsSyncing(false);
             analyticsLoadPromise = null;
           }
         })();
@@ -612,14 +694,8 @@
 
       $("analyzeBtn").addEventListener("click", runContentAnalysis);
 
-      $("refreshAnalytics").addEventListener("click", async () => {
-        const btn = $("refreshAnalytics");
-        btn.disabled = true;
-        btn.textContent = "Refreshing…";
-        analyticsCache = null;
-        await loadAnalytics({ force: true, showSkeleton: false });
-        btn.disabled = false;
-        btn.textContent = "Refresh";
+      $("refreshAnalytics").addEventListener("click", () => {
+        loadAnalytics({ force: true, background: true });
       });
 
       async function boot() {
@@ -661,6 +737,7 @@
             loadCollections({ showSkeleton: true }),
             loadAnalytics({ showSkeleton: true }),
           ]);
+          startAnalyticsWatchers();
         } catch {
           location.href = "/login";
         }
