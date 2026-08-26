@@ -127,7 +127,10 @@
           </div>
 
           <div id="insightsContent">
-          <p class="caption mb-md" id="analyticsMeta">Last 30 days</p>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
+            <p class="caption" id="analyticsMeta" style="margin:0">Last 30 days</p>
+            <button type="button" class="btn btn-ghost hidden" id="refreshAnalytics" style="padding:4px 10px;font-size:13px">Refresh</button>
+          </div>
 
           <div class="demo-grid mb-lg" id="stats"></div>
 
@@ -300,6 +303,9 @@
       const $ = (id) => document.getElementById(id);
       let me = null;
       let collections = [];
+      let analyticsCache = null;
+      let analyticsLoadPromise = null;
+      let collectionsLoaded = false;
       const statSurfaces = ["peach", "mint", "mustard"];
 
       function setSkeleton(id, show) {
@@ -334,7 +340,6 @@
         $("tab-insights").classList.toggle("hidden", name !== "insights");
         $("tab-intelligence").classList.toggle("hidden", name !== "intelligence");
         $("tab-setup").classList.toggle("hidden", name !== "setup");
-        if (name === "insights") loadAnalytics();
       }
 
       document.querySelectorAll(".tab-rail button").forEach((b) => {
@@ -404,16 +409,21 @@
         });
       }
 
-      async function loadCollections() {
-        showSetupLoading(true);
+      async function loadCollections(options = {}) {
+        const force = options.force === true;
+        if (collectionsLoaded && !force) return;
+
+        const showSkeleton = options.showSkeleton !== false && !collectionsLoaded;
+        if (showSkeleton) showSetupLoading(true);
         try {
           const res = await fetch("/api/app/collections");
           if (!res.ok) return;
           const data = await res.json();
           collections = data.collections || [];
           renderCollections();
+          collectionsLoaded = true;
         } finally {
-          showSetupLoading(false);
+          if (showSkeleton) showSetupLoading(false);
         }
       }
 
@@ -452,43 +462,66 @@
         log.textContent = `Done. Indexed ${n} items.`;
       }
 
-      async function loadAnalytics() {
-        showInsightsLoading(true);
-        try {
-          const res = await fetch("/api/app/analytics?days=30");
-          if (!res.ok) return;
-          const d = await res.json();
-          $("analyticsMeta").textContent = `Last ${d.days} days · ${me.siteName || me.siteId}`;
-          const stats = [
-            [d.total, "Total searches"],
-            [d.zeroResults, "Zero results"],
-            [d.moreThanFive, "More than 5 results"],
-          ];
-          $("stats").innerHTML = stats
-            .map(
-              ([n, label], i) =>
-                `<div class="demo-grid-card demo-grid-card--${statSurfaces[i]}">
-                  <div class="stat-value">${n}</div>
-                  <div class="stat-label">${label}</div>
-                </div>`
-            )
-            .join("");
-          $("noAnalytics").classList.toggle("hidden", d.total > 0);
-          $("topQueries").innerHTML = (d.topQueries || [])
-            .map(
-              (q) =>
-                `<tr><td>${esc(q.query)}</td><td>${q.count}</td><td>${q.avgResultCount}</td><td>${fmtDate(q.lastAt)}</td></tr>`
-            )
-            .join("");
-          $("recentQueries").innerHTML = (d.recentQueries || [])
-            .map(
-              (q) =>
-                `<tr><td>${esc(q.query)}</td><td>${q.resultCount}</td><td>${fmtDate(q.createdAt)}</td></tr>`
-            )
-            .join("");
-        } finally {
-          showInsightsLoading(false);
+      function renderAnalytics(d) {
+        $("analyticsMeta").textContent = `Last ${d.days} days · ${me.siteName || me.siteId}`;
+        const stats = [
+          [d.total, "Total searches"],
+          [d.zeroResults, "Zero results"],
+          [d.moreThanFive, "More than 5 results"],
+        ];
+        $("stats").innerHTML = stats
+          .map(
+            ([n, label], i) =>
+              `<div class="demo-grid-card demo-grid-card--${statSurfaces[i]}">
+                <div class="stat-value">${n}</div>
+                <div class="stat-label">${label}</div>
+              </div>`
+          )
+          .join("");
+        $("noAnalytics").classList.toggle("hidden", d.total > 0);
+        $("topQueries").innerHTML = (d.topQueries || [])
+          .map(
+            (q) =>
+              `<tr><td>${esc(q.query)}</td><td>${q.count}</td><td>${q.avgResultCount}</td><td>${fmtDate(q.lastAt)}</td></tr>`
+          )
+          .join("");
+        $("recentQueries").innerHTML = (d.recentQueries || [])
+          .map(
+            (q) =>
+              `<tr><td>${esc(q.query)}</td><td>${q.resultCount}</td><td>${fmtDate(q.createdAt)}</td></tr>`
+          )
+          .join("");
+        $("refreshAnalytics").classList.remove("hidden");
+      }
+
+      async function loadAnalytics(options = {}) {
+        const force = options.force === true;
+        if (analyticsCache && !force) {
+          renderAnalytics(analyticsCache);
+          return;
         }
+        if (analyticsLoadPromise && !force) {
+          await analyticsLoadPromise;
+          return;
+        }
+
+        const showSkeleton = options.showSkeleton !== false && !analyticsCache;
+        if (showSkeleton) showInsightsLoading(true);
+
+        analyticsLoadPromise = (async () => {
+          try {
+            const res = await fetch("/api/app/analytics?days=30");
+            if (!res.ok) return;
+            const d = await res.json();
+            analyticsCache = d;
+            renderAnalytics(d);
+          } finally {
+            if (showSkeleton) showInsightsLoading(false);
+            analyticsLoadPromise = null;
+          }
+        })();
+
+        await analyticsLoadPromise;
       }
 
       function esc(s) {
@@ -579,6 +612,16 @@
 
       $("analyzeBtn").addEventListener("click", runContentAnalysis);
 
+      $("refreshAnalytics").addEventListener("click", async () => {
+        const btn = $("refreshAnalytics");
+        btn.disabled = true;
+        btn.textContent = "Refreshing…";
+        analyticsCache = null;
+        await loadAnalytics({ force: true, showSkeleton: false });
+        btn.disabled = false;
+        btn.textContent = "Refresh";
+      });
+
       async function boot() {
         showPageLoading(true);
         showNavLoading(true);
@@ -601,8 +644,6 @@
 
           $("mainApp").classList.remove("hidden");
           showPageLoading(false);
-          showInsightsLoading(true);
-          showSetupLoading(true);
 
           $("searchUrl").textContent = me.searchEndpoint;
           $("scriptUrl").textContent = me.scriptUrl;
@@ -616,7 +657,10 @@
                 `<option value="${s.id}" ${s.id === me.siteId ? "selected" : ""}>${s.name}</option>`
             )
             .join("");
-          await Promise.all([loadCollections(), loadAnalytics()]);
+          await Promise.all([
+            loadCollections({ showSkeleton: true }),
+            loadAnalytics({ showSkeleton: true }),
+          ]);
         } catch {
           location.href = "/login";
         }
