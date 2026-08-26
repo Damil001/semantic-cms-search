@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
-import { normalizeSupabaseUrl } from "../lib/supabase.js";
+import { normalizeSupabaseUrl, getServiceClient } from "../lib/supabase.js";
 import {
   AUTH_ACCESS_COOKIE,
   readCookie,
@@ -49,16 +49,22 @@ export async function signUp(
   email: string,
   password: string
 ): Promise<{ user: User; accessToken: string; refreshToken: string }> {
-  const client = authClient();
-  const { data, error } = await client.auth.signUp({ email, password });
-  if (error || !data.session || !data.user) {
-    throw new Error(error?.message ?? "Sign up failed");
+  const admin = getServiceClient();
+  const { error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("already") || msg.includes("registered")) {
+      throw new Error("Account already exists. Use Sign in instead.");
+    }
+    throw new Error(error.message);
   }
-  return {
-    user: data.user,
-    accessToken: data.session.access_token,
-    refreshToken: data.session.refresh_token,
-  };
+
+  return signIn(email, password);
 }
 
 export async function signIn(

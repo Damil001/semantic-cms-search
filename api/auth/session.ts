@@ -50,6 +50,8 @@ export default async function handler(
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Auth failed";
-    res.status(400).json({ error: message });
+    console.error("auth session error", action, message);
+    const status = message.includes("SUPABASE_ANON_KEY") ? 503 : 400;
+    res.status(status).json({ error: message });
   }
 }
