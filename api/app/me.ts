@@ -1,16 +1,28 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getInstall } from "../../src/app/session.js";
+import { getAuthUser } from "../../src/app/auth.js";
+import { getInstallForUser } from "../../src/app/session.js";
 import { listSites } from "../../src/app/webflow-admin.js";
 
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  const install = await getInstall(req);
-  if (!install) {
-    res.status(200).json({ connected: false });
+  const user = await getAuthUser(req);
+  if (!user) {
+    res.status(200).json({ authenticated: false });
     return;
   }
+
+  const install = await getInstallForUser(req, user.id);
+  if (!install) {
+    res.status(200).json({
+      authenticated: true,
+      email: user.email,
+      connected: false,
+    });
+    return;
+  }
+
   let sites: { id: string; name: string }[] = [];
   try {
     sites = (await listSites(install.access_token)).map((s) => ({
@@ -25,7 +37,10 @@ export default async function handler(
       },
     ];
   }
+
   res.status(200).json({
+    authenticated: true,
+    email: user.email,
     connected: true,
     siteId: install.site_id,
     siteName: install.site_name,

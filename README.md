@@ -37,10 +37,14 @@ SUPABASE_URL=
 SUPABASE_SERVICE_KEY=
 ```
 
-5. Open `/app` → **Connect Webflow** → pick the site → confirm collection field maps (guessed from CMS) → **Index CMS**.
-6. After they publish more CMS items, they return to `/app` and click **Re-index** (same job; embeddings are rebuilt for those collections).
+5. Open `/login` → create account → **Connect Webflow** → map collections → **Index CMS**.
+6. **Insights** tab shows search stats once visitors use the embedded search widget.
 
-The dashboard prints `data-search-endpoint` and `data-search-site` for the Designer wrapper. Embeddings never run in the browser; the app token stays on your server.
+Run migration **`20240827000004_auth_and_analytics.sql`** in Supabase SQL Editor.
+
+**Supabase Auth:** Dashboard → Authentication → Providers → enable Email. For MVP testing, disable “Confirm email” under Email provider so sign-up works immediately.
+
+Add **`SUPABASE_ANON_KEY`** to Vercel (Project Settings → API → anon public key). Keep **`SUPABASE_SERVICE_KEY`** server-side only.
 
 ## 3. Optional CLI ingest
 

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getInstall } from "../../src/app/session.js";
+import { requireAuthInstall } from "../../src/app/guard.js";
 import {
   getCollection,
   getSite,
@@ -13,11 +13,9 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  const install = await getInstall(req);
-  if (!install) {
-    res.status(401).json({ error: "Connect Webflow first" });
-    return;
-  }
+  const ctx = await requireAuthInstall(req, res);
+  if (!ctx) return;
+  const install = ctx.install;
 
   const token = install.access_token;
   const site = await getSite(token, install.site_id);

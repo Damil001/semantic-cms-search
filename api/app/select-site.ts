@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getInstall } from "../../src/app/session.js";
+import { getAuthUser } from "../../src/app/auth.js";
+import { getInstallForUser } from "../../src/app/session.js";
 import { getSite, listSites } from "../../src/app/webflow-admin.js";
 import { getServiceClient } from "../../src/lib/supabase.js";
 
@@ -11,9 +12,16 @@ export default async function handler(
     res.status(405).json({ error: "POST only" });
     return;
   }
-  const install = await getInstall(req);
+
+  const user = await getAuthUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Log in first" });
+    return;
+  }
+
+  const install = await getInstallForUser(req, user.id);
   if (!install) {
-    res.status(401).json({ error: "Connect Webflow first" });
+    res.status(401).json({ error: "Connect a Webflow site first" });
     return;
   }
 
@@ -39,7 +47,8 @@ export default async function handler(
       preview_url: site.previewUrl ?? null,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", install.id);
+    .eq("id", install.id)
+    .eq("user_id", user.id);
   if (error) {
     res.status(500).json({ error: error.message });
     return;

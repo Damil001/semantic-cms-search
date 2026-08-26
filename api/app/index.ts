@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type { CollectionConfig } from "../../src/config/webflow.js";
-import { getInstall } from "../../src/app/session.js";
+import { requireAuthInstall } from "../../src/app/guard.js";
 import { fetchCollectionPage } from "../../src/ingest/webflow-api.js";
 import { mapCmsItem, upsertItemWithChunks } from "../../src/ingest/upsert.js";
 import { getServiceClient } from "../../src/lib/supabase.js";
@@ -26,11 +26,9 @@ export default async function handler(
     res.status(405).json({ error: "POST only" });
     return;
   }
-  const install = await getInstall(req);
-  if (!install) {
-    res.status(401).json({ error: "Connect Webflow first" });
-    return;
-  }
+  const ctx = await requireAuthInstall(req, res);
+  if (!ctx) return;
+  const install = ctx.install;
 
   const collectionId = String(req.body?.collectionId ?? "");
   const offset = Number(req.body?.offset ?? 0);

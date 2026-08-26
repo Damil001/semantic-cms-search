@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { runSearch } from "../src/search/run.js";
+import { logSearchEvent } from "../src/analytics/log.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -54,6 +55,15 @@ export default async function handler(
       limit: parseLimit(req.query.limit),
       siteId,
     });
+
+    if (siteId) {
+      void logSearchEvent({
+        siteId,
+        query: q.trim(),
+        resultCount: results.length,
+      });
+    }
+
     res.status(200).json({ query: q.trim(), results });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Search failed";

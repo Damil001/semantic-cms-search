@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getInstall } from "../../src/app/session.js";
+import { requireAuthInstall } from "../../src/app/guard.js";
 import { getServiceClient } from "../../src/lib/supabase.js";
 
 interface MapBody {
@@ -19,11 +19,9 @@ export default async function handler(
     res.status(405).json({ error: "PUT only" });
     return;
   }
-  const install = await getInstall(req);
-  if (!install) {
-    res.status(401).json({ error: "Connect Webflow first" });
-    return;
-  }
+  const ctx = await requireAuthInstall(req, res);
+  if (!ctx) return;
+  const install = ctx.install;
   const maps = (req.body?.maps ?? []) as MapBody[];
   const supabase = getServiceClient();
   const rows = maps.map((m) => ({
