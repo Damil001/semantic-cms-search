@@ -59,7 +59,7 @@ export async function signUp(
   if (error) {
     const msg = error.message.toLowerCase();
     if (msg.includes("already") || msg.includes("registered")) {
-      throw new Error("Account already exists. Use Sign in instead.");
+      return signIn(email, password);
     }
     throw new Error(error.message);
   }
