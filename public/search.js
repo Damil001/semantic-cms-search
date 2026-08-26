@@ -60,6 +60,20 @@
     }
   }
 
+  function setVisible(el, visible, fallbackText) {
+    if (!el) return;
+    el.hidden = !visible;
+    el.setAttribute("aria-hidden", visible ? "false" : "true");
+    if (visible) {
+      el.style.setProperty("display", "block", "important");
+      if (fallbackText && !el.textContent.trim()) {
+        el.textContent = fallbackText;
+      }
+    } else {
+      el.style.setProperty("display", "none", "important");
+    }
+  }
+
   function debounce(fn, wait) {
     var t;
     return function () {
@@ -136,14 +150,6 @@
       "[data-search-results]",
       '[fs-cmssearch-element="list"]',
     ]);
-    var loadingEl = first(root, [
-      "[data-search-loading]",
-      '[fs-cmssearch-element="loader"]',
-    ]);
-    var emptyEl = first(root, [
-      "[data-search-empty]",
-      '[fs-cmssearch-element="empty"]',
-    ]);
     if (!input || !resultsEl) {
       console.warn("[cms-search] Need a search input and a results list inside the wrapper.");
       return;
@@ -186,8 +192,53 @@
     var abortCtrl = null;
     var lastQuery = "";
 
-    setHidden(loadingEl, true);
-    setHidden(emptyEl, true);
+    var LOADING_SELECTORS = [
+      "[data-search-loading]",
+      '[fs-cmssearch-element="loader"]',
+    ];
+    var EMPTY_SELECTORS = [
+      "[data-search-empty]",
+      '[fs-cmssearch-element="empty"]',
+    ];
+
+    function showLoading(show) {
+      var els = all(root, LOADING_SELECTORS);
+      if (!show) {
+        els.forEach(function (el) {
+          setVisible(el, false);
+        });
+        root.classList.remove("is-search-loading");
+        return;
+      }
+      var target =
+        els.find(function (el) {
+          return el.textContent.trim();
+        }) || els[0];
+      els.forEach(function (el) {
+        setVisible(el, el === target, "Searching…");
+      });
+      root.classList.add("is-search-loading");
+    }
+
+    function showEmpty(show) {
+      var els = all(root, EMPTY_SELECTORS);
+      if (!show) {
+        els.forEach(function (el) {
+          setVisible(el, false);
+        });
+        return;
+      }
+      var target =
+        els.find(function (el) {
+          return el.textContent.trim();
+        }) || els[0];
+      els.forEach(function (el) {
+        setVisible(el, el === target, "No results found.");
+      });
+    }
+
+    showLoading(false);
+    showEmpty(false);
 
     function activeTypes() {
       return filters
@@ -259,8 +310,8 @@
           : (input.value || "").trim();
       if (!q) {
         if (abortCtrl) abortCtrl.abort();
-        setHidden(loadingEl, true);
-        setHidden(emptyEl, true);
+        showLoading(false);
+        showEmpty(false);
         while (listMount.firstChild) {
           listMount.removeChild(listMount.firstChild);
         }
@@ -270,8 +321,11 @@
       if (abortCtrl) abortCtrl.abort();
       abortCtrl = new AbortController();
 
-      setHidden(loadingEl, false);
-      setHidden(emptyEl, true);
+      while (listMount.firstChild) {
+        listMount.removeChild(listMount.firstChild);
+      }
+      showEmpty(false);
+      showLoading(true);
 
       var url = new URL(endpoint, window.location.origin);
       url.searchParams.set("q", q);
@@ -286,18 +340,18 @@
           return res.json();
         })
         .then(function (data) {
-          setHidden(loadingEl, true);
+          showLoading(false);
           var items = (data && data.results) || [];
           render(items);
-          setHidden(emptyEl, items.length > 0);
+          showEmpty(items.length === 0);
         })
         .catch(function (err) {
           if (err && err.name === "AbortError") return;
-          setHidden(loadingEl, true);
+          showLoading(false);
           while (listMount.firstChild) {
             listMount.removeChild(listMount.firstChild);
           }
-          setHidden(emptyEl, false);
+          showEmpty(true);
         });
     }
 
