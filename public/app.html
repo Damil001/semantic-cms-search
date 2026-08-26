@@ -4,138 +4,64 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Search Intelligence</title>
-    <style>
-      :root {
-        color-scheme: light;
-        --bg: #f4f1ea;
-        --ink: #1c1917;
-        --muted: #78716c;
-        --card: #fff;
-        --line: #e7e5e4;
-        --accent: #0f766e;
-        --warn: #b45309;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        font-family: ui-sans-serif, system-ui, sans-serif;
-        background: var(--bg);
-        color: var(--ink);
-        line-height: 1.45;
-      }
-      header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 24px;
-        border-bottom: 1px solid var(--line);
-        background: var(--card);
-      }
-      header h1 { margin: 0; font-size: 1.1rem; }
-      header .meta { font-size: 0.85rem; color: var(--muted); }
-      main { max-width: 960px; margin: 0 auto; padding: 24px 20px 80px; }
-      .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
-      .tabs button {
-        border: 1px solid var(--line);
-        background: var(--card);
-        padding: 8px 14px;
-        border-radius: 999px;
-        cursor: pointer;
-        font: inherit;
-      }
-      .tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 20px;
-        margin-bottom: 16px;
-      }
-      .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
-      .stat { background: #fafaf9; border-radius: 10px; padding: 14px; }
-      .stat .n { font-size: 1.75rem; font-weight: 700; color: var(--accent); }
-      .stat .l { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-      button, .btn {
-        appearance: none;
-        border: 0;
-        background: var(--accent);
-        color: #fff;
-        font-weight: 600;
-        padding: 10px 16px;
-        border-radius: 10px;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-        font: inherit;
-      }
-      button.secondary, .btn.secondary { background: #44403c; }
-      button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
-      button:disabled { opacity: 0.5; cursor: not-allowed; }
-      label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
-      input, select {
-        width: 100%;
-        padding: 8px 10px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        font: inherit;
-      }
-      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      .collection h2 { font-size: 1rem; margin: 0 0 12px; }
-      .status { font-size: 14px; color: var(--muted); min-height: 1.4em; }
-      code { background: #e7e5e4; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
-      table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-      th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
-      th { color: var(--muted); font-weight: 600; }
-      .hidden { display: none !important; }
-      .badge-warn { color: var(--warn); font-size: 0.8rem; }
-    </style>
+    <link rel="stylesheet" href="/design.css" />
   </head>
   <body>
-    <header>
-      <div>
-        <h1>Search Intelligence</h1>
-        <div class="meta" id="userEmail"></div>
+    <nav class="top-nav">
+      <a class="top-nav__brand" href="/app">Search Intelligence</a>
+      <div class="top-nav__cluster">
+        <span class="top-nav__meta" id="userEmail"></span>
+        <button type="button" class="btn btn-ghost" id="logout">Sign out</button>
       </div>
-      <button type="button" class="ghost" id="logout">Sign out</button>
-    </header>
+    </nav>
 
-    <main>
-      <div id="connectGate" class="card hidden">
-        <h2 style="margin:0 0 8px">Connect your Webflow site</h2>
-        <p style="color:var(--muted);margin:0 0 16px">
-          Authorize CMS read access. Then index content and embed search on your site.
+    <main class="container section--tight" style="padding-bottom: 96px">
+      <div id="connectGate" class="hero-card-dark hidden mb-lg">
+        <h2 class="title-lg mb-md">Connect your Webflow site</h2>
+        <p class="body-md" style="color: rgba(255,255,255,0.85); margin: 0 0 24px; max-width: 52ch">
+          Authorize CMS read access, map your collections, index content, and embed search on your site.
         </p>
-        <a class="btn" href="/api/oauth/start">Connect Webflow</a>
+        <a class="btn btn-secondary-on-dark" href="/api/oauth/start">Connect Webflow</a>
       </div>
 
       <div id="mainApp" class="hidden">
-        <div class="tabs">
+        <div class="tab-rail">
           <button type="button" class="active" data-tab="insights">Insights</button>
           <button type="button" data-tab="setup">Setup &amp; index</button>
         </div>
 
         <section id="tab-insights">
-          <div class="card">
-            <p class="status" id="analyticsMeta">Last 30 days</p>
-            <div class="stats" id="stats"></div>
-          </div>
-          <div class="card">
-            <h3 style="margin:0 0 12px">Top searches</h3>
-            <table>
+          <p class="caption mb-md" id="analyticsMeta">Last 30 days</p>
+
+          <div class="demo-grid mb-lg" id="stats"></div>
+
+          <div class="feature-card mb-lg">
+            <h3 class="title-sm mb-md">Top searches</h3>
+            <table class="data-table">
               <thead>
-                <tr><th>Query</th><th>Volume</th><th>Avg results</th><th>Last seen</th></tr>
+                <tr>
+                  <th>Query</th>
+                  <th>Volume</th>
+                  <th>Avg results</th>
+                  <th>Last seen</th>
+                </tr>
               </thead>
               <tbody id="topQueries"></tbody>
             </table>
-            <p class="badge-warn hidden" id="noAnalytics">
+            <p class="text-warn hidden mt-md" id="noAnalytics">
               No searches logged yet. Embed search on your site and try a few queries.
             </p>
           </div>
-          <div class="card">
-            <h3 style="margin:0 0 12px">Recent searches</h3>
-            <table>
+
+          <div class="feature-card">
+            <h3 class="title-sm mb-md">Recent searches</h3>
+            <table class="data-table">
               <thead>
-                <tr><th>Query</th><th>Results</th><th>When</th></tr>
+                <tr>
+                  <th>Query</th>
+                  <th>Results</th>
+                  <th>When</th>
+                </tr>
               </thead>
               <tbody id="recentQueries"></tbody>
             </table>
@@ -143,34 +69,52 @@
         </section>
 
         <section id="tab-setup" class="hidden">
-          <div class="card">
-            <label>Site</label>
-            <select id="site"></select>
-            <p class="status" id="siteMeta"></p>
-            <p>
+          <div class="cream-callout mb-lg">
+            <h3 class="title-sm mb-md">Embed on your site</h3>
+            <p class="body-md mb-md">
               Search URL: <code id="searchUrl"></code><br />
               Script: <code id="scriptUrl"></code><br />
               <code>data-search-site</code>: <code id="siteId"></code>
             </p>
           </div>
+
+          <div class="feature-card mb-lg">
+            <div class="form-field">
+              <label for="site">Site</label>
+              <select class="text-input" id="site"></select>
+            </div>
+            <p class="status-line" id="siteMeta"></p>
+          </div>
+
           <div id="collections"></div>
-          <div class="card">
-            <button id="save" type="button">Save mappings</button>
-            <button id="index" type="button">Index CMS</button>
-            <button id="reindex" class="secondary" type="button">Re-index</button>
-            <p class="status" id="log"></p>
+
+          <div class="feature-card">
+            <div class="btn-row">
+              <button id="save" type="button" class="btn btn-primary">Save mappings</button>
+              <button id="index" type="button" class="btn btn-secondary">Index CMS</button>
+              <button id="reindex" type="button" class="btn btn-secondary">Re-index</button>
+            </div>
+            <p class="status-line" id="log"></p>
           </div>
         </section>
       </div>
     </main>
 
+    <footer class="footer">
+      <div class="container" style="padding: 0; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px">
+        <span>Search Intelligence</span>
+        <a href="/pricing">Pricing</a>
+      </div>
+    </footer>
+
     <script>
       const $ = (id) => document.getElementById(id);
       let me = null;
       let collections = [];
+      const statSurfaces = ["peach", "mint", "mustard"];
 
       function showTab(name) {
-        document.querySelectorAll(".tabs button").forEach((b) => {
+        document.querySelectorAll(".tab-rail button").forEach((b) => {
           b.classList.toggle("active", b.getAttribute("data-tab") === name);
         });
         $("tab-insights").classList.toggle("hidden", name !== "insights");
@@ -178,7 +122,7 @@
         if (name === "insights") loadAnalytics();
       }
 
-      document.querySelectorAll(".tabs button").forEach((b) => {
+      document.querySelectorAll(".tab-rail button").forEach((b) => {
         b.addEventListener("click", () => showTab(b.getAttribute("data-tab")));
       });
 
@@ -196,7 +140,7 @@
             )
           )
           .join("");
-        return `<label>${name}</label><select data-field="${name}">${opts}</select>`;
+        return `<div class="form-field"><label>${name}</label><select class="text-input" data-field="${name}">${opts}</select></div>`;
       }
 
       function renderCollections() {
@@ -204,21 +148,21 @@
           .map((c, i) => {
             const f = c.fields || [];
             const m = c.mapping || {};
-            return `<div class="card collection" data-i="${i}">
+            return `<div class="feature-card collection-card" data-i="${i}">
               <h2><input type="checkbox" data-enabled ${c.enabled ? "checked" : ""} /> ${c.name}</h2>
-              <div class="row">
-                <div><label>Content type</label><input data-type value="${c.contentType || ""}" /></div>
-                <div><label>URL pattern</label><input data-url value="${c.urlPattern || ""}" /></div>
+              <div class="row-2">
+                <div class="form-field"><label>Content type</label><input class="text-input" data-type value="${c.contentType || ""}" /></div>
+                <div class="form-field"><label>URL pattern</label><input class="text-input" data-url value="${c.urlPattern || ""}" /></div>
               </div>
-              <div class="row">
+              <div class="row-2">
                 <div>${fieldSelect(f, "title", m.title)}</div>
                 <div>${fieldSelect(f, "body", m.body)}</div>
               </div>
-              <div class="row">
+              <div class="row-2">
                 <div>${fieldSelect(f, "excerpt", m.excerpt)}</div>
                 <div>${fieldSelect(f, "slug", m.slug)}</div>
               </div>
-              <div class="row">
+              <div class="row-2">
                 <div>${fieldSelect(f, "image", m.image)}</div>
                 <div>${fieldSelect(f, "date", m.date)}</div>
               </div>
@@ -229,7 +173,7 @@
 
       function readMaps() {
         return collections.map((c, i) => {
-          const el = document.querySelector(`.collection[data-i="${i}"]`);
+          const el = document.querySelector(`.collection-card[data-i="${i}"]`);
           const mapping = {};
           el.querySelectorAll("[data-field]").forEach((sel) => {
             mapping[sel.getAttribute("data-field")] = sel.value;
@@ -293,10 +237,20 @@
         if (!res.ok) return;
         const d = await res.json();
         $("analyticsMeta").textContent = `Last ${d.days} days · ${me.siteName || me.siteId}`;
-        $("stats").innerHTML =
-          stat(d.total, "Total searches") +
-          stat(d.zeroResults, "Zero results") +
-          stat(d.moreThanFive, "More than 5 results");
+        const stats = [
+          [d.total, "Total searches"],
+          [d.zeroResults, "Zero results"],
+          [d.moreThanFive, "More than 5 results"],
+        ];
+        $("stats").innerHTML = stats
+          .map(
+            ([n, label], i) =>
+              `<div class="demo-grid-card demo-grid-card--${statSurfaces[i]}">
+                <div class="stat-value">${n}</div>
+                <div class="stat-label">${label}</div>
+              </div>`
+          )
+          .join("");
         $("noAnalytics").classList.toggle("hidden", d.total > 0);
         $("topQueries").innerHTML = (d.topQueries || [])
           .map(
@@ -312,9 +266,6 @@
           .join("");
       }
 
-      function stat(n, label) {
-        return `<div class="stat"><div class="n">${n}</div><div class="l">${label}</div></div>`;
-      }
       function esc(s) {
         return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
       }
