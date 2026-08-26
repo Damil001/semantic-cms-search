@@ -647,6 +647,132 @@ code {
   margin-right: var(--space-xs);
 }
 
+/* Skeleton loading */
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.skeleton-line {
+  display: block;
+  height: 14px;
+  background: var(--color-surface-strong);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-line--title {
+  height: 28px;
+  width: min(280px, 70%);
+}
+
+.skeleton-line--caption {
+  height: 12px;
+  width: min(200px, 50%);
+  margin-top: var(--space-xs);
+}
+
+.skeleton-line--stat {
+  height: 36px;
+  width: 56px;
+  margin-bottom: var(--space-xs);
+}
+
+.skeleton-line--label {
+  height: 12px;
+  width: 80px;
+}
+
+.skeleton-line--cell {
+  height: 14px;
+  width: 100%;
+}
+
+.skeleton-line--cell-short {
+  height: 14px;
+  width: 48px;
+}
+
+.skeleton-block {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-lg);
+}
+
+.skeleton-stat {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.skeleton-table-row--3 {
+  grid-template-columns: 2fr 1fr 1.5fr;
+}
+
+.skeleton-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.skeleton-tab {
+  width: 100px;
+  height: 36px;
+  background: var(--color-surface-soft);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-tab:nth-child(2) { animation-delay: 0.15s; }
+
+.skeleton-collection {
+  padding: var(--space-xl);
+}
+
+.skeleton-collection .skeleton-line + .skeleton-line {
+  margin-top: var(--space-sm);
+}
+
+.skeleton-insights-grid {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.skeleton-insight-card {
+  padding: var(--space-md);
+}
+
+.skeleton-insight-card .skeleton-line:nth-child(2) {
+  margin-top: var(--space-sm);
+  width: 90%;
+}
+
+.skeleton-insight-card .skeleton-line:nth-child(3) {
+  margin-top: var(--space-xs);
+  width: 70%;
+}
+
 .out-row {
   display: flex;
   justify-content: space-between;

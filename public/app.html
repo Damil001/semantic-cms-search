@@ -16,6 +16,66 @@
     </nav>
 
     <main class="container section--tight" style="padding-bottom: 96px">
+      <div id="dashboardSkeleton">
+        <div class="skeleton-tabs">
+          <div class="skeleton-tab"></div>
+          <div class="skeleton-tab"></div>
+        </div>
+        <div class="skeleton-line skeleton-line--caption mb-md"></div>
+        <div class="skeleton-stat-grid mb-lg">
+          <div class="skeleton-stat">
+            <div class="skeleton-line skeleton-line--stat"></div>
+            <div class="skeleton-line skeleton-line--label"></div>
+          </div>
+          <div class="skeleton-stat">
+            <div class="skeleton-line skeleton-line--stat"></div>
+            <div class="skeleton-line skeleton-line--label"></div>
+          </div>
+          <div class="skeleton-stat">
+            <div class="skeleton-line skeleton-line--stat"></div>
+            <div class="skeleton-line skeleton-line--label"></div>
+          </div>
+        </div>
+        <div class="feature-card mb-lg skeleton-block">
+          <div class="skeleton-line skeleton-line--title mb-md"></div>
+          <div class="skeleton-line" style="width:85%"></div>
+        </div>
+        <div class="feature-card mb-lg">
+          <div class="skeleton-line skeleton-line--title mb-md"></div>
+          <div class="skeleton-table-row">
+            <div class="skeleton-line skeleton-line--cell"></div>
+            <div class="skeleton-line skeleton-line--cell-short"></div>
+            <div class="skeleton-line skeleton-line--cell-short"></div>
+            <div class="skeleton-line skeleton-line--cell"></div>
+          </div>
+          <div class="skeleton-table-row">
+            <div class="skeleton-line skeleton-line--cell"></div>
+            <div class="skeleton-line skeleton-line--cell-short"></div>
+            <div class="skeleton-line skeleton-line--cell-short"></div>
+            <div class="skeleton-line skeleton-line--cell"></div>
+          </div>
+          <div class="skeleton-table-row">
+            <div class="skeleton-line skeleton-line--cell"></div>
+            <div class="skeleton-line skeleton-line--cell-short"></div>
+            <div class="skeleton-line skeleton-line--cell-short"></div>
+            <div class="skeleton-line skeleton-line--cell"></div>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="skeleton-line skeleton-line--title mb-md"></div>
+          <div class="skeleton-table-row skeleton-table-row--3">
+            <div class="skeleton-line skeleton-line--cell"></div>
+            <div class="skeleton-line skeleton-line--cell-short"></div>
+            <div class="skeleton-line skeleton-line--cell"></div>
+          </div>
+          <div class="skeleton-table-row skeleton-table-row--3">
+            <div class="skeleton-line skeleton-line--cell"></div>
+            <div class="skeleton-line skeleton-line--cell-short"></div>
+            <div class="skeleton-line skeleton-line--cell"></div>
+          </div>
+        </div>
+      </div>
+
       <div id="connectGate" class="hero-card-dark hidden mb-lg">
         <h2 class="title-lg mb-md">Connect your Webflow site</h2>
         <p class="body-md" style="color: rgba(255,255,255,0.85); margin: 0 0 24px; max-width: 52ch">
@@ -31,6 +91,40 @@
         </div>
 
         <section id="tab-insights">
+          <div id="insightsSkeleton" class="hidden">
+            <div class="skeleton-line skeleton-line--caption mb-md"></div>
+            <div class="skeleton-stat-grid mb-lg">
+              <div class="skeleton-stat">
+                <div class="skeleton-line skeleton-line--stat"></div>
+                <div class="skeleton-line skeleton-line--label"></div>
+              </div>
+              <div class="skeleton-stat">
+                <div class="skeleton-line skeleton-line--stat"></div>
+                <div class="skeleton-line skeleton-line--label"></div>
+              </div>
+              <div class="skeleton-stat">
+                <div class="skeleton-line skeleton-line--stat"></div>
+                <div class="skeleton-line skeleton-line--label"></div>
+              </div>
+            </div>
+            <div class="feature-card mb-lg">
+              <div class="skeleton-line skeleton-line--title mb-md"></div>
+              <div class="skeleton-table-row">
+                <div class="skeleton-line skeleton-line--cell"></div>
+                <div class="skeleton-line skeleton-line--cell-short"></div>
+                <div class="skeleton-line skeleton-line--cell-short"></div>
+                <div class="skeleton-line skeleton-line--cell"></div>
+              </div>
+              <div class="skeleton-table-row">
+                <div class="skeleton-line skeleton-line--cell"></div>
+                <div class="skeleton-line skeleton-line--cell-short"></div>
+                <div class="skeleton-line skeleton-line--cell-short"></div>
+                <div class="skeleton-line skeleton-line--cell"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="insightsContent">
           <p class="caption mb-md" id="analyticsMeta">Last 30 days</p>
 
           <div class="demo-grid mb-lg" id="stats"></div>
@@ -49,6 +143,29 @@
           </div>
 
           <div id="contentInsights" class="hidden mb-lg">
+            <div id="contentInsightsSkeleton">
+              <div class="cream-callout mb-lg skeleton-block">
+                <div class="skeleton-line skeleton-line--title mb-md"></div>
+                <div class="skeleton-line" style="width:95%"></div>
+                <div class="skeleton-line mt-sm" style="width:80%"></div>
+              </div>
+              <div class="feature-card mb-lg">
+                <div class="skeleton-line skeleton-line--title mb-md"></div>
+                <div class="skeleton-insights-grid">
+                  <div class="skeleton-block skeleton-insight-card">
+                    <div class="skeleton-line" style="width:40%"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line"></div>
+                  </div>
+                  <div class="skeleton-block skeleton-insight-card">
+                    <div class="skeleton-line" style="width:35%"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="contentInsightsBody" class="hidden">
             <div class="cream-callout mb-lg">
               <h3 class="title-sm mb-md">Summary</h3>
               <p class="body-md" id="insightSummary"></p>
@@ -70,6 +187,7 @@
               <h3 class="title-sm mb-md" style="color:#fff">Marketing suggestions</h3>
               <p class="body-md mb-md" style="color:rgba(255,255,255,0.9)">Recommended pieces your team could write next.</p>
               <div id="insightSuggestions"></div>
+            </div>
             </div>
           </div>
 
@@ -104,9 +222,27 @@
               <tbody id="recentQueries"></tbody>
             </table>
           </div>
+          </div>
         </section>
 
         <section id="tab-setup" class="hidden">
+          <div id="setupSkeleton">
+            <div class="cream-callout mb-lg skeleton-block">
+              <div class="skeleton-line skeleton-line--title mb-md"></div>
+              <div class="skeleton-line" style="width:90%"></div>
+              <div class="skeleton-line mt-sm" style="width:75%"></div>
+            </div>
+            <div class="feature-card mb-lg skeleton-collection">
+              <div class="skeleton-line skeleton-line--title"></div>
+              <div class="skeleton-line" style="width:60%"></div>
+            </div>
+            <div class="feature-card skeleton-collection">
+              <div class="skeleton-line skeleton-line--title"></div>
+              <div class="skeleton-line" style="width:60%"></div>
+            </div>
+          </div>
+
+          <div id="setupContent" class="hidden">
           <div class="cream-callout mb-lg">
             <h3 class="title-sm mb-md">Embed on your site</h3>
             <p class="body-md mb-md">
@@ -134,6 +270,7 @@
             </div>
             <p class="status-line" id="log"></p>
           </div>
+          </div>
         </section>
       </div>
     </main>
@@ -150,6 +287,31 @@
       let me = null;
       let collections = [];
       const statSurfaces = ["peach", "mint", "mustard"];
+
+      function setSkeleton(id, show) {
+        const el = $(id);
+        if (el) el.classList.toggle("hidden", !show);
+      }
+
+      function showInsightsLoading(show) {
+        setSkeleton("insightsSkeleton", show);
+        $("insightsContent").classList.toggle("hidden", show);
+      }
+
+      function showSetupLoading(show) {
+        setSkeleton("setupSkeleton", show);
+        $("setupContent").classList.toggle("hidden", show);
+      }
+
+      function showPageLoading(show) {
+        setSkeleton("dashboardSkeleton", show);
+      }
+
+      function showNavLoading(show) {
+        if (show) {
+          $("userEmail").innerHTML = '<span class="skeleton-line skeleton-line--caption" style="width:120px;display:inline-block"></span>';
+        }
+      }
 
       function showTab(name) {
         document.querySelectorAll(".tab-rail button").forEach((b) => {
@@ -228,11 +390,16 @@
       }
 
       async function loadCollections() {
-        const res = await fetch("/api/app/collections");
-        if (!res.ok) return;
-        const data = await res.json();
-        collections = data.collections || [];
-        renderCollections();
+        showSetupLoading(true);
+        try {
+          const res = await fetch("/api/app/collections");
+          if (!res.ok) return;
+          const data = await res.json();
+          collections = data.collections || [];
+          renderCollections();
+        } finally {
+          showSetupLoading(false);
+        }
       }
 
       async function saveMaps() {
@@ -271,37 +438,42 @@
       }
 
       async function loadAnalytics() {
-        const res = await fetch("/api/app/analytics?days=30");
-        if (!res.ok) return;
-        const d = await res.json();
-        $("analyticsMeta").textContent = `Last ${d.days} days · ${me.siteName || me.siteId}`;
-        const stats = [
-          [d.total, "Total searches"],
-          [d.zeroResults, "Zero results"],
-          [d.moreThanFive, "More than 5 results"],
-        ];
-        $("stats").innerHTML = stats
-          .map(
-            ([n, label], i) =>
-              `<div class="demo-grid-card demo-grid-card--${statSurfaces[i]}">
-                <div class="stat-value">${n}</div>
-                <div class="stat-label">${label}</div>
-              </div>`
-          )
-          .join("");
-        $("noAnalytics").classList.toggle("hidden", d.total > 0);
-        $("topQueries").innerHTML = (d.topQueries || [])
-          .map(
-            (q) =>
-              `<tr><td>${esc(q.query)}</td><td>${q.count}</td><td>${q.avgResultCount}</td><td>${fmtDate(q.lastAt)}</td></tr>`
-          )
-          .join("");
-        $("recentQueries").innerHTML = (d.recentQueries || [])
-          .map(
-            (q) =>
-              `<tr><td>${esc(q.query)}</td><td>${q.resultCount}</td><td>${fmtDate(q.createdAt)}</td></tr>`
-          )
-          .join("");
+        showInsightsLoading(true);
+        try {
+          const res = await fetch("/api/app/analytics?days=30");
+          if (!res.ok) return;
+          const d = await res.json();
+          $("analyticsMeta").textContent = `Last ${d.days} days · ${me.siteName || me.siteId}`;
+          const stats = [
+            [d.total, "Total searches"],
+            [d.zeroResults, "Zero results"],
+            [d.moreThanFive, "More than 5 results"],
+          ];
+          $("stats").innerHTML = stats
+            .map(
+              ([n, label], i) =>
+                `<div class="demo-grid-card demo-grid-card--${statSurfaces[i]}">
+                  <div class="stat-value">${n}</div>
+                  <div class="stat-label">${label}</div>
+                </div>`
+            )
+            .join("");
+          $("noAnalytics").classList.toggle("hidden", d.total > 0);
+          $("topQueries").innerHTML = (d.topQueries || [])
+            .map(
+              (q) =>
+                `<tr><td>${esc(q.query)}</td><td>${q.count}</td><td>${q.avgResultCount}</td><td>${fmtDate(q.lastAt)}</td></tr>`
+            )
+            .join("");
+          $("recentQueries").innerHTML = (d.recentQueries || [])
+            .map(
+              (q) =>
+                `<tr><td>${esc(q.query)}</td><td>${q.resultCount}</td><td>${fmtDate(q.createdAt)}</td></tr>`
+            )
+            .join("");
+        } finally {
+          showInsightsLoading(false);
+        }
       }
 
       function esc(s) {
@@ -370,15 +542,19 @@
         const btn = $("analyzeBtn");
         btn.disabled = true;
         $("analyzeStatus").textContent = "Analyzing up to 15,000 past searches… this may take 30–60 seconds.";
-        $("contentInsights").classList.add("hidden");
+        $("contentInsights").classList.remove("hidden");
+        $("contentInsightsSkeleton").classList.remove("hidden");
+        $("contentInsightsBody").classList.add("hidden");
         try {
           const res = await fetch("/api/app/content-insights", { method: "POST" });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Analysis failed");
           renderContentInsights(data);
-          $("contentInsights").classList.remove("hidden");
+          $("contentInsightsSkeleton").classList.add("hidden");
+          $("contentInsightsBody").classList.remove("hidden");
           $("analyzeStatus").textContent = "Analysis complete.";
         } catch (err) {
+          $("contentInsights").classList.add("hidden");
           $("analyzeStatus").textContent = err.message;
         } finally {
           btn.disabled = false;
@@ -388,36 +564,46 @@
       $("analyzeBtn").addEventListener("click", runContentAnalysis);
 
       async function boot() {
-        const authRes = await fetch("/api/auth/session");
-        const auth = await authRes.json();
-        if (!auth.authenticated) {
-          location.href = "/login?next=/app";
-          return;
-        }
-        $("userEmail").textContent = auth.email || "";
+        showPageLoading(true);
+        showNavLoading(true);
+        try {
+          const authRes = await fetch("/api/auth/session");
+          const auth = await authRes.json();
+          if (!auth.authenticated) {
+            location.href = "/login?next=/app";
+            return;
+          }
+          $("userEmail").textContent = auth.email || "";
 
-        const res = await fetch("/api/app/me");
-        me = await res.json();
-        if (!me.connected) {
-          $("connectGate").classList.remove("hidden");
-          return;
-        }
+          const res = await fetch("/api/app/me");
+          me = await res.json();
+          if (!me.connected) {
+            showPageLoading(false);
+            $("connectGate").classList.remove("hidden");
+            return;
+          }
 
-        $("mainApp").classList.remove("hidden");
-        $("searchUrl").textContent = me.searchEndpoint;
-        $("scriptUrl").textContent = me.scriptUrl;
-        $("siteId").textContent = me.siteId;
-        $("siteMeta").textContent = me.lastIndexedAt
-          ? `Last indexed ${new Date(me.lastIndexedAt).toLocaleString()}`
-          : "Not indexed yet";
-        $("site").innerHTML = (me.sites || [])
-          .map(
-            (s) =>
-              `<option value="${s.id}" ${s.id === me.siteId ? "selected" : ""}>${s.name}</option>`
-          )
-          .join("");
-        await loadCollections();
-        await loadAnalytics();
+          $("mainApp").classList.remove("hidden");
+          showPageLoading(false);
+          showInsightsLoading(true);
+          showSetupLoading(true);
+
+          $("searchUrl").textContent = me.searchEndpoint;
+          $("scriptUrl").textContent = me.scriptUrl;
+          $("siteId").textContent = me.siteId;
+          $("siteMeta").textContent = me.lastIndexedAt
+            ? `Last indexed ${new Date(me.lastIndexedAt).toLocaleString()}`
+            : "Not indexed yet";
+          $("site").innerHTML = (me.sites || [])
+            .map(
+              (s) =>
+                `<option value="${s.id}" ${s.id === me.siteId ? "selected" : ""}>${s.name}</option>`
+            )
+            .join("");
+          await Promise.all([loadCollections(), loadAnalytics()]);
+        } catch {
+          location.href = "/login";
+        }
       }
 
       $("site").addEventListener("change", async (e) => {
@@ -444,9 +630,7 @@
         indexAll().catch((err) => ($("log").textContent = err.message))
       );
 
-      boot().catch(() => {
-        location.href = "/login";
-      });
+      boot();
     </script>
   </body>
 </html>
