@@ -67,15 +67,53 @@ export async function signUp(
   return signIn(email, password);
 }
 
+async function confirmUserEmail(email: string): Promise<void> {
+  const admin = getServiceClient();
+  const normalized = email.trim().toLowerCase();
+  let page = 1;
+
+  while (true) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage: 1000,
+    });
+    if (error) throw new Error(error.message);
+
+    const user = data.users.find((u) => u.email?.toLowerCase() === normalized);
+    if (user) {
+      const { error: updateError } = await admin.auth.admin.updateUserById(
+        user.id,
+        { email_confirm: true }
+      );
+      if (updateError) throw new Error(updateError.message);
+      return;
+    }
+
+    if (data.users.length < 1000) return;
+    page += 1;
+  }
+}
+
 export async function signIn(
   email: string,
   password: string
 ): Promise<{ user: User; accessToken: string; refreshToken: string }> {
   const client = authClient();
-  const { data, error } = await client.auth.signInWithPassword({
+  let { data, error } = await client.auth.signInWithPassword({
     email,
     password,
   });
+
+  if (
+    error?.message?.toLowerCase().includes("email not confirmed")
+  ) {
+    await confirmUserEmail(email);
+    ({ data, error } = await client.auth.signInWithPassword({
+      email,
+      password,
+    }));
+  }
+
   if (error || !data.session || !data.user) {
     throw new Error(error?.message ?? "Invalid email or password");
   }
