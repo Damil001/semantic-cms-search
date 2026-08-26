@@ -36,6 +36,44 @@
           <div class="demo-grid mb-lg" id="stats"></div>
 
           <div class="feature-card mb-lg">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px">
+              <div>
+                <h3 class="title-sm mb-md" style="margin-bottom:4px">Content intelligence</h3>
+                <p class="body-md text-muted" style="margin:0">
+                  Analyze up to 15,000 past searches for topic trends and content ideas for your marketing team.
+                </p>
+              </div>
+              <button type="button" class="btn btn-primary" id="analyzeBtn">Analyze trends</button>
+            </div>
+            <p class="status-line" id="analyzeStatus"></p>
+          </div>
+
+          <div id="contentInsights" class="hidden mb-lg">
+            <div class="cream-callout mb-lg">
+              <h3 class="title-sm mb-md">Summary</h3>
+              <p class="body-md" id="insightSummary"></p>
+              <p class="caption mt-sm" id="insightMeta"></p>
+            </div>
+
+            <div class="feature-card mb-lg">
+              <h3 class="title-sm mb-md">Topic trends</h3>
+              <div id="insightTrends"></div>
+            </div>
+
+            <div class="feature-card mb-lg">
+              <h3 class="title-sm mb-md">Content gaps</h3>
+              <p class="body-md text-muted mb-md">Searches with weak or no results — opportunities to create new content.</p>
+              <div id="insightGaps"></div>
+            </div>
+
+            <div class="signature-coral-card">
+              <h3 class="title-sm mb-md" style="color:#fff">Marketing suggestions</h3>
+              <p class="body-md mb-md" style="color:rgba(255,255,255,0.9)">Recommended pieces your team could write next.</p>
+              <div id="insightSuggestions"></div>
+            </div>
+          </div>
+
+          <div class="feature-card mb-lg">
             <h3 class="title-sm mb-md">Top searches</h3>
             <table class="data-table">
               <thead>
@@ -272,6 +310,82 @@
       function fmtDate(iso) {
         return new Date(iso).toLocaleString();
       }
+
+      function volumeBadge(vol) {
+        const colors = { high: "#fcab79", medium: "#a8d8c4", low: "#e0e2e6" };
+        const bg = colors[vol] || colors.low;
+        return `<span style="display:inline-block;font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;background:${bg};color:#181d26;text-transform:capitalize">${esc(vol || "low")}</span>`;
+      }
+
+      function renderContentInsights(data) {
+        $("insightSummary").textContent = data.summary || "";
+        $("insightMeta").textContent =
+          `${data.eventsAnalyzed} searches analyzed · ${data.uniqueQueries} unique queries · ${fmtDate(data.analyzedAt)}`;
+
+        $("insightTrends").innerHTML = (data.trends || []).length
+          ? (data.trends || [])
+              .map(
+                (t) =>
+                  `<div class="demo-grid-card demo-grid-card--soft mb-md">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                      <strong class="label-md">${esc(t.topic)}</strong>
+                      ${volumeBadge(t.volume)}
+                    </div>
+                    <p class="body-md text-muted" style="margin:0 0 8px">${esc(t.description)}</p>
+                    <p class="caption" style="margin:0">Examples: ${(t.exampleQueries || []).map(esc).join(", ")}</p>
+                  </div>`
+              )
+              .join("")
+          : `<p class="body-md text-muted">Not enough data to identify trends yet.</p>`;
+
+        $("insightGaps").innerHTML = (data.contentGaps || []).length
+          ? `<table class="data-table"><thead><tr><th>Query</th><th>Searches</th><th>Gap</th></tr></thead><tbody>` +
+            (data.contentGaps || [])
+              .map(
+                (g) =>
+                  `<tr><td>${esc(g.query)}</td><td>${g.searches ?? "—"}</td><td>${esc(g.note)}</td></tr>`
+              )
+              .join("") +
+            `</tbody></table>`
+          : `<p class="body-md text-muted">No major content gaps detected.</p>`;
+
+        $("insightSuggestions").innerHTML = (data.marketingSuggestions || []).length
+          ? (data.marketingSuggestions || [])
+              .map(
+                (s) =>
+                  `<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:16px;margin-bottom:12px">
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:6px">
+                      <strong style="color:#fff;font-size:16px">${esc(s.title)}</strong>
+                      <span style="font-size:12px;color:rgba(255,255,255,0.75);text-transform:uppercase">${esc(s.format)}</span>
+                    </div>
+                    <p class="body-md" style="color:rgba(255,255,255,0.9);margin:0 0 8px">${esc(s.rationale)}</p>
+                    <p class="caption" style="color:rgba(255,255,255,0.7);margin:0">Targets: ${(s.targetQueries || []).map(esc).join(", ")}</p>
+                  </div>`
+              )
+              .join("")
+          : `<p class="body-md" style="color:rgba(255,255,255,0.9)">Run analysis again once you have more search data.</p>`;
+      }
+
+      async function runContentAnalysis() {
+        const btn = $("analyzeBtn");
+        btn.disabled = true;
+        $("analyzeStatus").textContent = "Analyzing up to 15,000 past searches… this may take 30–60 seconds.";
+        $("contentInsights").classList.add("hidden");
+        try {
+          const res = await fetch("/api/app/content-insights", { method: "POST" });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Analysis failed");
+          renderContentInsights(data);
+          $("contentInsights").classList.remove("hidden");
+          $("analyzeStatus").textContent = "Analysis complete.";
+        } catch (err) {
+          $("analyzeStatus").textContent = err.message;
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      $("analyzeBtn").addEventListener("click", runContentAnalysis);
 
       async function boot() {
         const authRes = await fetch("/api/auth/session");

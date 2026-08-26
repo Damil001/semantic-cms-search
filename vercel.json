@@ -4,5 +4,10 @@
     { "source": "/app", "destination": "/app.html" },
     { "source": "/pricing", "destination": "/pricing-calculator.html" },
     { "source": "/search", "destination": "/api/search" }
-  ]
+  ],
+  "functions": {
+    "api/app/content-insights.ts": {
+      "maxDuration": 60
+    }
+  }
 }
