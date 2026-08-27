@@ -16,6 +16,8 @@ export interface InstallRow {
   preview_url: string | null;
   access_token: string;
   session_token: string;
+  /** Public widget key — scopes /search to this site only. */
+  search_token: string;
   last_indexed_at: string | null;
 }
 

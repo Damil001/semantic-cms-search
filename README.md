@@ -58,22 +58,27 @@ Set the same env vars in the Vercel project (do **not** add `SUPABASE_SERVICE_KE
 npx vercel
 ```
 
-`GET /search?q=AI%20data%20centers&site=WEBFLOW_SITE_ID&types=blog,webinar&limit=10`
+`GET /search?q=AI%20data%20centers&site=WEBFLOW_SITE_ID&token=SEARCH_TOKEN&types=blog,webinar&limit=10`
 
 | Param   | Meaning                                      |
 |---------|----------------------------------------------|
 | `q`     | Query (required)                             |
-| `site`  | Webflow site id (from `/app`)                |
+| `site`  | Webflow site id (from `/app`, required)      |
+| `token` | Install search token (from `/app`, required) |
 | `types` | Optional comma-separated `content_type`s     |
 | `limit` | Page size, max 50                            |
 
-The handler embeds `q`, runs semantic + keyword RPCs in parallel (~40 candidates each), fuses with **RRF (k=60)**, then keeps **one result per CMS item**. CORS is open for Webflow hosting.
+`site` + `token` must match the same `webflow_installs` row (401/403 otherwise). That keeps each customer’s CMS context isolated. You can also send `Authorization: Bearer SEARCH_TOKEN` instead of `token`.
+
+The handler embeds `q`, runs semantic + keyword RPCs in parallel (~40 candidates each), fuses with **RRF (k=60)**, keeps **one result per CMS item**, then generates a short **AI answer** grounded in those hits (or a no-match message when empty).
 
 Example body:
 
 ```json
 {
   "query": "AI data centers",
+  "answer": "Yes — we cover AI facility design. Start with the blog on GPU clusters and the webinar on cooling.",
+  "answerStatus": "matched",
   "results": [
     {
       "id": "webflow:COLLECTION:ITEM",
@@ -87,6 +92,8 @@ Example body:
   ]
 }
 ```
+
+Run migration **`20240828000005_search_token.sql`** so installs get a `search_token`.
 
 ## 5. Build the search page in Webflow Designer (Finsweet-style)
 
@@ -112,10 +119,12 @@ On a static page (e.g. `/search`):
    - `data-search` · `true`
    - `data-search-endpoint` · the Search URL from `/app`
    - `data-search-site` · the site id from `/app`
+   - `data-search-token` · the search token from `/app`
 2. **Input** — Form Search or Text Field inside the wrapper. Attribute `data-search-input` = `true`.
-3. **Filters (optional)** — Buttons. Attribute `data-search-filter` = `blog` / `webinar` / `ebook` (must match the content type you set in `/app`). Active state uses class `is-active` — style that combo class in Designer.
-4. **Loading / empty** — Text or Divs. Attributes `data-search-loading` and `data-search-empty`.
-5. **Results** — Add a **Collection List** bound to any collection (only used as a visual template; CMS rows are stripped on load).  
+3. **Answer (optional)** — Text or Paragraph with `data-search-answer` for the AI intro (shown for hits and zero results).
+4. **Filters (optional)** — Buttons. Attribute `data-search-filter` = `blog` / `webinar` / `ebook` (must match the content type you set in `/app`). Active state uses class `is-active` — style that combo class in Designer.
+5. **Loading / empty** — Text or Divs. Attributes `data-search-loading` and `data-search-empty`.
+6. **Results** — Add a **Collection List** bound to any collection (only used as a visual template; CMS rows are stripped on load).  
    - Collection List: `data-search-results`  
    - Collection Item: `data-search-result`  
    Style that item as your result card (image, type label, heading, excerpt, Link Block).
@@ -152,4 +161,4 @@ Uses a five-item mock corpus (blog / webinar / ebook plus off-topic fillers), fa
 
 ## Out of scope
 
-Reranking models, RAG answers, site crawling, analytics, and multi-tenant billing are intentionally not included.
+Reranking models, site crawling, and multi-tenant billing are intentionally not included.

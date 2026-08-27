@@ -6,6 +6,9 @@
     { "source": "/search", "destination": "/api/search" }
   ],
   "functions": {
+    "api/search.ts": {
+      "maxDuration": 30
+    },
     "api/app/content-insights.ts": {
       "maxDuration": 60
     }

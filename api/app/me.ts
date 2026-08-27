@@ -44,6 +44,7 @@ export default async function handler(
     connected: true,
     siteId: install.site_id,
     siteName: install.site_name,
+    searchToken: install.search_token,
     lastIndexedAt: install.last_indexed_at,
     searchEndpoint: `${publicOrigin(req)}/search`,
     scriptUrl: `${publicOrigin(req)}/search.js`,

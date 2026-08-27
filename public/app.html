@@ -270,7 +270,11 @@
             <p class="body-md mb-md">
               Search URL: <code id="searchUrl"></code><br />
               Script: <code id="scriptUrl"></code><br />
-              <code>data-search-site</code>: <code id="siteId"></code>
+              <code>data-search-site</code>: <code id="siteId"></code><br />
+              <code>data-search-token</code>: <code id="searchToken"></code>
+            </p>
+            <p class="body-md" style="opacity:0.85">
+              Optional: add an empty element with <code>data-search-answer</code> above your results list for the AI intro text.
             </p>
           </div>
 
@@ -724,6 +728,7 @@
           $("searchUrl").textContent = me.searchEndpoint;
           $("scriptUrl").textContent = me.scriptUrl;
           $("siteId").textContent = me.siteId;
+          $("searchToken").textContent = me.searchToken || "(run migration 20240828000005_search_token.sql)";
           $("siteMeta").textContent = me.lastIndexedAt
             ? `Last indexed ${new Date(me.lastIndexedAt).toLocaleString()}`
             : "Not indexed yet";

@@ -58,15 +58,20 @@ export async function runSearch(opts: {
   q: string;
   types?: string[];
   limit?: number;
-  siteId?: string;
+  /** Required — unscoped search would mix tenant corpora. */
+  siteId: string;
 }): Promise<SearchResult[]> {
   const q = opts.q.trim();
   if (!q) return [];
 
+  const filterSite = opts.siteId.trim();
+  if (!filterSite) {
+    throw new Error("siteId is required");
+  }
+
   const limit = Math.min(Math.max(opts.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
   const filterTypes =
     opts.types && opts.types.length > 0 ? opts.types : null;
-  const filterSite = opts.siteId?.trim() ? opts.siteId.trim() : null;
 
   const supabase = getServiceClient();
   const queryEmbedding = await embedQuery(q);

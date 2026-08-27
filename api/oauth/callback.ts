@@ -40,6 +40,13 @@ export default async function handler(
     }
 
     const supabase = getServiceClient();
+    const { data: existing } = await supabase
+      .from("webflow_installs")
+      .select("id, search_token")
+      .eq("user_id", user.id)
+      .eq("site_id", primary.id)
+      .maybeSingle();
+
     const row = {
       user_id: user.id,
       site_id: primary.id,
@@ -48,15 +55,10 @@ export default async function handler(
       preview_url: primary.previewUrl ?? null,
       access_token: accessToken,
       session_token: sessionToken,
+      search_token:
+        (existing?.search_token as string | undefined) || newToken(),
       updated_at: new Date().toISOString(),
     };
-
-    const { data: existing } = await supabase
-      .from("webflow_installs")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("site_id", primary.id)
-      .maybeSingle();
 
     const { error } = existing
       ? await supabase.from("webflow_installs").update(row).eq("id", existing.id)

@@ -52,6 +52,13 @@ export interface SearchResult {
   snippet: string;
 }
 
+export interface SearchResponse {
+  query: string;
+  answer: string;
+  answerStatus: "matched" | "empty";
+  results: SearchResult[];
+}
+
 export function makeItemId(
   source: string,
   collectionKey: string,

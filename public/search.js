@@ -8,10 +8,12 @@
  * Add custom attributes. This script clones your designed Collection Item.
  *
  * Root:     data-search  +  data-search-endpoint  (or fs-cmssearch-element=root)
+ *           data-search-site  +  data-search-token  (from /app — required)
  * Input:    data-search-input
  * List:     data-search-results   (put this on the Collection List)
  * Item:     data-search-result    (put this on the Collection Item — template)
  * Fields:   data-search-result-title | -type | -snippet | -image
+ * Answer:   data-search-answer    (optional — AI intro text)
  * States:   data-search-loading | data-search-empty
  * Filters:  data-search-filter="blog"
  * Mode:     data-search-mode="submit" (default, Enter to search) | "live" (typeahead)
@@ -137,8 +139,17 @@
     var siteId =
       root.getAttribute("data-search-site") ||
       root.getAttribute("fs-cmssearch-site");
+    var searchToken =
+      root.getAttribute("data-search-token") ||
+      root.getAttribute("fs-cmssearch-token");
     if (!endpoint) {
       console.warn("[cms-search] Add data-search-endpoint on the wrapper (your Vercel /search URL).");
+      return;
+    }
+    if (!siteId || !searchToken) {
+      console.warn(
+        "[cms-search] Add data-search-site and data-search-token from /app so results stay scoped to your site."
+      );
       return;
     }
 
@@ -183,6 +194,10 @@
       "[data-search-submit]",
       '[fs-cmssearch-element="submit"]',
     ]);
+    var answerEls = all(root, [
+      "[data-search-answer]",
+      '[fs-cmssearch-element="answer"]',
+    ]);
     var mode = (
       root.getAttribute("data-search-mode") ||
       root.getAttribute("fs-cmssearch-mode") ||
@@ -200,6 +215,18 @@
       "[data-search-empty]",
       '[fs-cmssearch-element="empty"]',
     ];
+
+    function setAnswer(text) {
+      answerEls.forEach(function (el) {
+        if (text) {
+          el.textContent = text;
+          setVisible(el, true);
+        } else {
+          el.textContent = "";
+          setVisible(el, false);
+        }
+      });
+    }
 
     function showLoading(show) {
       var els = all(root, LOADING_SELECTORS);
@@ -239,6 +266,7 @@
 
     showLoading(false);
     showEmpty(false);
+    setAnswer("");
 
     function activeTypes() {
       return filters
@@ -312,6 +340,7 @@
         if (abortCtrl) abortCtrl.abort();
         showLoading(false);
         showEmpty(false);
+        setAnswer("");
         while (listMount.firstChild) {
           listMount.removeChild(listMount.firstChild);
         }
@@ -325,12 +354,14 @@
         listMount.removeChild(listMount.firstChild);
       }
       showEmpty(false);
+      setAnswer("");
       showLoading(true);
 
       var url = new URL(endpoint, window.location.origin);
       url.searchParams.set("q", q);
       url.searchParams.set("limit", "20");
-      if (siteId) url.searchParams.set("site", siteId);
+      url.searchParams.set("site", siteId);
+      url.searchParams.set("token", searchToken);
       var types = activeTypes();
       if (types.length) url.searchParams.set("types", types.join(","));
 
@@ -342,12 +373,14 @@
         .then(function (data) {
           showLoading(false);
           var items = (data && data.results) || [];
+          setAnswer((data && data.answer) || "");
           render(items);
           showEmpty(items.length === 0);
         })
         .catch(function (err) {
           if (err && err.name === "AbortError") return;
           showLoading(false);
+          setAnswer("");
           while (listMount.firstChild) {
             listMount.removeChild(listMount.firstChild);
           }
