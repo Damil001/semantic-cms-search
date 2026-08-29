@@ -345,30 +345,29 @@ select.text-input:focus {
 }
 
 .password-field .text-input {
-  padding-right: 48px;
+  padding-right: 64px;
 }
 
 .password-toggle {
   position: absolute;
   top: 50%;
-  right: 6px;
+  right: 8px;
   transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
+  height: 32px;
+  padding: 0 8px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-muted);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
   cursor: pointer;
 }
 
 .password-toggle:hover {
   color: var(--color-ink);
-  background: rgba(0, 0, 0, 0.04);
 }
 
 .password-toggle:focus-visible {
