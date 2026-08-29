@@ -6,7 +6,13 @@ import {
   verifySearchAuth,
 } from "../src/search/auth.js";
 import { runSearch } from "../src/search/run.js";
+import { runSuggest } from "../src/search/suggest.js";
 import type { SearchResponse } from "../src/types.js";
+
+function isSuggestMode(req: VercelRequest): boolean {
+  const mode = typeof req.query.mode === "string" ? req.query.mode : "";
+  return mode === "suggest";
+}
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -67,6 +73,17 @@ export default async function handler(
   }
 
   try {
+    if (isSuggestMode(req)) {
+      const body = await runSuggest({
+        q,
+        siteId: auth.siteId,
+        limit: parseLimit(req.query.limit),
+      });
+      res.setHeader("Cache-Control", "public, max-age=15");
+      res.status(200).json(body);
+      return;
+    }
+
     const results = await runSearch({
       q,
       types: parseTypes(req.query.types),
