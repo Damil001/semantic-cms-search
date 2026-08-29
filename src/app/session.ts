@@ -43,10 +43,18 @@ export function setCookie(res: VercelResponse, name: string, value: string): voi
 }
 
 export function clearCookie(res: VercelResponse, name: string): void {
-  res.setHeader(
-    "Set-Cookie",
-    `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`
-  );
+  // Must match setCookie attributes (incl. Secure on Vercel) or the browser
+  // keeps the old cookie. Append — never overwrite — so logout can clear several.
+  const secure = process.env.VERCEL ? "; Secure" : "";
+  const next = `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
+  const prev = res.getHeader("Set-Cookie");
+  if (!prev) {
+    res.setHeader("Set-Cookie", next);
+  } else if (Array.isArray(prev)) {
+    res.setHeader("Set-Cookie", [...prev, next]);
+  } else {
+    res.setHeader("Set-Cookie", [String(prev), next]);
+  }
 }
 
 export function readCookie(req: VercelRequest, name: string): string | undefined {

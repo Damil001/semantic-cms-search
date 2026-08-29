@@ -422,8 +422,15 @@
       });
 
       $("logout").addEventListener("click", async () => {
-        await fetch("/api/auth/logout", { method: "POST" });
-        location.href = "/login";
+        try {
+          await fetch("/api/auth/logout", {
+            method: "POST",
+            credentials: "same-origin",
+          });
+        } catch {
+          /* still leave the app UI */
+        }
+        location.replace("/login");
       });
 
       function fieldSelect(fields, name, value) {
