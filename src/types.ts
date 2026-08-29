@@ -59,6 +59,12 @@ export interface SearchResponse {
   results: SearchResult[];
 }
 
+export interface SuggestResponse {
+  query: string;
+  suggestions: { text: string; count: number }[];
+  items: { id: string; type: string; title: string; url: string }[];
+}
+
 export function makeItemId(
   source: string,
   collectionKey: string,

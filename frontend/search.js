@@ -14,15 +14,18 @@
  * Item:     data-search-result    (put this on the Collection Item — template)
  * Fields:   data-search-result-title | -type | -snippet | -image
  * Answer:   data-search-answer    (optional — AI intro text)
+ * Suggest:  data-search-suggest   (optional — autocomplete panel; auto-created if missing)
  * States:   data-search-loading | data-search-empty
  * Filters:  data-search-filter="blog"
- * Mode:     data-search-mode="submit" (default, Enter to search) | "live" (typeahead)
+ * Mode:     data-search-mode="submit" (default, Enter to search) | "live" (suggest while typing; Enter runs full search)
  * Submit:   data-search-submit  (optional button; form submit also works)
  */
 (function () {
   "use strict";
 
   var DEBOUNCE_MS = 250;
+  var SUGGEST_DEBOUNCE_MS = 200;
+  var SUGGEST_MIN_CHARS = 2;
   var DEFAULT_MODE = "submit";
 
   function qs(root, sel) {
@@ -132,6 +135,53 @@
     });
   }
 
+  function deriveSuggestEndpoint(searchEndpoint, root) {
+    var custom =
+      root.getAttribute("data-search-suggest-endpoint") ||
+      root.getAttribute("fs-cmssearch-suggest-endpoint");
+    if (custom) return custom;
+    try {
+      var u = new URL(searchEndpoint, window.location.origin);
+      if (/\/search\/?$/.test(u.pathname)) {
+        u.pathname = u.pathname.replace(/\/search\/?$/, "/suggest");
+      } else {
+        u.pathname = u.pathname.replace(/\/?$/, "") + "/suggest";
+      }
+      return u.toString();
+    } catch (e) {
+      return String(searchEndpoint).replace(/\/search\/?$/, "/suggest");
+    }
+  }
+
+  function ensureSuggestPanel(root, input) {
+    var panel = first(root, [
+      "[data-search-suggest]",
+      '[fs-cmssearch-element="suggest"]',
+    ]);
+    if (panel) return panel;
+
+    var wrap = input.parentNode;
+    if (wrap && wrap !== root) {
+      var style = window.getComputedStyle(wrap);
+      if (style.position === "static") wrap.style.position = "relative";
+    } else if (root) {
+      var rs = window.getComputedStyle(root);
+      if (rs.position === "static") root.style.position = "relative";
+    }
+
+    panel = document.createElement("div");
+    panel.setAttribute("data-search-suggest", "true");
+    panel.setAttribute("role", "listbox");
+    panel.setAttribute("hidden", "true");
+    panel.style.cssText =
+      "position:absolute;left:0;right:0;top:100%;z-index:50;margin-top:4px;" +
+      "background:#fff;border:1px solid #ddd;border-radius:8px;" +
+      "box-shadow:0 8px 24px rgba(0,0,0,0.08);max-height:320px;overflow:auto;" +
+      "display:none;text-align:left;";
+    (wrap && wrap !== root ? wrap : root).appendChild(panel);
+    return panel;
+  }
+
   function initRoot(root) {
     var endpoint =
       root.getAttribute("data-search-endpoint") ||
@@ -152,6 +202,8 @@
       );
       return;
     }
+
+    var suggestEndpoint = deriveSuggestEndpoint(endpoint, root);
 
     var input = first(root, [
       "[data-search-input]",
@@ -198,6 +250,7 @@
       "[data-search-answer]",
       '[fs-cmssearch-element="answer"]',
     ]);
+    var suggestPanel = ensureSuggestPanel(root, input);
     var mode = (
       root.getAttribute("data-search-mode") ||
       root.getAttribute("fs-cmssearch-mode") ||
@@ -205,7 +258,11 @@
     ).toLowerCase();
     var liveMode = mode === "live";
     var abortCtrl = null;
+    var suggestAbort = null;
     var lastQuery = "";
+    var activeSuggestIndex = -1;
+    var suggestRows = [];
+    var blurTimer = null;
 
     var LOADING_SELECTORS = [
       "[data-search-loading]",
@@ -264,9 +321,162 @@
       });
     }
 
+    function hideSuggest() {
+      activeSuggestIndex = -1;
+      suggestRows = [];
+      while (suggestPanel.firstChild) {
+        suggestPanel.removeChild(suggestPanel.firstChild);
+      }
+      setHidden(suggestPanel, true);
+      suggestPanel.style.setProperty("display", "none", "important");
+      input.setAttribute("aria-expanded", "false");
+    }
+
+    function setActiveSuggest(index) {
+      activeSuggestIndex = index;
+      suggestRows.forEach(function (row, i) {
+        var on = i === index;
+        row.setAttribute("aria-selected", on ? "true" : "false");
+        row.style.background = on ? "#f3f4f6" : "transparent";
+      });
+    }
+
+    function activateSuggestRow(row) {
+      if (!row) return;
+      var kind = row.getAttribute("data-suggest-kind");
+      if (kind === "query") {
+        var text = row.getAttribute("data-suggest-text") || "";
+        input.value = text;
+        hideSuggest();
+        lastQuery = text;
+        search(text);
+      } else if (kind === "item") {
+        var url = row.getAttribute("data-suggest-url") || "";
+        hideSuggest();
+        if (url) window.location.href = url;
+      }
+    }
+
+    function renderSuggest(data) {
+      while (suggestPanel.firstChild) {
+        suggestPanel.removeChild(suggestPanel.firstChild);
+      }
+      suggestRows = [];
+      activeSuggestIndex = -1;
+
+      var suggestions = (data && data.suggestions) || [];
+      var items = (data && data.items) || [];
+      if (!suggestions.length && !items.length) {
+        hideSuggest();
+        return;
+      }
+
+      function addHeading(label) {
+        var h = document.createElement("div");
+        h.textContent = label;
+        h.style.cssText =
+          "padding:8px 12px 4px;font-size:11px;font-weight:600;" +
+          "letter-spacing:0.04em;text-transform:uppercase;color:#6b7280;";
+        suggestPanel.appendChild(h);
+      }
+
+      function addRow(opts) {
+        var row = document.createElement("div");
+        row.setAttribute("role", "option");
+        row.setAttribute("aria-selected", "false");
+        row.setAttribute("data-suggest-kind", opts.kind);
+        if (opts.text) row.setAttribute("data-suggest-text", opts.text);
+        if (opts.url) row.setAttribute("data-suggest-url", opts.url);
+        row.style.cssText =
+          "padding:10px 12px;cursor:pointer;font-size:14px;line-height:1.35;color:#111;";
+        if (opts.meta) {
+          var title = document.createElement("div");
+          title.textContent = opts.label;
+          var meta = document.createElement("div");
+          meta.textContent = opts.meta;
+          meta.style.cssText = "font-size:12px;color:#6b7280;margin-top:2px;";
+          row.appendChild(title);
+          row.appendChild(meta);
+        } else {
+          row.textContent = opts.label;
+        }
+        row.addEventListener("mousedown", function (e) {
+          e.preventDefault();
+          activateSuggestRow(row);
+        });
+        row.addEventListener("mouseenter", function () {
+          setActiveSuggest(suggestRows.indexOf(row));
+        });
+        suggestPanel.appendChild(row);
+        suggestRows.push(row);
+      }
+
+      if (suggestions.length) {
+        addHeading("Suggestions");
+        suggestions.forEach(function (s) {
+          addRow({
+            kind: "query",
+            text: s.text,
+            label: s.text,
+          });
+        });
+      }
+      if (items.length) {
+        addHeading("Content");
+        items.forEach(function (item) {
+          addRow({
+            kind: "item",
+            url: item.url,
+            label: item.title,
+            meta: item.type || "",
+          });
+        });
+      }
+
+      setHidden(suggestPanel, false);
+      suggestPanel.style.setProperty("display", "block", "important");
+      input.setAttribute("aria-expanded", "true");
+    }
+
+    function fetchSuggest(q) {
+      if (suggestAbort) suggestAbort.abort();
+      if (!q || q.length < SUGGEST_MIN_CHARS) {
+        hideSuggest();
+        return;
+      }
+      suggestAbort = new AbortController();
+      var url = new URL(suggestEndpoint, window.location.origin);
+      url.searchParams.set("q", q);
+      url.searchParams.set("site", siteId);
+      url.searchParams.set("token", searchToken);
+      url.searchParams.set("limit", "6");
+
+      fetch(url.toString(), { signal: suggestAbort.signal })
+        .then(function (res) {
+          if (!res.ok) throw new Error("suggest " + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          if ((input.value || "").trim() !== q) return;
+          renderSuggest(data);
+        })
+        .catch(function (err) {
+          if (err && err.name === "AbortError") return;
+          hideSuggest();
+        });
+    }
+
+    var debouncedSuggest = debounce(function () {
+      fetchSuggest((input.value || "").trim());
+    }, SUGGEST_DEBOUNCE_MS);
+
     showLoading(false);
     showEmpty(false);
     setAnswer("");
+    hideSuggest();
+    input.setAttribute("aria-autocomplete", "list");
+    input.setAttribute("aria-expanded", "false");
+    input.setAttribute("autocomplete", "off");
 
     function activeTypes() {
       return filters
@@ -336,6 +546,7 @@
         queryOverride !== undefined
           ? String(queryOverride).trim()
           : (input.value || "").trim();
+      hideSuggest();
       if (!q) {
         if (abortCtrl) abortCtrl.abort();
         showLoading(false);
@@ -397,32 +608,71 @@
 
     function clearResults() {
       lastQuery = "";
+      hideSuggest();
       search("");
     }
 
-    if (liveMode) {
-      var debounced = debounce(search, DEBOUNCE_MS);
-      input.addEventListener("input", debounced);
-      input.addEventListener("search", search);
-    } else {
-      input.setAttribute("enterkeyhint", "search");
-      input.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" && !e.shiftKey) {
+    input.addEventListener("input", debouncedSuggest);
+
+    input.addEventListener("keydown", function (e) {
+      var open = suggestRows.length > 0 && !suggestPanel.hidden;
+      if (e.key === "ArrowDown" && open) {
+        e.preventDefault();
+        setActiveSuggest(
+          activeSuggestIndex < suggestRows.length - 1
+            ? activeSuggestIndex + 1
+            : 0
+        );
+        return;
+      }
+      if (e.key === "ArrowUp" && open) {
+        e.preventDefault();
+        setActiveSuggest(
+          activeSuggestIndex > 0
+            ? activeSuggestIndex - 1
+            : suggestRows.length - 1
+        );
+        return;
+      }
+      if (e.key === "Escape") {
+        hideSuggest();
+        return;
+      }
+      if (e.key === "Enter" && !e.shiftKey) {
+        if (open && activeSuggestIndex >= 0) {
           e.preventDefault();
-          submitSearch();
+          activateSuggestRow(suggestRows[activeSuggestIndex]);
+          return;
         }
-      });
-      input.addEventListener("search", function () {
-        if (!(input.value || "").trim()) clearResults();
-      });
+        e.preventDefault();
+        submitSearch();
+      }
+    });
+
+    input.addEventListener("blur", function () {
+      blurTimer = setTimeout(hideSuggest, 150);
+    });
+    input.addEventListener("focus", function () {
+      if (blurTimer) clearTimeout(blurTimer);
+      var q = (input.value || "").trim();
+      if (q.length >= SUGGEST_MIN_CHARS) debouncedSuggest();
+    });
+
+    input.setAttribute("enterkeyhint", "search");
+    input.addEventListener("search", function () {
+      if (!(input.value || "").trim()) clearResults();
+    });
+
+    // live mode: suggest on type; full search still on Enter/submit only
+    if (liveMode) {
+      /* suggest already on input; no per-keystroke /search */
     }
 
     var form = input.form || input.closest("form");
     if (form) {
       form.addEventListener("submit", function (e) {
         e.preventDefault();
-        if (liveMode) search();
-        else submitSearch();
+        submitSearch();
       });
     }
 

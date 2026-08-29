@@ -3,7 +3,8 @@
     { "source": "/login", "destination": "/login.html" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/pricing", "destination": "/pricing-calculator.html" },
-    { "source": "/search", "destination": "/api/search" }
+    { "source": "/search", "destination": "/api/search" },
+    { "source": "/suggest", "destination": "/api/suggest" }
   ],
   "functions": {
     "api/search.ts": {

@@ -95,6 +95,29 @@ Example body:
 
 Run migration **`20240828000005_search_token.sql`** so installs get a `search_token`.
 
+### Autocomplete: `GET /suggest`
+
+`GET /suggest?q=seo&site=WEBFLOW_SITE_ID&token=SEARCH_TOKEN&limit=6`
+
+Same `site` + `token` auth as `/search`. No OpenAI call — returns popular past queries (from `search_events`) and matching CMS titles (from `content_items`) for the dropdown while the visitor types.
+
+```json
+{
+  "query": "seo",
+  "suggestions": [{ "text": "seo and website optimization", "count": 12 }],
+  "items": [
+    {
+      "id": "webflow:COLLECTION:ITEM",
+      "type": "blog",
+      "title": "SEO checklist for 2026",
+      "url": "https://www.example.com/blog/…"
+    }
+  ]
+}
+```
+
+The widget calls `/suggest` automatically (debounced). Full `/search` (with AI answer) runs only on Enter or when a query suggestion is chosen. Clicking a CMS title navigates to that URL.
+
 ## 5. Build the search page in Webflow Designer (Finsweet-style)
 
 You do **not** paste a results layout. You design the page in Webflow the same way you would for Finsweet CMS Filter: native elements + custom attributes. The script clones the Collection Item you styled.
@@ -122,9 +145,10 @@ On a static page (e.g. `/search`):
    - `data-search-token` · the search token from `/app`
 2. **Input** — Form Search or Text Field inside the wrapper. Attribute `data-search-input` = `true`.
 3. **Answer (optional)** — Text or Paragraph with `data-search-answer` for the AI intro (shown for hits and zero results).
-4. **Filters (optional)** — Buttons. Attribute `data-search-filter` = `blog` / `webinar` / `ebook` (must match the content type you set in `/app`). Active state uses class `is-active` — style that combo class in Designer.
-5. **Loading / empty** — Text or Divs. Attributes `data-search-loading` and `data-search-empty`.
-6. **Results** — Add a **Collection List** bound to any collection (only used as a visual template; CMS rows are stripped on load).  
+4. **Suggest (optional)** — Div with `data-search-suggest` for a custom autocomplete panel. If omitted, the script creates a dropdown under the input automatically.
+5. **Filters (optional)** — Buttons. Attribute `data-search-filter` = `blog` / `webinar` / `ebook` (must match the content type you set in `/app`). Active state uses class `is-active` — style that combo class in Designer.
+6. **Loading / empty** — Text or Divs. Attributes `data-search-loading` and `data-search-empty`.
+7. **Results** — Add a **Collection List** bound to any collection (only used as a visual template; CMS rows are stripped on load).  
    - Collection List: `data-search-results`  
    - Collection Item: `data-search-result`  
    Style that item as your result card (image, type label, heading, excerpt, Link Block).
@@ -140,7 +164,7 @@ On elements **inside** the Collection Item:
 
 Use a **Link Block** wrapping the card (or any `a` inside). The script sets `href` to the item’s live URL.
 
-Finsweet-shaped aliases also work (`fs-cmssearch-element="root|input|list|item|loader|empty"`, `fs-cmssearch-field="title"`, `fs-cmssearch-filter="webinar"`).
+Finsweet-shaped aliases also work (`fs-cmssearch-element="root|input|list|item|loader|empty|suggest|answer"`, `fs-cmssearch-field="title"`, `fs-cmssearch-filter="webinar"`).
 
 Publish the site after adding attributes. Style `[aria-pressed="true"]` or `.is-active` for filter pills.
 
