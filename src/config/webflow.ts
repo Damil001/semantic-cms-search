@@ -28,6 +28,7 @@ export interface CollectionConfig {
   contentType: string;
   urlPattern: string;
   fields: FieldSlugs;
+  embedFields?: string[];
 }
 
 export const WEBFLOW_COLLECTIONS: CollectionConfig[] = [

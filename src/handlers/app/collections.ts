@@ -50,6 +50,16 @@ export default async function handler(
     const existing = byId.get(col.id);
     const guessed = guessFields(col.fields);
     const slug = col.slug || "page";
+    const saved = existing?.fields as Record<string, unknown> | undefined;
+    const mapping = saved
+      ? {
+          ...guessed,
+          ...saved,
+          embedFields: Array.isArray(saved.embedFields)
+            ? (saved.embedFields as string[])
+            : guessed.embedFields,
+        }
+      : guessed;
     return {
       collectionId: col.id,
       name: col.displayName,
@@ -59,7 +69,7 @@ export default async function handler(
       enabled: existing?.enabled ?? true,
       urlPattern:
         (existing?.url_pattern as string) || `${origin}/${slug}/{slug}`,
-      mapping: (existing?.fields as Record<string, string>) || guessed,
+      mapping,
     };
   });
 

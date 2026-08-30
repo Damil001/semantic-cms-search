@@ -73,6 +73,7 @@ export interface MeResponse {
 export interface CollectionField {
   slug: string;
   displayName?: string;
+  type?: string;
 }
 
 export interface CollectionMapping {
@@ -82,6 +83,7 @@ export interface CollectionMapping {
   slug?: string;
   image?: string;
   date?: string;
+  embedFields?: string[];
 }
 
 export interface Collection {

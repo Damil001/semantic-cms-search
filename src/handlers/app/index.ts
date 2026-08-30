@@ -16,6 +16,7 @@ type FieldMap = {
   slug: string;
   image: string;
   date: string;
+  embedFields?: string[];
 };
 
 export default async function handler(
@@ -62,6 +63,7 @@ export default async function handler(
       image: fields.image || "",
       date: fields.date || "",
     },
+    embedFields: Array.isArray(fields.embedFields) ? fields.embedFields : undefined,
   };
 
   const page = await fetchCollectionPage(

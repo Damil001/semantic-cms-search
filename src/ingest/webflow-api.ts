@@ -98,3 +98,25 @@ export function fieldDate(
   const d = new Date(raw);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
+
+/** Plain-text value from a CMS field for search embedding. */
+export function fieldValueForSearch(
+  fieldData: Record<string, unknown>,
+  slug: string
+): string {
+  const value = fieldData[slug];
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (typeof value === "object" && value !== null) {
+    if ("url" in value && typeof (value as { url?: unknown }).url === "string") {
+      return (value as { url: string }).url;
+    }
+    if ("name" in value && typeof (value as { name?: unknown }).name === "string") {
+      return (value as { name: string }).name;
+    }
+  }
+  return "";
+}

@@ -73,6 +73,26 @@ export function publicSiteOrigin(site: WfSite): string {
   return "";
 }
 
+export function isEmbeddableFieldType(type: string): boolean {
+  const skip = new Set([
+    "Image",
+    "MultiImage",
+    "File",
+    "ExtFileRef",
+    "VideoLink",
+    "Reference",
+    "MultiReference",
+    "Color",
+  ]);
+  return !skip.has(type);
+}
+
+export function guessEmbedFields(fields: WfField[] | undefined): string[] {
+  return (fields ?? [])
+    .filter((f) => isEmbeddableFieldType(f.type))
+    .map((f) => f.slug);
+}
+
 export function guessFields(fields: WfField[] | undefined): {
   title: string;
   body: string;
@@ -80,6 +100,7 @@ export function guessFields(fields: WfField[] | undefined): {
   slug: string;
   image: string;
   date: string;
+  embedFields: string[];
 } {
   const list = fields ?? [];
   const byType = (t: string) => list.filter((f) => f.type === t);
@@ -104,5 +125,6 @@ export function guessFields(fields: WfField[] | undefined): {
     slug: slugOf((f) => f.slug === "slug" || f.type === "Link", "slug"),
     image: images[0]?.slug ?? "",
     date: dates[0]?.slug ?? "",
+    embedFields: guessEmbedFields(fields),
   };
 }

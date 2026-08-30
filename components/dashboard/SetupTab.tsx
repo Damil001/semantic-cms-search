@@ -1,14 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { Collection, MeResponse } from "@/lib/types";
+import type { Collection, CollectionMapping, MeResponse } from "@/lib/types";
+import { EmbedFieldPicker, isEmbeddableFieldType } from "./EmbedFieldPicker";
 
 interface Props {
   me: MeResponse;
   onSiteMetaChange: (text: string) => void;
 }
 
-type CollectionDraft = Collection & { mapping: Record<string, string> };
+type CollectionDraft = Collection & { mapping: CollectionMapping };
 
 type CollectionIndexRow = {
   collectionId: string;
@@ -69,6 +70,13 @@ function computeOverallPercent(rows: CollectionIndexRow[]): number | null {
   return hasUnknown && pct < 5 ? null : Math.min(100, Math.round(pct));
 }
 
+function normalizeMapping(mapping: CollectionMapping): CollectionMapping {
+  return {
+    ...mapping,
+    embedFields: Array.isArray(mapping.embedFields) ? mapping.embedFields : [],
+  };
+}
+
 function mergeCollectionDrafts(
   incoming: Collection[],
   previous: CollectionDraft[]
@@ -79,9 +87,20 @@ function mergeCollectionDrafts(
   const collections = incoming.map((c) => {
     const local = previousById.get(c.collectionId);
     const previousSlugs = new Set((local?.fields ?? []).map((f) => f.slug));
+    const newEmbeddableSlugs: string[] = [];
     for (const field of c.fields ?? []) {
-      if (!previousSlugs.has(field.slug)) newFieldCount += 1;
+      if (!previousSlugs.has(field.slug)) {
+        newFieldCount += 1;
+        if (isEmbeddableFieldType(field.type)) {
+          newEmbeddableSlugs.push(field.slug);
+        }
+      }
     }
+
+    const baseMapping = normalizeMapping(local?.mapping ?? c.mapping);
+    const embedFields = [
+      ...new Set([...(baseMapping.embedFields ?? []), ...newEmbeddableSlugs]),
+    ];
 
     return {
       ...c,
@@ -89,7 +108,10 @@ function mergeCollectionDrafts(
       contentType: local?.contentType ?? c.contentType,
       urlPattern: local?.urlPattern ?? c.urlPattern,
       fields: c.fields ?? [],
-      mapping: local?.mapping ?? { ...c.mapping },
+      mapping: normalizeMapping({
+        ...baseMapping,
+        embedFields: embedFields.length ? embedFields : baseMapping.embedFields,
+      }),
     };
   });
 
@@ -140,7 +162,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         setCollections(
           incoming.map((c) => ({
             ...c,
-            mapping: { ...c.mapping },
+            mapping: normalizeMapping(c.mapping),
           }))
         );
       }
@@ -163,10 +185,19 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
     );
   }
 
-  function updateMapping(i: number, field: string, value: string) {
+  function updateMapping(i: number, field: keyof CollectionMapping, value: string) {
+    if (field === "embedFields") return;
     setCollections((prev) =>
       prev.map((c, idx) =>
         idx === i ? { ...c, mapping: { ...c.mapping, [field]: value } } : c
+      )
+    );
+  }
+
+  function updateEmbedFields(i: number, slugs: string[]) {
+    setCollections((prev) =>
+      prev.map((c, idx) =>
+        idx === i ? { ...c, mapping: { ...c.mapping, embedFields: slugs } } : c
       )
     );
   }
@@ -398,9 +429,8 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
       )}
 
       <p className="caption text-muted mb-lg" style={{ marginTop: refreshNotice ? undefined : 0 }}>
-        Field dropdowns load from Webflow when you open this page. After adding or renaming CMS fields, click{" "}
-        <strong>Refresh fields</strong> — then map searchable content to <strong>Body</strong> (embedded for search) or{" "}
-        <strong>Excerpt</strong>, save, and re-index.
+        Map display fields below, then choose which CMS fields to embed for search. Use{" "}
+        <strong>Select all</strong> to index every text-like field, or pick individually. Save and re-index after changes.
       </p>
 
       <div className="setup-steps-grid mb-lg">
@@ -526,23 +556,6 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                 </select>
               </div>
               <div className="form-field">
-                <label>Body</label>
-                <select
-                  className="text-input"
-                  value={c.mapping.body ?? ""}
-                  onChange={(e) => updateMapping(i, "body", e.target.value)}
-                >
-                  <option value="">—</option>
-                  {(c.fields ?? []).map((f) => (
-                    <option key={f.slug} value={f.slug}>
-                      {f.displayName ?? f.slug}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="row-2">
-              <div className="form-field">
                 <label>Excerpt</label>
                 <select
                   className="text-input"
@@ -557,6 +570,8 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                   ))}
                 </select>
               </div>
+            </div>
+            <div className="row-2">
               <div className="form-field">
                 <label>Slug</label>
                 <select
@@ -572,8 +587,6 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                   ))}
                 </select>
               </div>
-            </div>
-            <div className="row-2">
               <div className="form-field">
                 <label>Image</label>
                 <select
@@ -589,6 +602,8 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                   ))}
                 </select>
               </div>
+            </div>
+            <div className="row-2">
               <div className="form-field">
                 <label>Date</label>
                 <select
@@ -605,6 +620,13 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                 </select>
               </div>
             </div>
+
+            <EmbedFieldPicker
+              fields={c.fields ?? []}
+              selected={c.mapping.embedFields ?? []}
+              onChange={(slugs) => updateEmbedFields(i, slugs)}
+              disabled={busy}
+            />
           </div>
         ))
       )}

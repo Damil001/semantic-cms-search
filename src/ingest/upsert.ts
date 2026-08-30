@@ -8,6 +8,7 @@ import {
   fieldDate,
   fieldImageUrl,
   fieldString,
+  fieldValueForSearch,
   type WebflowItem,
 } from "./webflow-api.js";
 
@@ -17,6 +18,18 @@ function buildUrl(pattern: string, slug: string): string {
   return pattern.replaceAll("{slug}", encodeURIComponent(slug));
 }
 
+function buildEmbedBody(
+  fieldData: Record<string, unknown>,
+  embedSlugs: string[]
+): string {
+  const parts: string[] = [];
+  for (const slug of embedSlugs) {
+    const text = stripHtml(fieldValueForSearch(fieldData, slug)).trim();
+    if (text) parts.push(text);
+  }
+  return parts.join("\n\n");
+}
+
 export function mapCmsItem(
   config: CollectionConfig,
   item: WebflowItem,
@@ -24,10 +37,21 @@ export function mapCmsItem(
 ) {
   const fd = item.fieldData ?? {};
   const title = fieldString(fd, config.fields.title) || "Untitled";
-  const bodyHtml = fieldString(fd, config.fields.body);
   const excerptRaw = fieldString(fd, config.fields.excerpt);
   const slug = fieldString(fd, config.fields.slug) || item.id;
-  const body = stripHtml(bodyHtml);
+
+  const embedSlugs =
+    config.embedFields && config.embedFields.length > 0
+      ? config.embedFields
+      : config.fields.body
+        ? [config.fields.body]
+        : [];
+
+  let body = buildEmbedBody(fd, embedSlugs);
+  if (!body && config.fields.body) {
+    body = stripHtml(fieldString(fd, config.fields.body));
+  }
+
   const excerpt = stripHtml(excerptRaw) || body.slice(0, 240) || null;
 
   return {
