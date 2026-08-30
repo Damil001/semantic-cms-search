@@ -5,6 +5,9 @@
   "type": "module",
   "description": "Source-agnostic semantic search over CMS content (Webflow first), using Supabase pgvector and OpenAI embeddings.",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "ingest": "tsx src/ingest/index.ts",
     "demo": "tsx scripts/demo.ts",
     "typecheck": "tsc --noEmit"
@@ -14,11 +17,18 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
+    "chart.js": "^4.4.7",
+    "next": "^15.1.0",
     "openai": "^4.58.1",
+    "react": "^19.0.0",
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^19.0.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/node": "^22.5.4",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@types/ws": "^8.5.13",
     "@vercel/node": "^3.2.18",
     "dotenv": "^16.4.5",

@@ -9,10 +9,23 @@ The item model is **source-agnostic**. Webflow is the first connector. Sanity or
 - Node.js + TypeScript
 - Supabase (Postgres + **pgvector**) — metadata and vectors in one place
 - OpenAI `text-embedding-3-small` (1536 dimensions)
-- Vercel serverless `GET /search` (also rewritten from `/api/search`)
-- Vanilla JS widget (`frontend/search.js`) — no framework, no build step
+- Next.js 15 + React 19 dashboard (`app/`, `components/`)
+- Vercel serverless API routes (`app/api/*`) — same backend logic as before
+- Chart.js via `react-chartjs-2` for analytics charts
+- Vanilla JS widget (`public/search.js`) — embed on customer sites, no build step
 
 The browser never sees `SUPABASE_SERVICE_KEY` or the Webflow OAuth secret. Visitors only call the public `/search` URL. You host the server; they connect a site in a dashboard.
+
+## Local development
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000/app](http://localhost:3000/app). API routes live under `/api/*`; the search widget stays at `/search.js`.
+
+Production build: `npm run build && npm start`
 
 ## 1. Supabase
 

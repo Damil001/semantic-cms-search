@@ -1,16 +1,9 @@
 {
-  "rewrites": [
-    { "source": "/login", "destination": "/login.html" },
-    { "source": "/app", "destination": "/app.html" },
-    { "source": "/pricing", "destination": "/pricing-calculator.html" },
-    { "source": "/search", "destination": "/api/search" },
-    { "source": "/suggest", "destination": "/api/search?mode=suggest" }
-  ],
   "functions": {
-    "api/search.ts": {
+    "app/api/search/route.ts": {
       "maxDuration": 30
     },
-    "api/app/content-insights.ts": {
+    "app/api/app/content-insights/route.ts": {
       "maxDuration": 60
     }
   }
