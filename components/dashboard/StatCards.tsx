@@ -35,12 +35,50 @@ const STAT_META = [
   },
 ] as const;
 
-const ICONS = [
-  <path key="1" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
-  <path key="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />,
-  <path key="3" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />,
-  <path key="4" d="M12 12a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2" />,
-];
+const SVG_PROPS = {
+  width: 18,
+  height: 18,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
+function StatIcon({ iconKey }: { iconKey: (typeof STAT_META)[number]["key"] }) {
+  switch (iconKey) {
+    case "totalPrompts":
+      return (
+        <svg {...SVG_PROPS}>
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+      );
+    case "uniquePrompts":
+      return (
+        <svg {...SVG_PROPS}>
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      );
+    case "searchesPerVisitor":
+      return (
+        <svg {...SVG_PROPS}>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      );
+    case "searchesPerSession":
+      return (
+        <svg {...SVG_PROPS}>
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      );
+  }
+}
 
 export function StatCards({ data }: { data: PromptAnalytics }) {
   const metrics = [
@@ -76,9 +114,7 @@ export function StatCards({ data }: { data: PromptAnalytics }) {
             <div className="insights-stat-card__shine" aria-hidden="true" />
             <div className="insights-stat-card__top">
               <span className="insights-stat-card__icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  {ICONS[i]}
-                </svg>
+                <StatIcon iconKey={meta.key} />
               </span>
               <span className="insights-stat-card__label">{meta.label}</span>
             </div>
