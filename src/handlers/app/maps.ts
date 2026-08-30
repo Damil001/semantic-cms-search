@@ -7,7 +7,7 @@ interface MapBody {
   contentType: string;
   enabled: boolean;
   urlPattern: string;
-  mapping: Record<string, string>;
+  mapping: Record<string, unknown>;
   collectionName?: string;
 }
 
@@ -24,15 +24,35 @@ export default async function handler(
   const install = ctx.install;
   const maps = (req.body?.maps ?? []) as MapBody[];
   const supabase = getServiceClient();
-  const rows = maps.map((m) => ({
-    site_id: install.site_id,
-    collection_id: m.collectionId,
-    collection_name: m.collectionName ?? null,
-    content_type: m.contentType || "cms",
-    enabled: Boolean(m.enabled),
-    url_pattern: m.urlPattern,
-    fields: m.mapping ?? {},
-  }));
+
+  const { data: existingRows } = await supabase
+    .from("webflow_collection_maps")
+    .select("collection_id, cms_fields, cms_fields_synced_at")
+    .eq("site_id", install.site_id);
+  const schemaById = new Map(
+    (existingRows ?? []).map((row) => [
+      row.collection_id as string,
+      {
+        cms_fields: row.cms_fields,
+        cms_fields_synced_at: row.cms_fields_synced_at as string | null,
+      },
+    ])
+  );
+
+  const rows = maps.map((m) => {
+    const cached = schemaById.get(m.collectionId);
+    return {
+      site_id: install.site_id,
+      collection_id: m.collectionId,
+      collection_name: m.collectionName ?? null,
+      content_type: m.contentType || "cms",
+      enabled: Boolean(m.enabled),
+      url_pattern: m.urlPattern,
+      fields: m.mapping ?? {},
+      cms_fields: cached?.cms_fields ?? [],
+      cms_fields_synced_at: cached?.cms_fields_synced_at ?? null,
+    };
+  });
   const { error } = await supabase.from("webflow_collection_maps").upsert(rows, {
     onConflict: "site_id,collection_id",
   });

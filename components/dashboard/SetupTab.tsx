@@ -127,51 +127,54 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   const [activeAction, setActiveAction] = useState<"save" | "index" | "reindex" | null>(null);
   const [indexProgress, setIndexProgress] = useState<IndexProgress | null>(null);
 
-  const loadCollections = useCallback(async (options?: { merge?: boolean }) => {
-    const merge = options?.merge ?? false;
-    if (merge) {
-      setRefreshing(true);
-      setRefreshNotice(null);
-    } else {
-      setLoading(true);
-    }
-
+  const loadCollections = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await fetch("/api/app/collections", { cache: "no-store" });
-      if (!res.ok) {
-        if (merge) {
-          setRefreshNotice("Could not refresh fields from Webflow. Try again.");
-        }
-        return;
-      }
+      if (!res.ok) return;
       const data = await res.json();
       const incoming = (data.collections ?? []) as Collection[];
-
-      if (merge) {
-        let notice = "";
-        setCollections((prev) => {
-          const { collections: merged, newFieldCount } = mergeCollectionDrafts(incoming, prev);
-          notice =
-            newFieldCount > 0
-              ? `Found ${newFieldCount} new CMS field${newFieldCount === 1 ? "" : "s"}. Map them below, then re-index.`
-              : "Field list is up to date with Webflow.";
-          return merged;
-        });
-        setRefreshNotice(notice);
-      } else {
-        setCollections(
-          incoming.map((c) => ({
-            ...c,
-            mapping: normalizeMapping(c.mapping),
-          }))
-        );
+      setCollections(
+        incoming.map((c) => ({
+          ...c,
+          mapping: normalizeMapping(c.mapping),
+        }))
+      );
+      if (data.needsSchemaRefresh) {
+        setRefreshNotice("No cached CMS fields yet. Click Refresh fields to pull from Webflow.");
       }
     } finally {
-      if (merge) {
-        setRefreshing(false);
-      } else {
-        setLoading(false);
+      setLoading(false);
+    }
+  }, []);
+
+  const refreshFromWebflow = useCallback(async () => {
+    setRefreshing(true);
+    setRefreshNotice(null);
+    try {
+      const res = await fetch("/api/app/collections/refresh", {
+        method: "POST",
+        cache: "no-store",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRefreshNotice(data.error || "Could not refresh fields from Webflow.");
+        return;
       }
+      const incoming = (data.collections ?? []) as Collection[];
+      let notice = "";
+      setCollections((prev) => {
+        const { collections: merged, newFieldCount } = mergeCollectionDrafts(incoming, prev);
+        const count = data.newFieldCount ?? newFieldCount;
+        notice =
+          count > 0
+            ? `Pulled ${count} new CMS field${count === 1 ? "" : "s"} from Webflow. Map them below, then re-index.`
+            : `Synced ${data.synced ?? incoming.length} collection${(data.synced ?? incoming.length) === 1 ? "" : "s"} from Webflow.`;
+        return merged;
+      });
+      setRefreshNotice(notice);
+    } finally {
+      setRefreshing(false);
     }
   }, []);
 
@@ -408,7 +411,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             type="button"
             className={`btn btn-secondary btn-sm${refreshing ? " is-loading" : ""}`}
             disabled={loading || refreshing || busy}
-            onClick={() => loadCollections({ merge: true })}
+            onClick={() => refreshFromWebflow()}
           >
             {refreshing ? (
               <>
@@ -429,8 +432,8 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
       )}
 
       <p className="caption text-muted mb-lg" style={{ marginTop: refreshNotice ? undefined : 0 }}>
-        Map display fields below, then choose which CMS fields to embed for search. Use{" "}
-        <strong>Select all</strong> to index every text-like field, or pick individually. Save and re-index after changes.
+        Field lists load from your saved backend cache — not Webflow on every visit. After changing CMS fields in Webflow, click{" "}
+        <strong>Refresh fields</strong> to pull the latest schema, then save mappings and re-index.
       </p>
 
       <div className="setup-steps-grid mb-lg">
