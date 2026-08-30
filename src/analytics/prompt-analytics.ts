@@ -321,22 +321,64 @@ function classifyNewReturning(
   return { newCount, returningCount };
 }
 
-function uniqueCount(rows: SearchEventRow[], field: "visitor_id" | "session_id"): number {
+function attributedStats(
+  rows: SearchEventRow[],
+  field: "visitor_id" | "session_id"
+): { searches: number; unique: number } {
   const ids = new Set<string>();
+  let searches = 0;
   for (const row of rows) {
-    const id = row[field];
-    if (id) ids.add(id);
+    const id = row[field]?.trim();
+    if (!id) continue;
+    searches += 1;
+    ids.add(id);
   }
-  return ids.size;
+  return { searches, unique: ids.size };
+}
+
+function ratioByDay(
+  rows: SearchEventRow[],
+  start: Date,
+  end: Date,
+  field: "visitor_id" | "session_id"
+): { date: string; count: number }[] {
+  const buckets = new Map<string, { searches: number; ids: Set<string> }>();
+  const cursor = new Date(start);
+  cursor.setUTCHours(0, 0, 0, 0);
+  const endDay = new Date(end);
+  endDay.setUTCHours(0, 0, 0, 0);
+
+  while (cursor <= endDay) {
+    buckets.set(isoDate(cursor), { searches: 0, ids: new Set() });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  for (const row of rows) {
+    const day = row.created_at.slice(0, 10);
+    const bucket = buckets.get(day);
+    if (!bucket) continue;
+    const id = row[field]?.trim();
+    if (!id) continue;
+    bucket.searches += 1;
+    bucket.ids.add(id);
+  }
+
+  return [...buckets.entries()].map(([date, { searches, ids }]) => ({
+    date,
+    count:
+      ids.size > 0
+        ? Math.round((searches / ids.size) * 10) / 10
+        : 0,
+  }));
 }
 
 function ratioMetric(
-  total: number,
+  searches: number,
   unique: number,
-  previousTotal: number,
+  previousSearches: number,
   previousUnique: number
 ): MetricWithChange {
-  if (unique === 0) {
+  if (unique === 0 || searches === 0) {
     return {
       value: 0,
       display: "—",
@@ -344,8 +386,11 @@ function ratioMetric(
       direction: "flat",
     };
   }
-  const value = total / unique;
-  const previousValue = previousUnique > 0 ? previousTotal / previousUnique : 0;
+  const value = searches / unique;
+  const previousValue =
+    previousUnique > 0 && previousSearches > 0
+      ? previousSearches / previousUnique
+      : 0;
   return metric(value, previousValue, formatDecimal);
 }
 
@@ -426,10 +471,10 @@ export async function getPromptAnalytics(
   const currentUnique = currentNorms.size;
   const previousUnique = previousNorms.size;
 
-  const currentVisitors = uniqueCount(currentRows, "visitor_id");
-  const previousVisitors = uniqueCount(previousRows, "visitor_id");
-  const currentSessions = uniqueCount(currentRows, "session_id");
-  const previousSessions = uniqueCount(previousRows, "session_id");
+  const currentVisitorStats = attributedStats(currentRows, "visitor_id");
+  const previousVisitorStats = attributedStats(previousRows, "visitor_id");
+  const currentSessionStats = attributedStats(currentRows, "session_id");
+  const previousSessionStats = attributedStats(previousRows, "session_id");
 
   const { newCount, returningCount } = classifyNewReturning(
     currentRows,
@@ -446,13 +491,13 @@ export async function getPromptAnalytics(
       currentEnd,
       "query_normalized"
     ),
-    searchesPerVisitor: uniqueCountByDay(
+    searchesPerVisitor: ratioByDay(
       currentRows,
       currentStart,
       currentEnd,
       "visitor_id"
     ),
-    searchesPerSession: uniqueCountByDay(
+    searchesPerSession: ratioByDay(
       currentRows,
       currentStart,
       currentEnd,
@@ -548,16 +593,16 @@ export async function getPromptAnalytics(
       n.toLocaleString()
     ),
     searchesPerVisitor: ratioMetric(
-      currentTotal,
-      currentVisitors,
-      previousTotal,
-      previousVisitors
+      currentVisitorStats.searches,
+      currentVisitorStats.unique,
+      previousVisitorStats.searches,
+      previousVisitorStats.unique
     ),
     searchesPerSession: ratioMetric(
-      currentTotal,
-      currentSessions,
-      previousTotal,
-      previousSessions
+      currentSessionStats.searches,
+      currentSessionStats.unique,
+      previousSessionStats.searches,
+      previousSessionStats.unique
     ),
     newVsReturning: {
       newCount,
