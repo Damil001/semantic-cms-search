@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Search Intelligence</title>
     <link rel="stylesheet" href="/design.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
   </head>
   <body>
     <nav class="top-nav">
@@ -127,82 +128,113 @@
           </div>
 
           <div id="insightsContent">
-          <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
+          <div class="insights-toolbar">
             <div>
-              <p class="caption" id="analyticsMeta" style="margin:0">Last 30 days</p>
+              <h2 class="title-sm" style="margin:0 0 4px">Prompt analytics</h2>
+              <p class="caption text-muted" id="analyticsMeta" style="margin:0">Last 30 days</p>
               <p class="caption text-muted" id="analyticsUpdated" style="margin:4px 0 0"></p>
             </div>
-            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+            <div class="insights-toolbar__actions">
               <div class="timeframe-rail" id="timeframeRail">
-                <button type="button" class="active" data-days="7">7 days</button>
-                <button type="button" data-days="30">30 days</button>
+                <button type="button" data-days="7">7 days</button>
+                <button type="button" class="active" data-days="30">30 days</button>
                 <button type="button" data-days="90">90 days</button>
               </div>
-              <button type="button" class="btn btn-ghost hidden" id="refreshAnalytics" style="padding:4px 10px;font-size:13px">Refresh</button>
+              <button type="button" class="btn btn-ghost hidden" id="refreshAnalytics">Refresh</button>
             </div>
           </div>
 
           <div id="insightsData">
           <div class="prompt-stat-grid mb-lg" id="stats"></div>
 
-          <div class="feature-card mb-lg">
-            <h3 class="title-sm mb-md">New vs. returning prompts</h3>
+          <div class="insights-panel mb-lg">
+            <div class="insights-panel__head">
+              <h3 class="title-sm">New vs. returning</h3>
+              <p class="caption text-muted">First-time questions vs. repeat prompts in this period</p>
+            </div>
+            <div class="new-returning-legend">
+              <span class="new-returning-legend__item"><i class="new-returning-legend__dot new-returning-legend__dot--new"></i> New</span>
+              <span class="new-returning-legend__item"><i class="new-returning-legend__dot new-returning-legend__dot--returning"></i> Returning</span>
+            </div>
             <div class="new-returning-bar mb-md" id="newReturningBar"></div>
-            <p class="body-md text-muted" id="newReturningInsight" style="margin:0"></p>
+            <div class="new-returning-pills" id="newReturningPills"></div>
+            <p class="insights-callout" id="newReturningInsight"></p>
           </div>
 
-          <div class="feature-card mb-lg">
-            <h3 class="title-sm mb-md">Prompt volume over time</h3>
-            <div class="prompt-chart-wrap" id="volumeChart"></div>
-            <p class="body-md text-muted mt-md" id="volumeInsight" style="margin:0"></p>
+          <div class="insights-panel mb-lg">
+            <div class="insights-panel__head">
+              <h3 class="title-sm">Prompt volume over time</h3>
+              <p class="caption text-muted">Daily search activity from your embedded widget</p>
+            </div>
+            <div class="prompt-chart-wrap">
+              <canvas id="volumeChartCanvas" aria-label="Prompt volume over time"></canvas>
+              <p class="prompt-chart-empty hidden" id="volumeChartEmpty">No volume data yet for this period.</p>
+            </div>
+            <p class="insights-callout" id="volumeInsight"></p>
           </div>
 
-          <div class="feature-card mb-lg">
-            <h3 class="title-sm mb-md">Most popular prompts</h3>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Prompt</th>
-                  <th>Volume</th>
-                  <th>% of total</th>
-                  <th>Trend</th>
-                </tr>
-              </thead>
-              <tbody id="popularPrompts"></tbody>
-            </table>
+          <div class="insights-panel mb-lg">
+            <div class="insights-panel__head">
+              <h3 class="title-sm">Most popular prompts</h3>
+              <p class="caption text-muted">Highest volume — not the same as fastest growth</p>
+            </div>
+            <div class="insights-table-wrap">
+              <table class="data-table data-table--insights">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Prompt</th>
+                    <th>Volume</th>
+                    <th>Share</th>
+                    <th>Trend</th>
+                  </tr>
+                </thead>
+                <tbody id="popularPrompts"></tbody>
+              </table>
+            </div>
           </div>
 
-          <div class="feature-card mb-lg">
-            <h3 class="title-sm mb-md">Trending prompts</h3>
-            <p class="caption text-muted mb-md">Fastest growth vs. the previous equivalent period (not the same as highest volume).</p>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Prompt</th>
-                  <th>Volume</th>
-                  <th>Growth</th>
-                </tr>
-              </thead>
-              <tbody id="trendingPrompts"></tbody>
-            </table>
+          <div class="insights-panel mb-lg">
+            <div class="insights-panel__head">
+              <h3 class="title-sm">Trending prompts</h3>
+              <p class="caption text-muted">Fastest growth vs. the previous equivalent period</p>
+            </div>
+            <div class="insights-table-wrap">
+              <table class="data-table data-table--insights">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Prompt</th>
+                    <th>Volume</th>
+                    <th>Growth</th>
+                  </tr>
+                </thead>
+                <tbody id="trendingPrompts"></tbody>
+              </table>
+            </div>
           </div>
 
-          <p class="text-warn hidden mb-lg" id="noAnalytics">
+          <p class="insights-empty hidden mb-lg" id="noAnalytics">
             No prompts logged yet. Embed search on your site and try a few queries.
           </p>
 
-          <div class="feature-card">
-            <h3 class="title-sm mb-md">Recent prompts</h3>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Prompt</th>
-                  <th>Results</th>
-                  <th>When</th>
-                </tr>
-              </thead>
-              <tbody id="recentQueries"></tbody>
-            </table>
+          <div class="insights-panel">
+            <div class="insights-panel__head">
+              <h3 class="title-sm">Recent prompts</h3>
+              <p class="caption text-muted">Latest searches as they happened</p>
+            </div>
+            <div class="insights-table-wrap">
+              <table class="data-table data-table--insights">
+                <thead>
+                  <tr>
+                    <th>Prompt</th>
+                    <th>Results</th>
+                    <th>When</th>
+                  </tr>
+                </thead>
+                <tbody id="recentQueries"></tbody>
+              </table>
+            </div>
           </div>
           </div>
           </div>
@@ -356,7 +388,8 @@
       let activeTab = "insights";
       let collectionsLoaded = false;
       let analyticsDays = 30;
-      const statSurfaces = ["peach", "mint", "mustard", "peach", "mint", "mustard"];
+      let volumeChartInstance = null;
+      const statSurfaces = ["peach", "mint", "mustard", "cream"];
       const ANALYTICS_STALE_MS = 2 * 60 * 1000;
 
       function setSkeleton(id, show) {
@@ -582,74 +615,152 @@
       }
 
       function fmtChange(m) {
-        if (!m || m.changePercent == null) return '<span class="metric-change metric-change--muted">— vs prev period</span>';
+        if (!m || m.changePercent == null) {
+          return '<span class="trend-badge trend-badge--neutral">— vs prev</span>';
+        }
         const arrow = m.direction === "up" ? "↑" : m.direction === "down" ? "↓" : "→";
         const cls =
           m.direction === "up"
-            ? "metric-change--up"
+            ? "trend-badge--up"
             : m.direction === "down"
-              ? "metric-change--down"
-              : "metric-change--muted";
-        return `<span class="metric-change ${cls}">${arrow} ${Math.abs(m.changePercent)}% vs prev period</span>`;
+              ? "trend-badge--down"
+              : "trend-badge--neutral";
+        return `<span class="trend-badge ${cls}">${arrow} ${Math.abs(m.changePercent)}%</span>`;
+      }
+
+      function fmtShortDate(iso) {
+        const d = new Date(`${iso}T12:00:00`);
+        return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      }
+
+      function trendBadge(pct) {
+        if (pct == null) return '<span class="trend-badge trend-badge--neutral">—</span>';
+        if (pct >= 0) return `<span class="trend-badge trend-badge--up">↑ ${Math.abs(pct)}%</span>`;
+        return `<span class="trend-badge trend-badge--down">↓ ${Math.abs(pct)}%</span>`;
       }
 
       function renderVolumeChart(points) {
-        const el = $("volumeChart");
-        if (!points || !points.length) {
-          el.innerHTML = '<p class="body-md text-muted" style="margin:0">No volume data yet.</p>';
-          return;
+        const canvas = $("volumeChartCanvas");
+        const empty = $("volumeChartEmpty");
+        if (!canvas) return;
+
+        if (volumeChartInstance) {
+          volumeChartInstance.destroy();
+          volumeChartInstance = null;
         }
-        const max = Math.max(...points.map((p) => p.count), 1);
-        const w = 640;
-        const h = 160;
-        const pad = { l: 8, r: 8, t: 12, b: 24 };
-        const innerW = w - pad.l - pad.r;
-        const innerH = h - pad.t - pad.b;
-        const coords = points.map((p, i) => {
-          const x = pad.l + (points.length <= 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
-          const y = pad.t + innerH - (p.count / max) * innerH;
-          return { x, y, ...p };
+
+        const hasData = points && points.some((p) => p.count > 0);
+        canvas.classList.toggle("hidden", !hasData);
+        empty.classList.toggle("hidden", hasData);
+
+        if (!hasData || typeof Chart === "undefined") return;
+
+        const ctx = canvas.getContext("2d");
+        const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+        gradient.addColorStop(0, "rgba(24, 29, 38, 0.14)");
+        gradient.addColorStop(1, "rgba(24, 29, 38, 0)");
+
+        volumeChartInstance = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: points.map((p) => fmtShortDate(p.date)),
+            datasets: [
+              {
+                label: "Prompts",
+                data: points.map((p) => p.count),
+                borderColor: "#181d26",
+                backgroundColor: gradient,
+                fill: true,
+                tension: 0.38,
+                borderWidth: 2.5,
+                pointRadius: points.map((p) => (p.count > 0 ? 4 : 0)),
+                pointHoverRadius: 6,
+                pointBackgroundColor: "#181d26",
+                pointBorderColor: "#ffffff",
+                pointBorderWidth: 2,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: "index" },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: "#181d26",
+                titleColor: "#fff",
+                bodyColor: "rgba(255,255,255,0.9)",
+                padding: 12,
+                cornerRadius: 8,
+                displayColors: false,
+                titleFont: { family: "Inter", size: 12, weight: "500" },
+                bodyFont: { family: "Inter", size: 13, weight: "600" },
+                callbacks: {
+                  title: (items) => points[items[0].dataIndex]?.date ?? "",
+                  label: (item) =>
+                    `${item.raw} prompt${item.raw === 1 ? "" : "s"}`,
+                },
+              },
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                border: { display: false },
+                ticks: {
+                  maxTicksLimit: 7,
+                  color: "#9297a0",
+                  font: { family: "Inter", size: 11 },
+                },
+              },
+              y: {
+                beginAtZero: true,
+                border: { display: false },
+                grid: { color: "rgba(0,0,0,0.05)" },
+                ticks: {
+                  precision: 0,
+                  color: "#9297a0",
+                  font: { family: "Inter", size: 11 },
+                  padding: 8,
+                },
+              },
+            },
+          },
         });
-        const line = coords.map((c) => `${c.x},${c.y}`).join(" ");
-        const area = `${pad.l},${pad.t + innerH} ${line} ${pad.l + innerW},${pad.t + innerH}`;
-        const labels = [coords[0], coords[coords.length - 1]]
-          .filter(Boolean)
-          .map(
-            (c) =>
-              `<text x="${c.x}" y="${h - 4}" text-anchor="${c === coords[0] ? "start" : "end"}" class="prompt-chart-label">${esc(c.date)}</text>`
-          )
-          .join("");
-        el.innerHTML = `<svg class="prompt-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Prompt volume over time">
-          <polygon points="${area}" class="prompt-chart-area" />
-          <polyline points="${line}" class="prompt-chart-line" fill="none" />
-          ${labels}
-        </svg>`;
       }
 
       function renderAnalytics(d) {
-        $("analyticsMeta").textContent = `Last ${d.days} days · ${me.siteName || me.siteId}`;
+        $("analyticsMeta").textContent = `${me.siteName || me.siteId} · last ${d.days} days`;
         const cards = [
-          [d.totalPrompts?.display ?? d.total, "Total prompts", d.totalPrompts],
-          [d.uniquePrompts?.display ?? "0", "Unique prompts", d.uniquePrompts],
-          [d.searchesPerVisitor?.display ?? "—", "Searches / visitor", d.searchesPerVisitor],
-          [d.searchesPerSession?.display ?? "—", "Searches / session", d.searchesPerSession],
+          [d.totalPrompts?.display ?? d.total, "Total prompts", d.totalPrompts, statSurfaces[0]],
+          [d.uniquePrompts?.display ?? "0", "Unique prompts", d.uniquePrompts, statSurfaces[1]],
+          [d.searchesPerVisitor?.display ?? "—", "Searches / visitor", d.searchesPerVisitor, statSurfaces[2]],
+          [d.searchesPerSession?.display ?? "—", "Searches / session", d.searchesPerSession, statSurfaces[3]],
         ];
         $("stats").innerHTML = cards
           .map(
-            ([value, label, metric], i) =>
-              `<div class="demo-grid-card demo-grid-card--${statSurfaces[i]}">
-                <div class="stat-value">${esc(String(value))}</div>
-                <div class="stat-label">${esc(label)}</div>
-                ${fmtChange(metric)}
+            ([value, label, metric, surface]) =>
+              `<div class="insights-stat-card insights-stat-card--${surface}">
+                <div class="insights-stat-card__label">${esc(label)}</div>
+                <div class="insights-stat-card__value">${esc(String(value))}</div>
+                <div class="insights-stat-card__change">${fmtChange(metric)}</div>
               </div>`
           )
           .join("");
 
         const nr = d.newVsReturning || { newCount: 0, returningCount: 0, newPercent: 0, returningPercent: 0 };
-        $("newReturningBar").innerHTML = `<div class="new-returning-segment new-returning-segment--new" style="width:${nr.newPercent}%"></div><div class="new-returning-segment new-returning-segment--returning" style="width:${nr.returningPercent}%"></div>`;
+        const nrTotal = nr.newCount + nr.returningCount;
+        $("newReturningBar").innerHTML =
+          nrTotal > 0
+            ? `<div class="new-returning-segment new-returning-segment--new" style="width:${Math.max(nr.newPercent, nr.newCount > 0 ? 4 : 0)}%"></div><div class="new-returning-segment new-returning-segment--returning" style="width:${Math.max(nr.returningPercent, nr.returningCount > 0 ? 4 : 0)}%"></div>`
+            : "";
+        $("newReturningPills").innerHTML =
+          nrTotal > 0
+            ? `<div class="new-returning-pill new-returning-pill--new"><span class="new-returning-pill__label">New</span><strong>${nr.newCount.toLocaleString()}</strong><span>${nr.newPercent}%</span></div><div class="new-returning-pill new-returning-pill--returning"><span class="new-returning-pill__label">Returning</span><strong>${nr.returningCount.toLocaleString()}</strong><span>${nr.returningPercent}%</span></div>`
+            : "";
         $("newReturningInsight").textContent =
-          nr.newCount + nr.returningCount > 0
-            ? `${nr.newPercent}% of prompts (${nr.newCount.toLocaleString()}) are new questions not asked before this period. ${nr.returningPercent}% (${nr.returningCount.toLocaleString()}) are returning prompts.`
+          nrTotal > 0
+            ? `${nr.newPercent}% of prompts are new questions not asked before this period — a strong signal for content gaps and fresh demand.`
             : "No prompt data for this period yet.";
 
         renderVolumeChart(d.volumeOverTime || []);
@@ -658,28 +769,30 @@
         $("popularPrompts").innerHTML = (d.popularPrompts || []).length
           ? (d.popularPrompts || [])
               .map(
-                (p) =>
-                  `<tr><td>${esc(p.query)}</td><td>${p.count.toLocaleString()}</td><td>${p.percentOfTotal}%</td><td>${p.trendPercent != null ? (p.trendPercent >= 0 ? "↑" : "↓") + " " + Math.abs(p.trendPercent) + "%" : "—"}</td></tr>`
+                (p, i) =>
+                  `<tr><td class="rank-cell">${i + 1}</td><td class="prompt-cell">${esc(p.query)}</td><td><strong>${p.count.toLocaleString()}</strong></td><td>${p.percentOfTotal}%</td><td>${trendBadge(p.trendPercent)}</td></tr>`
               )
               .join("")
-          : '<tr><td colspan="4" class="text-muted">No popular prompts yet.</td></tr>';
+          : '<tr><td colspan="5" class="table-empty">No popular prompts yet.</td></tr>';
 
         $("trendingPrompts").innerHTML = (d.trendingPrompts || []).length
           ? (d.trendingPrompts || [])
               .map(
-                (p) =>
-                  `<tr><td>${esc(p.query)}</td><td>${p.currentCount.toLocaleString()}</td><td class="metric-change--up">↑ ${p.growthPercent}%</td></tr>`
+                (p, i) =>
+                  `<tr><td class="rank-cell">${i + 1}</td><td class="prompt-cell">${esc(p.query)}</td><td><strong>${p.currentCount.toLocaleString()}</strong></td><td>${trendBadge(p.growthPercent)}</td></tr>`
               )
               .join("")
-          : '<tr><td colspan="3" class="text-muted">Not enough repeat growth yet — trending appears when prompts accelerate vs. the previous period.</td></tr>';
+          : '<tr><td colspan="4" class="table-empty">Not enough growth yet — trending appears when prompts accelerate vs. the previous period.</td></tr>';
 
         $("noAnalytics").classList.toggle("hidden", (d.total || 0) > 0);
-        $("recentQueries").innerHTML = (d.recentQueries || [])
-          .map(
-            (q) =>
-              `<tr><td>${esc(q.query)}</td><td>${q.resultCount}</td><td>${fmtDate(q.createdAt)}</td></tr>`
-          )
-          .join("");
+        $("recentQueries").innerHTML = (d.recentQueries || []).length
+          ? (d.recentQueries || [])
+              .map(
+                (q) =>
+                  `<tr><td class="prompt-cell">${esc(q.query)}</td><td>${q.resultCount}</td><td class="text-muted">${fmtDate(q.createdAt)}</td></tr>`
+              )
+              .join("")
+          : '<tr><td colspan="3" class="table-empty">No recent prompts.</td></tr>';
         $("refreshAnalytics").classList.remove("hidden");
         updateAnalyticsTimestamp(false);
       }
