@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { MeResponse, PromptAnalytics } from "@/lib/types";
 import { InsightsTab } from "./InsightsTab";
 import { IntelligenceTab } from "./IntelligenceTab";
@@ -11,7 +10,6 @@ const STALE_MS = 2 * 60 * 1000;
 type Tab = "insights" | "intelligence" | "setup";
 
 export function DashboardApp() {
-  const router = useRouter();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [booting, setBooting] = useState(true);
   const [tab, setTab] = useState<Tab>("insights");
@@ -64,17 +62,32 @@ export function DashboardApp() {
 
   useEffect(() => {
     let cancelled = false;
+
+    const bootTimeout = window.setTimeout(() => {
+      if (!cancelled) {
+        setBooting(false);
+      }
+    }, 12000);
+
     (async () => {
       try {
-        const authRes = await fetch("/api/auth/session", { cache: "no-store" });
+        const authRes = await fetch("/api/auth/session", {
+          cache: "no-store",
+          credentials: "same-origin",
+        });
         const auth = await authRes.json();
-        if (!auth.authenticated) {
-          router.replace("/login?next=/app");
-          return;
-        }
+
         if (cancelled) return;
 
-        const meRes = await fetch("/api/app/me", { cache: "no-store" });
+        if (!auth.authenticated) {
+          window.location.replace("/login?next=/app");
+          return;
+        }
+
+        const meRes = await fetch("/api/app/me", {
+          cache: "no-store",
+          credentials: "same-origin",
+        });
         const meData = (await meRes.json()) as MeResponse;
         if (cancelled) return;
 
@@ -87,14 +100,18 @@ export function DashboardApp() {
       } catch {
         if (!cancelled) {
           setBooting(false);
-          router.replace("/login");
+          window.location.replace("/login?next=/app");
         }
+      } finally {
+        window.clearTimeout(bootTimeout);
       }
     })();
+
     return () => {
       cancelled = true;
+      window.clearTimeout(bootTimeout);
     };
-  }, [router, loadAnalytics]);
+  }, [loadAnalytics]);
 
   useEffect(() => {
     if (tab !== "insights" || !me?.connected) return;
@@ -133,6 +150,27 @@ export function DashboardApp() {
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="skeleton-stat insights-stat-card insights-stat-card--cream" />
           ))}
+        </div>
+        <p className="caption text-muted" style={{ textAlign: "center" }}>
+          Checking session…
+        </p>
+      </div>
+    );
+  }
+
+  if (!me) {
+    return (
+      <div className="container section--tight">
+        <div className="insights-panel insights-panel--empty">
+          <div className="empty-state">
+            <h2 className="title-lg">Sign in required</h2>
+            <p className="body-md text-muted">
+              Your session expired or could not be verified. Sign in again to open the dashboard.
+            </p>
+            <a className="btn btn-primary mt-md" href="/login?next=/app">
+              Go to sign in
+            </a>
+          </div>
         </div>
       </div>
     );
