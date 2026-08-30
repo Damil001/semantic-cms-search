@@ -1,24 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
+import { setAuthCookiesOnResponse } from "@/src/app/auth-cookies";
 import {
-  getAuthUserFromAccessToken,
-  setAuthCookiesOnResponse,
-  signIn,
-  signUp,
-} from "@/src/app/auth";
+  AuthTimeoutError,
+  getUserFromAccessTokenFast,
+  signInWithPasswordFast,
+  signUpFast,
+} from "@/src/app/goauth";
 
 export const dynamic = "force-dynamic";
+export const runtime = "edge";
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get("sb_access")?.value;
-  const user = await getAuthUserFromAccessToken(token);
-  if (!user) {
+  if (!token) {
     return NextResponse.json({ authenticated: false });
   }
-  return NextResponse.json({
-    authenticated: true,
-    email: user.email,
-    userId: user.id,
-  });
+
+  try {
+    const user = await getUserFromAccessTokenFast(token);
+    if (!user) {
+      return NextResponse.json({ authenticated: false });
+    }
+    return NextResponse.json({
+      authenticated: true,
+      email: user.email,
+      userId: user.id,
+    });
+  } catch {
+    return NextResponse.json({ authenticated: false });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -39,7 +49,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const result =
-      action === "signup" ? await signUp(email, password) : await signIn(email, password);
+      action === "signup"
+        ? await signUpFast(email, password)
+        : await signInWithPasswordFast(email, password);
+
     const response = NextResponse.json({
       ok: true,
       email: result.user.email,
@@ -48,9 +61,15 @@ export async function POST(request: NextRequest) {
     setAuthCookiesOnResponse(response, result.accessToken, result.refreshToken);
     return response;
   } catch (err) {
+    if (err instanceof AuthTimeoutError) {
+      return NextResponse.json({ error: err.message }, { status: 504 });
+    }
     const message = err instanceof Error ? err.message : "Auth failed";
     console.error("auth session error", action, message);
-    const status = message.includes("SUPABASE_ANON_KEY") ? 503 : 400;
+    const status =
+      message.includes("SUPABASE_ANON_KEY") || message.includes("SUPABASE_URL")
+        ? 503
+        : 400;
     return NextResponse.json({ error: message }, { status });
   }
 }

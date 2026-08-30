@@ -1,10 +1,9 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 export function LoginForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/app";
   const [email, setEmail] = useState("");
@@ -16,11 +15,14 @@ export function LoginForm() {
   async function auth(action: "login" | "signup") {
     setError("");
     setSubmitting(true);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15_000);
     try {
       const res = await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
+        signal: controller.signal,
         body: JSON.stringify({ action, email, password }),
       });
       const data = await res.json();
@@ -28,11 +30,15 @@ export function LoginForm() {
         setError(data.error || "Failed");
         return;
       }
-      router.replace(next);
-      router.refresh();
-    } catch {
-      setError("Network error — check your connection and try again.");
+      window.location.href = next;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Sign-in timed out. If this keeps happening, check Vercel env vars for Supabase.");
+      } else {
+        setError("Network error — check your connection and try again.");
+      }
     } finally {
+      window.clearTimeout(timeout);
       setSubmitting(false);
     }
   }

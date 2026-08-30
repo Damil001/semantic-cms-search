@@ -1,20 +1,17 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { WebSocket as NodeWebSocket } from "ws";
+import { normalizeSupabaseUrl } from "./supabase-url.js";
 
-if (typeof globalThis.WebSocket === "undefined") {
-  Object.assign(globalThis, { WebSocket: NodeWebSocket });
-}
+export { normalizeSupabaseUrl } from "./supabase-url.js";
 
-/** Project URL only — no /rest/v1, /graphql, or trailing slash. */
-export function normalizeSupabaseUrl(raw: string): string {
-  return raw
-    .trim()
-    .replace(/\/+$/, "")
-    .replace(/\/rest\/v1$/i, "")
-    .replace(/\/graphql\/v1$/i, "");
+function ensureWebSocketPolyfill(): void {
+  if (typeof globalThis.WebSocket !== "undefined") return;
+  // Lazy-load ws so auth/login routes don't pay cold-start cost.
+  const { WebSocket } = require("ws") as typeof import("ws");
+  Object.assign(globalThis, { WebSocket });
 }
 
 export function getServiceClient(): SupabaseClient {
+  ensureWebSocketPolyfill();
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) {
