@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { requireAuthInstall } from "../../src/app/guard.js";
-import { getServiceClient } from "../../src/lib/supabase.js";
+import { requireAuthInstall } from "../../app/guard.js";
+import { getServiceClient } from "../../lib/supabase.js";
 
 interface MapBody {
   collectionId: string;

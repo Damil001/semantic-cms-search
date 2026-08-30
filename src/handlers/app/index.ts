@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import type { CollectionConfig } from "../../src/config/webflow.js";
-import { requireAuthInstall } from "../../src/app/guard.js";
-import { fetchCollectionPage } from "../../src/ingest/webflow-api.js";
-import { mapCmsItem, upsertItemWithChunks } from "../../src/ingest/upsert.js";
-import { getServiceClient } from "../../src/lib/supabase.js";
+import type { CollectionConfig } from "../../config/webflow.js";
+import { requireAuthInstall } from "../../app/guard.js";
+import { fetchCollectionPage } from "../../ingest/webflow-api.js";
+import { mapCmsItem, upsertItemWithChunks } from "../../ingest/upsert.js";
+import { getServiceClient } from "../../lib/supabase.js";
 
 export const config = { maxDuration: 60 };
 

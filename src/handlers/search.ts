@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { logSearchEvent } from "../src/analytics/log.js";
-import { generateSearchAnswer } from "../src/search/answer.js";
+import { logSearchEvent } from "../analytics/log.js";
+import { generateSearchAnswer } from "../search/answer.js";
 import {
   extractSearchCredentials,
   verifySearchAuth,
-} from "../src/search/auth.js";
-import { runSearch } from "../src/search/run.js";
-import { runSuggest } from "../src/search/suggest.js";
-import type { SearchResponse } from "../src/types.js";
+} from "../search/auth.js";
+import { runSearch } from "../search/run.js";
+import { runSuggest } from "../search/suggest.js";
+import type { SearchResponse } from "../types.js";
 
 function isSuggestMode(req: VercelRequest): boolean {
   const mode = typeof req.query.mode === "string" ? req.query.mode : "";

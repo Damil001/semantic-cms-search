@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { runVercelHandler } from "@/lib/vercel-adapter";
-import handler from "@/api/search";
+import handler from "@/src/handlers/search";
 
 export const maxDuration = 30;
 

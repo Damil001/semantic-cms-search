@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getAuthUser } from "../../src/app/auth.js";
-import { OAUTH_STATE_COOKIE, newToken, setCookie } from "../../src/app/session.js";
-import { oauthAuthorizeUrl } from "../../src/app/webflow-oauth.js";
+import { getAuthUser } from "../../app/auth.js";
+import { OAUTH_STATE_COOKIE, newToken, setCookie } from "../../app/session.js";
+import { oauthAuthorizeUrl } from "../../app/webflow-oauth.js";
 
 export default async function handler(
   req: VercelRequest,

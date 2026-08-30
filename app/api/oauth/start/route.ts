@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { runVercelHandler } from "@/lib/vercel-adapter";
-import handler from "@/api/oauth/start";
+import handler from "@/src/handlers/oauth/start";
 
 export async function GET(request: NextRequest) {
   return runVercelHandler(handler, request);

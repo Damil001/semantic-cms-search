@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { analyzeSearchQueries } from "../../src/analytics/analyze.js";
-import { requireAuthInstall } from "../../src/app/guard.js";
+import { analyzeSearchQueries } from "../../analytics/analyze.js";
+import { requireAuthInstall } from "../../app/guard.js";
 
 export default async function handler(
   req: VercelRequest,

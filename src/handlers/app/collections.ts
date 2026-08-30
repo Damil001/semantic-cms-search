@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { requireAuthInstall } from "../../src/app/guard.js";
+import { requireAuthInstall } from "../../app/guard.js";
 import {
   getCollection,
   getSite,
   guessFields,
   listCollections,
   publicSiteOrigin,
-} from "../../src/app/webflow-admin.js";
-import { getServiceClient } from "../../src/lib/supabase.js";
+} from "../../app/webflow-admin.js";
+import { getServiceClient } from "../../lib/supabase.js";
 
 export default async function handler(
   req: VercelRequest,

@@ -5,7 +5,7 @@ import {
   setAuthCookies,
   signIn,
   signUp,
-} from "../../src/app/auth.js";
+} from "../../app/auth.js";
 
 export default async function handler(
   req: VercelRequest,

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getAuthUser } from "../../src/app/auth.js";
-import { getInstallForUser } from "../../src/app/session.js";
-import { listSites } from "../../src/app/webflow-admin.js";
+import { getAuthUser } from "../../app/auth.js";
+import { getInstallForUser } from "../../app/session.js";
+import { listSites } from "../../app/webflow-admin.js";
 
 export default async function handler(
   req: VercelRequest,
