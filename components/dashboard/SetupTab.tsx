@@ -10,11 +10,71 @@ interface Props {
 
 type CollectionDraft = Collection & { mapping: Record<string, string> };
 
+type CollectionIndexRow = {
+  collectionId: string;
+  name: string;
+  status: "pending" | "indexing" | "done";
+  processed: number;
+  total: number | null;
+  chunks: number;
+};
+
+type IndexProgress = {
+  phase: "saving" | "indexing" | "success" | "error";
+  mode: "save" | "index" | "reindex";
+  message: string;
+  collections: CollectionIndexRow[];
+  totalProcessed: number;
+  totalChunks: number;
+  percent: number | null;
+};
+
+function StatusIcon({ status }: { status: CollectionIndexRow["status"] }) {
+  if (status === "indexing") return <span className="index-spinner" aria-hidden />;
+  if (status === "done") {
+    return (
+      <svg className="index-status-icon index-status-icon--done" viewBox="0 0 16 16" fill="none" aria-hidden>
+        <path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  return <span className="index-status-icon index-status-icon--pending" aria-hidden />;
+}
+
+function formatCollectionStat(row: CollectionIndexRow) {
+  if (row.status === "pending") return "Waiting";
+  if (row.total != null) return `${row.processed} / ${row.total} items`;
+  if (row.processed > 0) return `${row.processed} items`;
+  return "Starting…";
+}
+
+function computeOverallPercent(rows: CollectionIndexRow[]): number | null {
+  const active = rows.filter((r) => r.status !== "pending" || r.processed > 0);
+  if (active.length === 0) return null;
+
+  let sum = 0;
+  let hasUnknown = false;
+  for (const row of rows) {
+    if (row.status === "done") {
+      sum += 1;
+      continue;
+    }
+    if (row.total != null && row.total > 0) {
+      sum += Math.min(row.processed / row.total, 1);
+    } else if (row.status === "indexing") {
+      hasUnknown = true;
+    }
+  }
+  const pct = (sum / rows.length) * 100;
+  return hasUnknown && pct < 5 ? null : Math.min(100, Math.round(pct));
+}
+
 export function SetupTab({ me, onSiteMetaChange }: Props) {
   const [collections, setCollections] = useState<CollectionDraft[]>([]);
   const [loading, setLoading] = useState(true);
-  const [log, setLog] = useState("");
   const [busy, setBusy] = useState(false);
+  const [activeAction, setActiveAction] = useState<"save" | "index" | "reindex" | null>(null);
+  const [indexProgress, setIndexProgress] = useState<IndexProgress | null>(null);
 
   const loadCollections = useCallback(async () => {
     setLoading(true);
@@ -72,18 +132,75 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
     if (!res.ok) throw new Error(data.error || "Save failed");
   }
 
+  function initIndexProgress(mode: "index" | "reindex", enabled: ReturnType<typeof readMaps>) {
+    const rows: CollectionIndexRow[] = enabled.map((m) => ({
+      collectionId: m.collectionId,
+      name: m.collectionName || m.collectionId,
+      status: "pending",
+      processed: 0,
+      total: null,
+      chunks: 0,
+    }));
+    setIndexProgress({
+      phase: "saving",
+      mode,
+      message: "Saving field mappings…",
+      collections: rows,
+      totalProcessed: 0,
+      totalChunks: 0,
+      percent: null,
+    });
+  }
+
   async function indexAll(reindex = false) {
+    const mode = reindex ? "reindex" : "index";
     setBusy(true);
-    setLog(reindex ? "Re-indexing…" : "Indexing…");
+    setActiveAction(mode);
+    const enabled = readMaps().filter((m) => m.enabled);
+    if (enabled.length === 0) {
+      setIndexProgress({
+        phase: "error",
+        mode,
+        message: "Enable at least one collection before indexing.",
+        collections: [],
+        totalProcessed: 0,
+        totalChunks: 0,
+        percent: null,
+      });
+      setBusy(false);
+      setActiveAction(null);
+      return;
+    }
+
+    initIndexProgress(mode, enabled);
     try {
       await saveMaps();
-      const enabled = readMaps().filter((m) => m.enabled);
-      let n = 0;
+      setIndexProgress((prev) =>
+        prev
+          ? {
+              ...prev,
+              phase: "indexing",
+              message: reindex
+                ? "Re-indexing CMS content with saved mappings…"
+                : "Indexing CMS content…",
+            }
+          : prev
+      );
+
       for (const m of enabled) {
+        setIndexProgress((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            collections: prev.collections.map((r) =>
+              r.collectionId === m.collectionId ? { ...r, status: "indexing" as const } : r
+            ),
+          };
+        });
+
         let offset = 0;
         let done = false;
         while (!done) {
-          setLog(`Indexing ${m.collectionName || m.collectionId} @ ${offset}…`);
           const res = await fetch("/api/app/index", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -91,21 +208,77 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Index failed");
-          n += data.processed || 0;
+
+          setIndexProgress((prev) => {
+            if (!prev) return prev;
+            const collections = prev.collections.map((r) =>
+              r.collectionId === m.collectionId
+                ? {
+                    ...r,
+                    processed: data.nextOffset ?? offset + (data.processed || 0),
+                    total: data.total ?? r.total,
+                    chunks: r.chunks + (data.chunks || 0),
+                    status: "indexing" as const,
+                  }
+                : r
+            );
+            return {
+              ...prev,
+              collections,
+              totalProcessed: collections.reduce((n, r) => n + r.processed, 0),
+              totalChunks: collections.reduce((n, r) => n + r.chunks, 0),
+              percent: computeOverallPercent(collections),
+              message: `Indexing ${m.collectionName || m.collectionId}…`,
+            };
+          });
+
           offset = data.nextOffset;
           done = data.done;
         }
+
+        setIndexProgress((prev) => {
+          if (!prev) return prev;
+          const collections = prev.collections.map((r) =>
+            r.collectionId === m.collectionId ? { ...r, status: "done" as const } : r
+          );
+          return {
+            ...prev,
+            collections,
+            percent: computeOverallPercent(collections),
+          };
+        });
       }
-      setLog(`Done. Indexed ${n} items.`);
+
+      setIndexProgress((prev) => {
+        const totalProcessed = prev?.totalProcessed ?? 0;
+        const totalChunks = prev?.totalChunks ?? 0;
+        return {
+          phase: "success",
+          mode,
+          message: `Indexed ${totalProcessed} item${totalProcessed === 1 ? "" : "s"} across ${enabled.length} collection${enabled.length === 1 ? "" : "s"} (${totalChunks} chunks).`,
+          collections: (prev?.collections ?? []).map((r) => ({ ...r, status: "done" as const })),
+          totalProcessed,
+          totalChunks,
+          percent: 100,
+        };
+      });
       onSiteMetaChange(
-        me.lastIndexedAt
-          ? `${me.siteName || me.siteId} · Last indexed ${new Date().toLocaleString()}`
-          : `${me.siteName || me.siteId} · Indexed just now`
+        `${me.siteName || me.siteId} · Last indexed ${new Date().toLocaleString()}`
       );
     } catch (err) {
-      setLog(err instanceof Error ? err.message : "Index failed");
+      const message = err instanceof Error ? err.message : "Index failed";
+      setIndexProgress((prev) => ({
+        phase: "error",
+        mode,
+        message,
+        collections: prev?.collections ?? [],
+        totalProcessed: prev?.totalProcessed ?? 0,
+        totalChunks: prev?.totalChunks ?? 0,
+        percent: prev?.percent ?? null,
+      }));
     } finally {
       setBusy(false);
+      setActiveAction(null);
     }
   }
 
@@ -121,6 +294,12 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   const siteMetaText = me.lastIndexedAt
     ? `${me.siteName || me.siteId} · Last indexed ${new Date(me.lastIndexedAt).toLocaleString()}`
     : `${me.siteName || me.siteId} · Not indexed yet`;
+
+  const isIndexing = busy && (activeAction === "index" || activeAction === "reindex");
+  const showIndexDetails =
+    indexProgress &&
+    indexProgress.collections.length > 0 &&
+    (indexProgress.phase === "indexing" || indexProgress.phase === "success");
 
   return (
     <>
@@ -141,7 +320,9 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
           <span className="setup-step-card__label">Map collections</span>
           <span className="setup-step-card__hint">Choose fields to index</span>
         </div>
-        <div className="setup-step-card setup-step-card--peach">
+        <div
+          className={`setup-step-card setup-step-card--peach${isIndexing ? " setup-step-card--active" : ""}`}
+        >
           <span className="setup-step-card__num">2</span>
           <span className="setup-step-card__label">Index CMS</span>
           <span className="setup-step-card__hint">Build your search index</span>
@@ -342,40 +523,156 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         <div className="btn-row">
           <button
             type="button"
-            className="btn btn-primary"
+            className={`btn btn-primary${activeAction === "save" ? " is-loading" : ""}`}
             disabled={busy}
             onClick={async () => {
               setBusy(true);
+              setActiveAction("save");
+              setIndexProgress({
+                phase: "saving",
+                mode: "save",
+                message: "Saving field mappings…",
+                collections: [],
+                totalProcessed: 0,
+                totalChunks: 0,
+                percent: null,
+              });
               try {
                 await saveMaps();
-                setLog("Mappings saved.");
+                setIndexProgress({
+                  phase: "success",
+                  mode: "save",
+                  message: "Field mappings saved.",
+                  collections: [],
+                  totalProcessed: 0,
+                  totalChunks: 0,
+                  percent: null,
+                });
               } catch (err) {
-                setLog(err instanceof Error ? err.message : "Save failed");
+                setIndexProgress({
+                  phase: "error",
+                  mode: "save",
+                  message: err instanceof Error ? err.message : "Save failed",
+                  collections: [],
+                  totalProcessed: 0,
+                  totalChunks: 0,
+                  percent: null,
+                });
               } finally {
                 setBusy(false);
+                setActiveAction(null);
               }
             }}
           >
-            Save mappings
+            {activeAction === "save" ? (
+              <>
+                <span className="index-spinner" aria-hidden style={{ marginRight: 8 }} />
+                <span className="btn-label">Saving…</span>
+              </>
+            ) : (
+              "Save mappings"
+            )}
           </button>
           <button
             type="button"
-            className="btn btn-secondary"
+            className={`btn btn-secondary${activeAction === "index" ? " is-loading" : ""}`}
             disabled={busy}
             onClick={() => indexAll(false)}
           >
-            Index CMS
+            {activeAction === "index" ? (
+              <>
+                <span className="index-spinner" aria-hidden style={{ marginRight: 8 }} />
+                <span className="btn-label">Indexing…</span>
+              </>
+            ) : (
+              "Index CMS"
+            )}
           </button>
           <button
             type="button"
-            className="btn btn-secondary"
+            className={`btn btn-secondary${activeAction === "reindex" ? " is-loading" : ""}`}
             disabled={busy}
             onClick={() => indexAll(true)}
           >
-            Re-index
+            {activeAction === "reindex" ? (
+              <>
+                <span className="index-spinner" aria-hidden style={{ marginRight: 8 }} />
+                <span className="btn-label">Re-indexing…</span>
+              </>
+            ) : (
+              "Re-index"
+            )}
           </button>
         </div>
-        {log && <p className="status-line mt-md">{log}</p>}
+
+        {indexProgress && (
+          <div
+            className={`index-progress${
+              indexProgress.phase === "success" ? " index-progress--success" : ""
+            }${indexProgress.phase === "error" ? " index-progress--error" : ""}`}
+            role="status"
+            aria-live="polite"
+          >
+            <div className="index-progress__head">
+              {(indexProgress.phase === "saving" || indexProgress.phase === "indexing") && (
+                <span className="index-spinner" aria-hidden />
+              )}
+              {indexProgress.phase === "success" && <StatusIcon status="done" />}
+              {indexProgress.phase === "error" && (
+                <svg className="index-status-icon" viewBox="0 0 16 16" fill="none" aria-hidden style={{ color: "var(--color-signature-coral)" }}>
+                  <path d="M8 5v4M8 11.5v.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+                  <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
+              )}
+              <p className="index-progress__title">{indexProgress.message}</p>
+            </div>
+
+            {showIndexDetails && (
+              <>
+                <div className="index-progress__bar" aria-hidden>
+                  <div
+                    className={`index-progress__fill${
+                      indexProgress.percent == null && indexProgress.phase === "indexing"
+                        ? " index-progress__fill--indeterminate"
+                        : ""
+                    }`}
+                    style={
+                      indexProgress.percent != null
+                        ? { width: `${indexProgress.percent}%` }
+                        : undefined
+                    }
+                  />
+                </div>
+                {(indexProgress.totalProcessed > 0 || indexProgress.totalChunks > 0) && (
+                  <p className="index-progress__meta">
+                    {indexProgress.totalProcessed} item
+                    {indexProgress.totalProcessed === 1 ? "" : "s"}
+                    {indexProgress.totalChunks > 0 &&
+                      ` · ${indexProgress.totalChunks} chunk${indexProgress.totalChunks === 1 ? "" : "s"} embedded`}
+                    {indexProgress.percent != null && indexProgress.phase === "indexing" &&
+                      ` · ${indexProgress.percent}%`}
+                  </p>
+                )}
+                <ul className="index-progress__collections">
+                  {indexProgress.collections.map((row) => (
+                    <li
+                      key={row.collectionId}
+                      className={`index-progress__row${
+                        row.status === "indexing" ? " index-progress__row--active" : ""
+                      }${row.status === "done" ? " index-progress__row--done" : ""}`}
+                    >
+                      <span className="index-progress__row-name">
+                        <StatusIcon status={row.status} />
+                        <span>{row.name}</span>
+                      </span>
+                      <span className="index-progress__row-stat">{formatCollectionStat(row)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </>
   );
