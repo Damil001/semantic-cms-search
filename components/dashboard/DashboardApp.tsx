@@ -9,6 +9,19 @@ import { SetupTab } from "./SetupTab";
 const STALE_MS = 2 * 60 * 1000;
 type Tab = "insights" | "intelligence" | "setup";
 
+async function fetchJson<T>(url: string): Promise<T | null> {
+  try {
+    const res = await fetch(url, {
+      cache: "no-store",
+      credentials: "same-origin",
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 export function DashboardApp() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [booting, setBooting] = useState(true);
@@ -41,13 +54,13 @@ export function DashboardApp() {
 
       loadPromiseRef.current = (async () => {
         try {
-          const res = await fetch(`/api/app/analytics?days=${days}`);
-          if (!res.ok) return;
-          const data = (await res.json()) as PromptAnalytics;
-          analyticsRef.current = data;
-          setAnalytics(data);
-          setAnalyticsDays(days);
-          setFetchedAt(Date.now());
+          const data = await fetchJson<PromptAnalytics>(`/api/app/analytics?days=${days}`);
+          if (data) {
+            analyticsRef.current = data;
+            setAnalytics(data);
+            setAnalyticsDays(days);
+            setFetchedAt(Date.now());
+          }
         } finally {
           setAnalyticsLoading(false);
           setSyncing(false);
@@ -63,53 +76,33 @@ export function DashboardApp() {
   useEffect(() => {
     let cancelled = false;
 
-    const bootTimeout = window.setTimeout(() => {
-      if (!cancelled) {
-        setBooting(false);
-      }
-    }, 12000);
-
     (async () => {
-      try {
-        const authRes = await fetch("/api/auth/session", {
-          cache: "no-store",
-          credentials: "same-origin",
-        });
-        const auth = await authRes.json();
+      const auth = await fetchJson<{ authenticated?: boolean }>("/api/auth/session");
+      if (cancelled) return;
 
-        if (cancelled) return;
+      if (!auth?.authenticated) {
+        window.location.replace("/login?next=/app");
+        return;
+      }
 
-        if (!auth.authenticated) {
-          window.location.replace("/login?next=/app");
-          return;
-        }
+      const meData = await fetchJson<MeResponse>("/api/app/me");
+      if (cancelled) return;
 
-        const meRes = await fetch("/api/app/me", {
-          cache: "no-store",
-          credentials: "same-origin",
-        });
-        const meData = (await meRes.json()) as MeResponse;
-        if (cancelled) return;
+      if (!meData?.authenticated) {
+        window.location.replace("/login?next=/app");
+        return;
+      }
 
-        setMe(meData);
-        setBooting(false);
+      setMe(meData);
+      setBooting(false);
 
-        if (meData.connected) {
-          void loadAnalytics({ days: 30, force: true });
-        }
-      } catch {
-        if (!cancelled) {
-          setBooting(false);
-          window.location.replace("/login?next=/app");
-        }
-      } finally {
-        window.clearTimeout(bootTimeout);
+      if (meData.connected) {
+        void loadAnalytics({ days: 30, force: true });
       }
     })();
 
     return () => {
       cancelled = true;
-      window.clearTimeout(bootTimeout);
     };
   }, [loadAnalytics]);
 
@@ -152,7 +145,7 @@ export function DashboardApp() {
           ))}
         </div>
         <p className="caption text-muted" style={{ textAlign: "center" }}>
-          Checking session…
+          Loading dashboard…
         </p>
       </div>
     );
@@ -163,13 +156,17 @@ export function DashboardApp() {
       <div className="container section--tight">
         <div className="insights-panel insights-panel--empty">
           <div className="empty-state">
-            <h2 className="title-lg">Sign in required</h2>
+            <h2 className="title-lg">Could not load dashboard</h2>
             <p className="body-md text-muted">
-              Your session expired or could not be verified. Sign in again to open the dashboard.
+              Your session is active but profile data did not load. Try again.
             </p>
-            <a className="btn btn-primary mt-md" href="/login?next=/app">
-              Go to sign in
-            </a>
+            <button
+              type="button"
+              className="btn btn-primary mt-md"
+              onClick={() => window.location.reload()}
+            >
+              Reload
+            </button>
           </div>
         </div>
       </div>
@@ -244,7 +241,7 @@ export function DashboardApp() {
           ) : (
             <div className="insights-panel insights-panel--empty mb-lg">
               <p className="body-md text-muted" style={{ margin: 0 }}>
-                Insights could not be loaded. Try refreshing the tab.
+                Insights are still loading. If this persists, open Setup and confirm your site is connected.
               </p>
               <button
                 type="button"

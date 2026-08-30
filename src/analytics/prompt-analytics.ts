@@ -140,14 +140,17 @@ async function fetchEvents(
   const supabase = getServiceClient();
   const rows: SearchEventRow[] = [];
   let offset = 0;
+  const selectWithVisitors =
+    "query, query_normalized, result_count, created_at, visitor_id, session_id";
+  const selectBasic = "query, query_normalized, result_count, created_at";
+  let select = selectWithVisitors;
+  let visitorColumns = true;
 
   while (rows.length < MAX_EVENTS) {
     const limit = Math.min(PAGE_SIZE, MAX_EVENTS - rows.length);
     let q = supabase
       .from("search_events")
-      .select(
-        "query, query_normalized, result_count, created_at, visitor_id, session_id"
-      )
+      .select(select)
       .eq("site_id", siteId)
       .gte("created_at", since.toISOString())
       .order("created_at", { ascending: true });
@@ -157,8 +160,17 @@ async function fetchEvents(
     }
 
     const { data, error } = await q.range(offset, offset + limit - 1);
-    if (error) throw new Error(error.message);
-    const batch = (data ?? []) as SearchEventRow[];
+    if (error) {
+      if (visitorColumns && /visitor_id|session_id/i.test(error.message)) {
+        visitorColumns = false;
+        select = selectBasic;
+        offset = 0;
+        rows.length = 0;
+        continue;
+      }
+      throw new Error(error.message);
+    }
+    const batch = (data ?? []) as unknown as SearchEventRow[];
     if (batch.length === 0) break;
     rows.push(...batch);
     if (batch.length < limit) break;
@@ -347,6 +359,61 @@ function ratioMetric(
   const value = total / unique;
   const previousValue = previousUnique > 0 ? previousTotal / previousUnique : 0;
   return metric(value, previousValue, formatDecimal);
+}
+
+export function emptyPromptAnalytics(days = 30): PromptAnalytics {
+  const { currentStart, currentEnd } = periodBounds(days);
+  const emptyMetric: MetricWithChange = {
+    value: 0,
+    display: "0",
+    changePercent: null,
+    direction: "flat",
+  };
+  const emptyDays: { date: string; count: number }[] = volumeByDay(
+    [],
+    currentStart,
+    currentEnd
+  );
+
+  return {
+    days,
+    periodStart: currentStart.toISOString(),
+    periodEnd: currentEnd.toISOString(),
+    totalPrompts: emptyMetric,
+    uniquePrompts: emptyMetric,
+    searchesPerVisitor: { value: 0, display: "—", changePercent: null, direction: "flat" },
+    searchesPerSession: { value: 0, display: "—", changePercent: null, direction: "flat" },
+    newVsReturning: {
+      newCount: 0,
+      returningCount: 0,
+      newPercent: 0,
+      returningPercent: 0,
+    },
+    volumeOverTime: emptyDays,
+    statSparklines: {
+      totalPrompts: emptyDays,
+      uniquePrompts: emptyDays,
+      searchesPerVisitor: emptyDays,
+      searchesPerSession: emptyDays,
+    },
+    volumeInsight: "No prompts logged yet for this period.",
+    popularPrompts: [],
+    trendingPrompts: [],
+    contentGaps: [],
+    contentGapsSummary: {
+      gapPromptCount: 0,
+      unansweredSearchCount: 0,
+      criticalCount: 0,
+      byQuality: { none: 0, poor: 0, weak: 0, good: 0 },
+      searchVolumeByQuality: { none: 0, poor: 0, weak: 0, good: 0 },
+    },
+    contentGapsInsight: "No search data yet — embed the widget to start collecting prompts.",
+    total: 0,
+    zeroResults: 0,
+    moreThanFive: 0,
+    topQueries: [],
+    recentQueries: [],
+  };
 }
 
 export async function getPromptAnalytics(

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthUser } from "../../app/auth.js";
 import { getInstallForUser } from "../../app/session.js";
-import { getPromptAnalytics } from "../../analytics/prompt-analytics.js";
+import { getPromptAnalytics, emptyPromptAnalytics } from "../../analytics/prompt-analytics.js";
 
 export default async function handler(
   req: VercelRequest,
@@ -32,6 +32,7 @@ export default async function handler(
     res.status(200).json(analytics);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Analytics failed";
-    res.status(500).json({ error: message });
+    console.error("analytics error", message);
+    res.status(200).json(emptyPromptAnalytics(days));
   }
 }
