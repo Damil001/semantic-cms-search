@@ -48,6 +48,12 @@ export interface PromptAnalytics {
     returningPercent: number;
   };
   volumeOverTime: { date: string; count: number }[];
+  statSparklines: {
+    totalPrompts: { date: string; count: number }[];
+    uniquePrompts: { date: string; count: number }[];
+    searchesPerVisitor: { date: string; count: number }[];
+    searchesPerSession: { date: string; count: number }[];
+  };
   volumeInsight: string;
   popularPrompts: PopularPrompt[];
   trendingPrompts: TrendingPrompt[];
@@ -238,6 +244,37 @@ function volumeByDay(
   return [...buckets.entries()].map(([date, count]) => ({ date, count }));
 }
 
+function uniqueCountByDay(
+  rows: SearchEventRow[],
+  start: Date,
+  end: Date,
+  field: "query_normalized" | "visitor_id" | "session_id"
+): { date: string; count: number }[] {
+  const buckets = new Map<string, Set<string>>();
+  const cursor = new Date(start);
+  cursor.setUTCHours(0, 0, 0, 0);
+  const endDay = new Date(end);
+  endDay.setUTCHours(0, 0, 0, 0);
+
+  while (cursor <= endDay) {
+    buckets.set(isoDate(cursor), new Set());
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  for (const row of rows) {
+    const day = row.created_at.slice(0, 10);
+    const bucket = buckets.get(day);
+    if (!bucket) continue;
+    const value = String(row[field] ?? "").trim();
+    if (value) bucket.add(value);
+  }
+
+  return [...buckets.entries()].map(([date, ids]) => ({
+    date,
+    count: ids.size,
+  }));
+}
+
 function classifyNewReturning(
   rows: SearchEventRow[],
   historicalNorms: Set<string>
@@ -321,6 +358,27 @@ export async function getPromptAnalytics(
   const classified = newCount + returningCount || 1;
 
   const volumeOverTime = volumeByDay(currentRows, currentStart, currentEnd);
+  const statSparklines = {
+    totalPrompts: volumeOverTime,
+    uniquePrompts: uniqueCountByDay(
+      currentRows,
+      currentStart,
+      currentEnd,
+      "query_normalized"
+    ),
+    searchesPerVisitor: uniqueCountByDay(
+      currentRows,
+      currentStart,
+      currentEnd,
+      "visitor_id"
+    ),
+    searchesPerSession: uniqueCountByDay(
+      currentRows,
+      currentStart,
+      currentEnd,
+      "session_id"
+    ),
+  };
   const totalVolumeChange = pctChange(currentTotal, previousTotal);
   const volumeInsight =
     totalVolumeChange != null && currentTotal > 0
@@ -423,6 +481,7 @@ export async function getPromptAnalytics(
       returningPercent: Math.round((returningCount / classified) * 1000) / 10,
     },
     volumeOverTime,
+    statSparklines,
     volumeInsight,
     popularPrompts,
     trendingPrompts,

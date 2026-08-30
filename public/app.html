@@ -147,7 +147,7 @@
           <div id="insightsData">
           <div class="prompt-stat-grid mb-lg" id="stats"></div>
 
-          <div class="insights-panel mb-lg">
+          <div class="insights-panel mb-lg" id="newReturningPanel">
             <div class="insights-panel__head">
               <h3 class="title-sm">New vs. returning</h3>
               <p class="caption text-muted">First-time questions vs. repeat prompts in this period</p>
@@ -161,7 +161,7 @@
             <p class="insights-callout" id="newReturningInsight"></p>
           </div>
 
-          <div class="insights-panel mb-lg">
+          <div class="insights-panel mb-lg" id="volumePanel">
             <div class="insights-panel__head">
               <h3 class="title-sm">Prompt volume over time</h3>
               <p class="caption text-muted">Daily search activity from your embedded widget</p>
@@ -389,7 +389,39 @@
       let collectionsLoaded = false;
       let analyticsDays = 30;
       let volumeChartInstance = null;
+      let statSparklineInstances = [];
       const statSurfaces = ["peach", "mint", "mustard", "cream"];
+      const statSparkColors = ["#c45a20", "#2d8a5e", "#9a7200", "#6b5a45"];
+      const statMeta = [
+        {
+          key: "totalPrompts",
+          label: "Total prompts",
+          hint: "Every search submitted through your widget in this period.",
+          scroll: "#volumePanel",
+          icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+        },
+        {
+          key: "uniquePrompts",
+          label: "Unique prompts",
+          hint: "Distinct questions — repeats of the same query count once.",
+          scroll: "#newReturningPanel",
+          icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`,
+        },
+        {
+          key: "searchesPerVisitor",
+          label: "Searches / visitor",
+          hint: "Average prompts per unique visitor. Requires the latest embed script.",
+          scroll: "#volumePanel",
+          icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+        },
+        {
+          key: "searchesPerSession",
+          label: "Searches / session",
+          hint: "Average prompts per browsing session on your site.",
+          scroll: "#volumePanel",
+          icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+        },
+      ];
       const ANALYTICS_STALE_MS = 2 * 60 * 1000;
 
       function setSkeleton(id, show) {
@@ -639,6 +671,116 @@
         return `<span class="trend-badge trend-badge--down">↓ ${Math.abs(pct)}%</span>`;
       }
 
+      function previousMetricLabel(m, formatter) {
+        if (!m || m.changePercent == null || m.value === 0) return null;
+        const prev =
+          m.changePercent === 100 && m.value > 0
+            ? 0
+            : m.value / (1 + m.changePercent / 100);
+        if (!Number.isFinite(prev)) return null;
+        return formatter ? formatter(prev) : String(Math.round(prev));
+      }
+
+      function animateStatValue(el, target, formatter) {
+        if (!el) return;
+        const isNumeric =
+          typeof target === "number" && Number.isFinite(target) && formatter !== null;
+        if (!isNumeric) {
+          el.textContent = formatter === null ? String(target) : formatter(target);
+          el.classList.remove("is-counting");
+          return;
+        }
+        el.classList.add("is-counting");
+        const start = performance.now();
+        const from = 0;
+        const duration = 650;
+        const tick = (now) => {
+          const t = Math.min(1, (now - start) / duration);
+          const eased = 1 - (1 - t) ** 3;
+          const current = from + (target - from) * eased;
+          el.textContent = formatter(current);
+          if (t < 1) requestAnimationFrame(tick);
+          else el.classList.remove("is-counting");
+        };
+        requestAnimationFrame(tick);
+      }
+
+      function destroyStatSparklines() {
+        for (const chart of statSparklineInstances) {
+          chart.destroy();
+        }
+        statSparklineInstances = [];
+      }
+
+      function renderStatSparkline(canvas, points, color, index) {
+        if (!canvas || typeof Chart === "undefined") return;
+        const values = (points || []).map((p) => p.count);
+        const hasData = values.some((v) => v > 0);
+        canvas.classList.toggle("is-empty", !hasData);
+        if (!hasData) return;
+
+        const ctx = canvas.getContext("2d");
+        const chart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: values.map((_, i) => i),
+            datasets: [
+              {
+                data: values,
+                borderColor: color,
+                backgroundColor: `${color}22`,
+                fill: true,
+                tension: 0.42,
+                borderWidth: 2,
+                pointRadius: 0,
+                pointHoverRadius: 3,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 700, delay: index * 80 },
+            interaction: { intersect: false, mode: "index" },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                enabled: true,
+                backgroundColor: "#181d26",
+                displayColors: false,
+                padding: 8,
+                cornerRadius: 6,
+                titleFont: { size: 11 },
+                bodyFont: { size: 12, weight: "600" },
+                callbacks: {
+                  title: (items) => {
+                    const i = items[0]?.dataIndex ?? 0;
+                    return points[i]?.date ?? "";
+                  },
+                  label: (item) => `${item.raw}`,
+                },
+              },
+            },
+            scales: {
+              x: { display: false },
+              y: { display: false, min: 0 },
+            },
+          },
+        });
+        statSparklineInstances.push(chart);
+      }
+
+      $("stats").addEventListener("click", (e) => {
+        const card = e.target.closest(".insights-stat-card[data-scroll]");
+        if (!card) return;
+        const target = document.querySelector(card.getAttribute("data-scroll"));
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          target.classList.add("insights-panel--highlight");
+          setTimeout(() => target.classList.remove("insights-panel--highlight"), 1200);
+        }
+      });
+
       function renderVolumeChart(points) {
         const canvas = $("volumeChartCanvas");
         const empty = $("volumeChartEmpty");
@@ -731,23 +873,63 @@
 
       function renderAnalytics(d) {
         $("analyticsMeta").textContent = `${me.siteName || me.siteId} · last ${d.days} days`;
-        const cards = [
-          [d.totalPrompts?.display ?? d.total, "Total prompts", d.totalPrompts, statSurfaces[0]],
-          [d.uniquePrompts?.display ?? "0", "Unique prompts", d.uniquePrompts, statSurfaces[1]],
-          [d.searchesPerVisitor?.display ?? "—", "Searches / visitor", d.searchesPerVisitor, statSurfaces[2]],
-          [d.searchesPerSession?.display ?? "—", "Searches / session", d.searchesPerSession, statSurfaces[3]],
+        const sparklines = d.statSparklines || {};
+        const metrics = [
+          d.totalPrompts,
+          d.uniquePrompts,
+          d.searchesPerVisitor,
+          d.searchesPerSession,
         ];
-        $("stats").innerHTML = cards
-          .map(
-            ([value, label, metric, surface]) =>
-              `<div class="insights-stat-card insights-stat-card--${surface}">
-                <div class="insights-stat-card__label">${esc(label)}</div>
-                <div class="insights-stat-card__value">${esc(String(value))}</div>
-                <div class="insights-stat-card__change">${fmtChange(metric)}</div>
-              </div>`
-          )
+
+        $("stats").innerHTML = statMeta
+          .map((meta, i) => {
+            const m = metrics[i];
+            const surface = statSurfaces[i];
+            const prevLabel = previousMetricLabel(
+              m,
+              i < 2
+                ? (n) => Math.round(n).toLocaleString()
+                : (n) => (Math.round(n * 10) / 10).toFixed(1)
+            );
+            return `<button type="button" class="insights-stat-card insights-stat-card--${surface}" style="--stat-i:${i}" data-stat="${meta.key}" data-scroll="${meta.scroll}" title="${esc(meta.hint)}">
+              <div class="insights-stat-card__shine" aria-hidden="true"></div>
+              <div class="insights-stat-card__top">
+                <span class="insights-stat-card__icon">${meta.icon}</span>
+                <span class="insights-stat-card__label">${esc(meta.label)}</span>
+                <span class="insights-stat-card__info" aria-hidden="true">?</span>
+              </div>
+              <div class="insights-stat-card__value" data-stat-value="${i}">${esc(m?.display ?? "—")}</div>
+              <div class="insights-stat-card__foot">
+                <div class="insights-stat-card__change">${fmtChange(m)}</div>
+                <div class="insights-stat-card__spark">
+                  <canvas class="stat-sparkline" data-spark-index="${i}" aria-hidden="true"></canvas>
+                </div>
+              </div>
+              <div class="insights-stat-card__hover-detail">
+                ${prevLabel ? `<span>Previous period: <strong>${esc(prevLabel)}</strong></span>` : `<span>${esc(meta.hint)}</span>`}
+                <span class="insights-stat-card__cta">Click to explore ↓</span>
+              </div>
+            </button>`;
+          })
           .join("");
 
+        destroyStatSparklines();
+        statMeta.forEach((meta, i) => {
+          const canvas = document.querySelector(`canvas[data-spark-index="${i}"]`);
+          renderStatSparkline(
+            canvas,
+            sparklines[meta.key] || d.volumeOverTime || [],
+            statSparkColors[i],
+            i
+          );
+          const m = metrics[i];
+          const valueEl = document.querySelector(`[data-stat-value="${i}"]`);
+          if (i < 2 && m && typeof m.value === "number") {
+            animateStatValue(valueEl, m.value, (n) => Math.round(n).toLocaleString());
+          } else if (i >= 2 && m && m.display !== "—" && typeof m.value === "number") {
+            animateStatValue(valueEl, m.value, (n) => (Math.round(n * 10) / 10).toFixed(1));
+          }
+        });
         const nr = d.newVsReturning || { newCount: 0, returningCount: 0, newPercent: 0, returningPercent: 0 };
         const nrTotal = nr.newCount + nr.returningCount;
         $("newReturningBar").innerHTML =
