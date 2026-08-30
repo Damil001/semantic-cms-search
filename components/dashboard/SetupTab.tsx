@@ -130,7 +130,14 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   const loadCollections = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/app/collections", { cache: "no-store" });
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 10_000);
+      const res = await fetch("/api/app/collections", {
+        cache: "no-store",
+        credentials: "same-origin",
+        signal: controller.signal,
+      });
+      window.clearTimeout(timer);
       if (!res.ok) return;
       const data = await res.json();
       const incoming = (data.collections ?? []) as Collection[];

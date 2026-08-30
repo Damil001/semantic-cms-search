@@ -1,14 +1,12 @@
-import { getServiceClient } from "../lib/supabase.js";
-
 import {
   buildContentGaps,
   contentGapsInsight,
   type ContentGapPrompt,
   type ContentGapsSummary,
 } from "./content-gaps.js";
+import { supabaseRestGet } from "../lib/supabase-rest.js";
 
-const MAX_EVENTS = 50000;
-const MAX_HISTORICAL_NORMS = 20000;
+const MAX_EVENTS = 3000;
 const PAGE_SIZE = 1000;
 
 interface SearchEventRow {
@@ -137,44 +135,44 @@ async function fetchEvents(
   since: Date,
   until?: Date
 ): Promise<SearchEventRow[]> {
-  const supabase = getServiceClient();
   const rows: SearchEventRow[] = [];
   let offset = 0;
-  const selectWithVisitors =
-    "query, query_normalized, result_count, created_at, visitor_id, session_id";
-  const selectBasic = "query, query_normalized, result_count, created_at";
-  let select = selectWithVisitors;
   let visitorColumns = true;
 
   while (rows.length < MAX_EVENTS) {
     const limit = Math.min(PAGE_SIZE, MAX_EVENTS - rows.length);
-    let q = supabase
-      .from("search_events")
-      .select(select)
-      .eq("site_id", siteId)
-      .gte("created_at", since.toISOString())
-      .order("created_at", { ascending: true });
+    const select = visitorColumns
+      ? "query,query_normalized,result_count,created_at,visitor_id,session_id"
+      : "query,query_normalized,result_count,created_at";
 
+    let path =
+      `search_events?site_id=eq.${encodeURIComponent(siteId)}` +
+      `&created_at=gte.${encodeURIComponent(since.toISOString())}`;
     if (until) {
-      q = q.lt("created_at", until.toISOString());
+      path += `&created_at=lt.${encodeURIComponent(until.toISOString())}`;
     }
+    path +=
+      `&order=created_at.asc&select=${select}` +
+      `&offset=${offset}&limit=${limit}`;
 
-    const { data, error } = await q.range(offset, offset + limit - 1);
-    if (error) {
-      if (visitorColumns && /visitor_id|session_id/i.test(error.message)) {
+    try {
+      const batch = await supabaseRestGet<SearchEventRow[]>(path, {
+        timeoutMs: 8000,
+      });
+      if (batch.length === 0) break;
+      rows.push(...batch);
+      if (batch.length < limit) break;
+      offset += batch.length;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      if (visitorColumns && /visitor_id|session_id/i.test(message)) {
         visitorColumns = false;
-        select = selectBasic;
         offset = 0;
         rows.length = 0;
         continue;
       }
-      throw new Error(error.message);
+      throw err;
     }
-    const batch = (data ?? []) as unknown as SearchEventRow[];
-    if (batch.length === 0) break;
-    rows.push(...batch);
-    if (batch.length < limit) break;
-    offset += batch.length;
   }
 
   return rows;
@@ -184,28 +182,18 @@ async function fetchHistoricalNorms(
   siteId: string,
   before: Date
 ): Promise<Set<string>> {
-  const supabase = getServiceClient();
   const norms = new Set<string>();
-  let offset = 0;
 
-  while (norms.size < MAX_HISTORICAL_NORMS) {
-    const { data, error } = await supabase
-      .from("search_events")
-      .select("query_normalized")
-      .eq("site_id", siteId)
-      .lt("created_at", before.toISOString())
-      .order("created_at", { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
+  const data = await supabaseRestGet<{ query_normalized: string }[]>(
+    `search_events?site_id=eq.${encodeURIComponent(siteId)}` +
+      `&created_at=lt.${encodeURIComponent(before.toISOString())}` +
+      `&order=created_at.desc&select=query_normalized&limit=1000`,
+    { timeoutMs: 8000 }
+  );
 
-    if (error) throw new Error(error.message);
-    const batch = data ?? [];
-    if (batch.length === 0) break;
-    for (const row of batch) {
-      const norm = String(row.query_normalized ?? "").trim();
-      if (norm) norms.add(norm);
-    }
-    if (batch.length < PAGE_SIZE) break;
-    offset += batch.length;
+  for (const row of data) {
+    const norm = String(row.query_normalized ?? "").trim();
+    if (norm) norms.add(norm);
   }
 
   return norms;

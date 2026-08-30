@@ -9,16 +9,21 @@ import { SetupTab } from "./SetupTab";
 const STALE_MS = 2 * 60 * 1000;
 type Tab = "insights" | "intelligence" | "setup";
 
-async function fetchJson<T>(url: string): Promise<T | null> {
+async function fetchJson<T>(url: string, timeoutMs = 15_000): Promise<T | null> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       cache: "no-store",
       credentials: "same-origin",
+      signal: controller.signal,
     });
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
     return null;
+  } finally {
+    window.clearTimeout(timer);
   }
 }
 
@@ -54,12 +59,18 @@ export function DashboardApp() {
 
       loadPromiseRef.current = (async () => {
         try {
-          const data = await fetchJson<PromptAnalytics>(`/api/app/analytics?days=${days}`);
+          const data = await fetchJson<PromptAnalytics>(
+            `/api/app/analytics?days=${days}`,
+            20_000
+          );
           if (data) {
             analyticsRef.current = data;
             setAnalytics(data);
             setAnalyticsDays(days);
             setFetchedAt(Date.now());
+          } else if (!opts.background) {
+            analyticsRef.current = null;
+            setAnalytics(null);
           }
         } finally {
           setAnalyticsLoading(false);

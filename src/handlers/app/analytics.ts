@@ -27,8 +27,14 @@ export default async function handler(
   const daysRaw = typeof req.query.days === "string" ? req.query.days : "30";
   const days = Math.min(Math.max(Number.parseInt(daysRaw, 10) || 30, 1), 90);
 
+  const timeoutMs = 12_000;
   try {
-    const analytics = await getPromptAnalytics(install.site_id, days);
+    const analytics = await Promise.race([
+      getPromptAnalytics(install.site_id, days),
+      new Promise<ReturnType<typeof emptyPromptAnalytics>>((resolve) =>
+        setTimeout(() => resolve(emptyPromptAnalytics(days)), timeoutMs)
+      ),
+    ]);
     res.status(200).json(analytics);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Analytics failed";
