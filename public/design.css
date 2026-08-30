@@ -836,6 +836,203 @@ select.text-input:focus {
   box-shadow: 0 2px 8px rgba(24, 29, 38, 0.18);
 }
 
+.insights-panel--gaps {
+  border-color: rgba(170, 45, 0, 0.12);
+  background: linear-gradient(180deg, #fffaf7 0%, var(--color-canvas) 120px);
+}
+
+.insights-panel__head--split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.gap-summary-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.gap-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-muted);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-hairline);
+}
+
+.gap-summary-pill strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.gap-summary-pill--alert {
+  background: rgba(170, 45, 0, 0.08);
+  border-color: rgba(170, 45, 0, 0.15);
+  color: #aa2d00;
+}
+
+.gap-summary-pill--alert strong {
+  color: #aa2d00;
+}
+
+.gap-summary-pill--critical {
+  background: rgba(180, 35, 24, 0.08);
+  border-color: rgba(180, 35, 24, 0.15);
+}
+
+.gap-volume-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-surface-soft);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.gap-volume-segment {
+  min-width: 4px;
+  transition: width 0.5s ease;
+}
+
+.gap-volume-segment--none { background: #b42318; }
+.gap-volume-segment--poor { background: #e85d04; }
+.gap-volume-segment--weak { background: #f4d35e; }
+.gap-volume-segment--good { background: #5cb88a; }
+
+.gap-volume-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.gap-volume-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gap-volume-legend__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.gap-volume-legend__dot--none { background: #b42318; }
+.gap-volume-legend__dot--poor { background: #e85d04; }
+.gap-volume-legend__dot--weak { background: #f4d35e; }
+.gap-volume-legend__dot--good { background: #5cb88a; }
+
+.gap-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.gap-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gap-filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+
+.gap-filter-rail {
+  flex-wrap: wrap;
+}
+
+.quality-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.quality-badge--none {
+  background: rgba(180, 35, 24, 0.12);
+  color: #b42318;
+}
+
+.quality-badge--poor {
+  background: rgba(232, 93, 4, 0.12);
+  color: #c44a00;
+}
+
+.quality-badge--weak {
+  background: rgba(244, 211, 94, 0.35);
+  color: #8a6800;
+}
+
+.quality-badge--good {
+  background: rgba(92, 184, 138, 0.15);
+  color: #0d6832;
+}
+
+.opportunity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.opportunity-badge__icon {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.opportunity-badge--critical {
+  background: rgba(180, 35, 24, 0.12);
+  color: #b42318;
+}
+
+.opportunity-badge--high {
+  background: rgba(232, 93, 4, 0.12);
+  color: #c44a00;
+}
+
+.opportunity-badge--medium {
+  background: rgba(24, 29, 38, 0.08);
+  color: var(--color-ink);
+}
+
+.opportunity-badge--low {
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
+}
+
+.data-table--gaps .gap-row--none {
+  background: rgba(180, 35, 24, 0.03);
+}
+
+.data-table--gaps .gap-row--poor {
+  background: rgba(232, 93, 4, 0.03);
+}
+
+.data-table--gaps tbody tr.gap-row:hover {
+  background: rgba(24, 29, 38, 0.04);
+}
+
 .insights-panel {
   background: var(--color-canvas);
   border: 1px solid var(--color-hairline);

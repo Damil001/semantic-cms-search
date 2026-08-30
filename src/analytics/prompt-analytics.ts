@@ -1,5 +1,12 @@
 import { getServiceClient } from "../lib/supabase.js";
 
+import {
+  buildContentGaps,
+  contentGapsInsight,
+  type ContentGapPrompt,
+  type ContentGapsSummary,
+} from "./content-gaps.js";
+
 const MAX_EVENTS = 50000;
 const PAGE_SIZE = 1000;
 
@@ -57,6 +64,9 @@ export interface PromptAnalytics {
   volumeInsight: string;
   popularPrompts: PopularPrompt[];
   trendingPrompts: TrendingPrompt[];
+  contentGaps: ContentGapPrompt[];
+  contentGapsSummary: ContentGapsSummary;
+  contentGapsInsight: string;
   /** Legacy fields for older UI paths */
   total: number;
   zeroResults: number;
@@ -190,11 +200,23 @@ async function fetchHistoricalNorms(
 
 function aggregateByNorm(rows: SearchEventRow[]): Map<
   string,
-  { query: string; count: number; sumResults: number; lastAt: string }
+  {
+    query: string;
+    count: number;
+    sumResults: number;
+    zeroResults: number;
+    lastAt: string;
+  }
 > {
   const byNorm = new Map<
     string,
-    { query: string; count: number; sumResults: number; lastAt: string }
+    {
+      query: string;
+      count: number;
+      sumResults: number;
+      zeroResults: number;
+      lastAt: string;
+    }
   >();
   for (const row of rows) {
     const norm = row.query_normalized;
@@ -204,11 +226,13 @@ function aggregateByNorm(rows: SearchEventRow[]): Map<
         query: row.query,
         count: 1,
         sumResults: row.result_count,
+        zeroResults: row.result_count === 0 ? 1 : 0,
         lastAt: row.created_at,
       });
     } else {
       existing.count += 1;
       existing.sumResults += row.result_count;
+      if (row.result_count === 0) existing.zeroResults += 1;
       if (row.created_at > existing.lastAt) {
         existing.lastAt = row.created_at;
         existing.query = row.query;
@@ -425,6 +449,11 @@ export async function getPromptAnalytics(
     .sort((a, b) => b.growthPercent - a.growthPercent)
     .slice(0, 10);
 
+  const { gaps: contentGaps, summary: contentGapsSummary } = buildContentGaps(
+    [...currentNorms.entries()].map(([norm, agg]) => ({ norm, ...agg })),
+    previousNormCounts
+  );
+
   let zeroResults = 0;
   let moreThanFive = 0;
   for (const row of currentRows) {
@@ -485,6 +514,9 @@ export async function getPromptAnalytics(
     volumeInsight,
     popularPrompts,
     trendingPrompts,
+    contentGaps,
+    contentGapsSummary,
+    contentGapsInsight: contentGapsInsight(contentGapsSummary, days),
     total: currentTotal,
     zeroResults,
     moreThanFive,

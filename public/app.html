@@ -147,6 +147,56 @@
           <div id="insightsData">
           <div class="prompt-stat-grid mb-lg" id="stats"></div>
 
+          <div class="insights-panel insights-panel--gaps mb-lg" id="contentGapsPanel">
+            <div class="insights-panel__head insights-panel__head--split">
+              <div>
+                <h3 class="title-sm">Questions your website can't answer</h3>
+                <p class="caption text-muted">Prompts where search returns none, weak, or poor matches — your content to-do list</p>
+              </div>
+              <div class="gap-summary-pills" id="contentGapsSummary"></div>
+            </div>
+
+            <div class="gap-volume-bar mb-md" id="contentGapsBar" aria-hidden="true"></div>
+            <div class="gap-volume-legend mb-md" id="contentGapsLegend"></div>
+
+            <div class="gap-filters mb-md">
+              <div class="gap-filter-group">
+                <span class="gap-filter-label">Result quality</span>
+                <div class="timeframe-rail gap-filter-rail" id="contentGapQualityFilter">
+                  <button type="button" class="active" data-quality="gaps">All gaps</button>
+                  <button type="button" data-quality="none">None</button>
+                  <button type="button" data-quality="poor">Poor</button>
+                  <button type="button" data-quality="weak">Weak</button>
+                  <button type="button" data-quality="all">Show all</button>
+                </div>
+              </div>
+              <div class="gap-filter-group">
+                <span class="gap-filter-label">Opportunity</span>
+                <div class="timeframe-rail gap-filter-rail" id="contentGapOpportunityFilter">
+                  <button type="button" class="active" data-opportunity="all">All</button>
+                  <button type="button" data-opportunity="critical">Critical</button>
+                  <button type="button" data-opportunity="high">High+</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="insights-table-wrap">
+              <table class="data-table data-table--insights data-table--gaps">
+                <thead>
+                  <tr>
+                    <th>Prompt</th>
+                    <th>Searches</th>
+                    <th>Result quality</th>
+                    <th>Avg results</th>
+                    <th>Opportunity</th>
+                  </tr>
+                </thead>
+                <tbody id="contentGapsTable"></tbody>
+              </table>
+            </div>
+            <p class="insights-callout" id="contentGapsInsight"></p>
+          </div>
+
           <div class="insights-panel mb-lg" id="newReturningPanel">
             <div class="insights-panel__head">
               <h3 class="title-sm">New vs. returning</h3>
@@ -387,6 +437,8 @@
       let analyticsClockTimer = null;
       let activeTab = "insights";
       let collectionsLoaded = false;
+      let contentGapQualityFilter = "gaps";
+      let contentGapOpportunityFilter = "all";
       let analyticsDays = 30;
       let volumeChartInstance = null;
       let statSparklineInstances = [];
@@ -397,7 +449,7 @@
           key: "totalPrompts",
           label: "Total prompts",
           hint: "Every search submitted through your widget in this period.",
-          scroll: "#volumePanel",
+          scroll: "#contentGapsPanel",
           icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
         },
         {
@@ -663,6 +715,102 @@
       function fmtShortDate(iso) {
         const d = new Date(`${iso}T12:00:00`);
         return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      }
+
+      function qualityBadge(quality) {
+        const labels = { none: "None", poor: "Poor", weak: "Weak", good: "Good" };
+        return `<span class="quality-badge quality-badge--${quality}">${labels[quality] || quality}</span>`;
+      }
+
+      function opportunityBadge(level) {
+        const map = {
+          critical: { label: "Critical", icon: "🔥🔥" },
+          high: { label: "High", icon: "🔥" },
+          medium: { label: "Medium", icon: "↑" },
+          low: { label: "Low", icon: "—" },
+        };
+        const m = map[level] || map.low;
+        return `<span class="opportunity-badge opportunity-badge--${level}"><span class="opportunity-badge__icon">${m.icon}</span>${m.label}</span>`;
+      }
+
+      function filterContentGaps(gaps) {
+        return (gaps || []).filter((g) => {
+          if (contentGapQualityFilter === "gaps") {
+            if (g.resultQuality === "good") return false;
+          } else if (contentGapQualityFilter !== "all") {
+            if (g.resultQuality !== contentGapQualityFilter) return false;
+          }
+          if (contentGapOpportunityFilter === "critical") {
+            if (g.opportunity !== "critical") return false;
+          } else if (contentGapOpportunityFilter === "high") {
+            if (g.opportunity !== "critical" && g.opportunity !== "high") return false;
+          }
+          return true;
+        });
+      }
+
+      function renderContentGaps(d) {
+        const summary = d.contentGapsSummary;
+        const gaps = filterContentGaps(d.contentGaps || []);
+        const totalVol = summary
+          ? Object.values(summary.searchVolumeByQuality || {}).reduce((a, b) => a + b, 0)
+          : 0;
+
+        if (summary && totalVol > 0) {
+          const segments = [
+            { key: "none", label: "None", class: "none" },
+            { key: "poor", label: "Poor", class: "poor" },
+            { key: "weak", label: "Weak", class: "weak" },
+            { key: "good", label: "Good", class: "good" },
+          ];
+          $("contentGapsBar").innerHTML = segments
+            .map(({ key, class: cls }) => {
+              const vol = summary.searchVolumeByQuality[key] || 0;
+              const pct = totalVol > 0 ? (vol / totalVol) * 100 : 0;
+              return pct > 0
+                ? `<div class="gap-volume-segment gap-volume-segment--${cls}" style="width:${pct}%" title="${vol} searches"></div>`
+                : "";
+            })
+            .join("");
+          $("contentGapsLegend").innerHTML = segments
+            .map(({ key, label, class: cls }) => {
+              const vol = summary.searchVolumeByQuality[key] || 0;
+              return vol > 0
+                ? `<span class="gap-volume-legend__item"><i class="gap-volume-legend__dot gap-volume-legend__dot--${cls}"></i>${label} (${vol.toLocaleString()})</span>`
+                : "";
+            })
+            .join("");
+          $("contentGapsSummary").innerHTML = `
+            <span class="gap-summary-pill gap-summary-pill--alert"><strong>${summary.unansweredSearchCount.toLocaleString()}</strong> gap searches</span>
+            <span class="gap-summary-pill"><strong>${summary.gapPromptCount}</strong> prompts</span>
+            ${summary.criticalCount > 0 ? `<span class="gap-summary-pill gap-summary-pill--critical"><strong>${summary.criticalCount}</strong> critical</span>` : ""}`;
+        } else {
+          $("contentGapsBar").innerHTML = "";
+          $("contentGapsLegend").innerHTML = "";
+          $("contentGapsSummary").innerHTML = "";
+        }
+
+        $("contentGapsTable").innerHTML = gaps.length
+          ? gaps
+              .slice(0, 50)
+              .map(
+                (g) =>
+                  `<tr class="gap-row gap-row--${g.resultQuality}">
+                    <td class="prompt-cell">${esc(g.query)}</td>
+                    <td><strong>${g.count.toLocaleString()}</strong></td>
+                    <td>${qualityBadge(g.resultQuality)}</td>
+                    <td class="text-muted">${g.avgResultCount}</td>
+                    <td>${opportunityBadge(g.opportunity)}</td>
+                  </tr>`
+              )
+              .join("")
+          : `<tr><td colspan="5" class="table-empty">${
+              (d.contentGaps || []).length
+                ? "No prompts match these filters."
+                : "No gap data yet — searches with weak results will appear here."
+            }</td></tr>`;
+
+        $("contentGapsInsight").textContent = d.contentGapsInsight || "";
       }
 
       function trendBadge(pct) {
@@ -948,6 +1096,8 @@
         renderVolumeChart(d.volumeOverTime || []);
         $("volumeInsight").textContent = d.volumeInsight || "";
 
+        renderContentGaps(d);
+
         $("popularPrompts").innerHTML = (d.popularPrompts || []).length
           ? (d.popularPrompts || [])
               .map(
@@ -1108,6 +1258,26 @@
       }
 
       $("analyzeBtn").addEventListener("click", runContentAnalysis);
+
+      $("contentGapQualityFilter").addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-quality]");
+        if (!btn) return;
+        contentGapQualityFilter = btn.getAttribute("data-quality");
+        document.querySelectorAll("#contentGapQualityFilter button").forEach((b) => {
+          b.classList.toggle("active", b === btn);
+        });
+        if (analyticsCache) renderContentGaps(analyticsCache);
+      });
+
+      $("contentGapOpportunityFilter").addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-opportunity]");
+        if (!btn) return;
+        contentGapOpportunityFilter = btn.getAttribute("data-opportunity");
+        document.querySelectorAll("#contentGapOpportunityFilter button").forEach((b) => {
+          b.classList.toggle("active", b === btn);
+        });
+        if (analyticsCache) renderContentGaps(analyticsCache);
+      });
 
       $("timeframeRail").addEventListener("click", (e) => {
         const btn = e.target.closest("button[data-days]");
