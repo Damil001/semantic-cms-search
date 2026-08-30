@@ -291,129 +291,184 @@
         </section>
 
         <section id="tab-intelligence" class="hidden">
-          <div class="hero-card-dark mb-lg">
-            <h2 class="title-lg mb-md">Content intelligence</h2>
-            <p class="body-md mb-lg" style="color: rgba(255,255,255,0.85); margin-bottom: 24px; max-width: 56ch">
-              Analyze up to 15,000 past searches to uncover topic trends, content gaps, and marketing ideas for your team.
-            </p>
-            <button type="button" class="btn btn-secondary-on-dark" id="analyzeBtn">Analyze search trends</button>
-            <p class="status-line mt-md" id="analyzeStatus" style="color: rgba(255,255,255,0.75)"></p>
+          <div class="insights-toolbar">
+            <div>
+              <h2 class="title-sm" style="margin:0 0 4px">Content intelligence</h2>
+              <p class="caption text-muted" style="margin:0">AI analysis of up to 15,000 searches — topic trends, gaps, and content ideas</p>
+              <p class="caption text-muted" id="analyzeStatus" style="margin:4px 0 0"></p>
+            </div>
+            <div class="insights-toolbar__actions">
+              <button type="button" class="btn btn-primary" id="analyzeBtn">Analyze search trends</button>
+            </div>
           </div>
 
-          <div id="contentInsightsEmpty" class="feature-card mb-lg">
-            <h3 class="title-sm mb-md">Ready when you are</h3>
-            <p class="body-md text-muted" style="margin:0">
-              Run an analysis to see what visitors are searching for, where content is missing, and what your marketing team should write next.
-            </p>
+          <div id="contentInsightsEmpty" class="insights-panel insights-panel--empty mb-lg">
+            <div class="empty-state">
+              <span class="empty-state__icon" aria-hidden="true">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              </span>
+              <h3 class="title-sm">Ready when you are</h3>
+              <p class="body-md text-muted">Run an analysis to see what visitors are searching for, where content is missing, and what your team should write next.</p>
+            </div>
           </div>
 
           <div id="contentInsightsSkeleton" class="hidden">
-            <div class="cream-callout mb-lg skeleton-block">
+            <div class="prompt-stat-grid mb-lg">
+              <div class="skeleton-stat insights-stat-card insights-stat-card--cream"></div>
+              <div class="skeleton-stat insights-stat-card insights-stat-card--mint"></div>
+              <div class="skeleton-stat insights-stat-card insights-stat-card--peach"></div>
+            </div>
+            <div class="insights-panel mb-lg skeleton-block">
               <div class="skeleton-line skeleton-line--title mb-md"></div>
               <div class="skeleton-line" style="width:95%"></div>
               <div class="skeleton-line mt-sm" style="width:80%"></div>
             </div>
-            <div class="feature-card mb-lg">
+            <div class="insights-panel mb-lg skeleton-block">
               <div class="skeleton-line skeleton-line--title mb-md"></div>
               <div class="skeleton-insights-grid">
-                <div class="skeleton-block skeleton-insight-card">
-                  <div class="skeleton-line" style="width:40%"></div>
-                  <div class="skeleton-line"></div>
-                  <div class="skeleton-line"></div>
-                </div>
-                <div class="skeleton-block skeleton-insight-card">
-                  <div class="skeleton-line" style="width:35%"></div>
-                  <div class="skeleton-line"></div>
-                  <div class="skeleton-line"></div>
-                </div>
-              </div>
-            </div>
-            <div class="feature-card skeleton-block">
-              <div class="skeleton-line skeleton-line--title mb-md"></div>
-              <div class="skeleton-table-row skeleton-table-row--3">
-                <div class="skeleton-line skeleton-line--cell"></div>
-                <div class="skeleton-line skeleton-line--cell-short"></div>
-                <div class="skeleton-line skeleton-line--cell"></div>
+                <div class="skeleton-block skeleton-insight-card"></div>
+                <div class="skeleton-block skeleton-insight-card"></div>
               </div>
             </div>
           </div>
 
           <div id="contentInsightsBody" class="hidden">
-            <div class="cream-callout mb-lg">
-              <h3 class="title-sm mb-md">Summary</h3>
+            <div class="prompt-stat-grid mb-lg" id="intelligenceStats"></div>
+
+            <div class="insights-panel mb-lg">
+              <div class="insights-panel__head">
+                <h3 class="title-sm">Executive summary</h3>
+                <p class="caption text-muted">What your search data means for content and marketing</p>
+              </div>
               <p class="body-md" id="insightSummary"></p>
-              <p class="caption mt-sm" id="insightMeta"></p>
+              <p class="caption text-muted mt-sm" id="insightMeta"></p>
             </div>
 
-            <div class="feature-card mb-lg">
-              <h3 class="title-sm mb-md">Topic trends</h3>
-              <div id="insightTrends"></div>
+            <div class="insights-panel mb-lg">
+              <div class="insights-panel__head">
+                <h3 class="title-sm">Topic trends</h3>
+                <p class="caption text-muted">Recurring themes clustered from real prompts</p>
+              </div>
+              <div id="insightTrends" class="intelligence-trends"></div>
             </div>
 
-            <div class="feature-card mb-lg">
-              <h3 class="title-sm mb-md">Content gaps</h3>
-              <p class="body-md text-muted mb-md">Searches with weak or no results — opportunities to create new content.</p>
-              <div id="insightGaps"></div>
+            <div class="insights-panel mb-lg">
+              <div class="insights-panel__head">
+                <h3 class="title-sm">Content gaps</h3>
+                <p class="caption text-muted">High-intent searches your site doesn't answer well yet</p>
+              </div>
+              <div class="insights-table-wrap">
+                <div id="insightGaps"></div>
+              </div>
             </div>
 
-            <div class="signature-coral-card">
-              <h3 class="title-sm mb-md" style="color:#fff">Marketing suggestions</h3>
-              <p class="body-md mb-md" style="color:rgba(255,255,255,0.9)">Recommended pieces your team could write next.</p>
-              <div id="insightSuggestions"></div>
+            <div class="insights-panel insights-panel--suggestions mb-lg">
+              <div class="insights-panel__head">
+                <h3 class="title-sm">Marketing suggestions</h3>
+                <p class="caption text-muted">Recommended pieces your team could publish next</p>
+              </div>
+              <div id="insightSuggestions" class="suggestion-list"></div>
             </div>
           </div>
         </section>
 
         <section id="tab-setup" class="hidden">
           <div id="setupSkeleton">
-            <div class="cream-callout mb-lg skeleton-block">
+            <div class="insights-toolbar">
+              <div class="skeleton-line skeleton-line--title"></div>
+              <div class="skeleton-line skeleton-line--caption mt-sm"></div>
+            </div>
+            <div class="setup-steps-grid mb-lg">
+              <div class="skeleton-stat insights-stat-card insights-stat-card--mint"></div>
+              <div class="skeleton-stat insights-stat-card insights-stat-card--peach"></div>
+              <div class="skeleton-stat insights-stat-card insights-stat-card--mustard"></div>
+            </div>
+            <div class="insights-panel mb-lg skeleton-block">
               <div class="skeleton-line skeleton-line--title mb-md"></div>
               <div class="skeleton-line" style="width:90%"></div>
-              <div class="skeleton-line mt-sm" style="width:75%"></div>
             </div>
-            <div class="feature-card mb-lg skeleton-collection">
+            <div class="insights-panel skeleton-block">
               <div class="skeleton-line skeleton-line--title"></div>
-              <div class="skeleton-line" style="width:60%"></div>
-            </div>
-            <div class="feature-card skeleton-collection">
-              <div class="skeleton-line skeleton-line--title"></div>
-              <div class="skeleton-line" style="width:60%"></div>
             </div>
           </div>
 
           <div id="setupContent" class="hidden">
-          <div class="cream-callout mb-lg">
-            <h3 class="title-sm mb-md">Embed on your site</h3>
-            <p class="body-md mb-md">
-              Search URL: <code id="searchUrl"></code><br />
-              Script: <code id="scriptUrl"></code><br />
-              <code>data-search-site</code>: <code id="siteId"></code><br />
-              <code>data-search-token</code>: <code id="searchToken"></code>
-            </p>
-            <p class="body-md" style="opacity:0.85">
-              Optional: add an empty element with <code>data-search-answer</code> above your results list for the AI intro text.
-              Autocomplete (query suggestions + CMS titles) runs automatically while typing via <code>/suggest</code> — no extra attributes required.
-            </p>
-          </div>
-
-          <div class="feature-card mb-lg">
-            <div class="form-field">
-              <label for="site">Site</label>
-              <select class="text-input" id="site"></select>
+            <div class="insights-toolbar">
+              <div>
+                <h2 class="title-sm" style="margin:0 0 4px">Setup &amp; index</h2>
+                <p class="caption text-muted" id="siteMeta" style="margin:0">Connect collections and embed search on your site</p>
+              </div>
             </div>
-            <p class="status-line" id="siteMeta"></p>
-          </div>
 
-          <div id="collections"></div>
-
-          <div class="feature-card">
-            <div class="btn-row">
-              <button id="save" type="button" class="btn btn-primary">Save mappings</button>
-              <button id="index" type="button" class="btn btn-secondary">Index CMS</button>
-              <button id="reindex" type="button" class="btn btn-secondary">Re-index</button>
+            <div class="setup-steps-grid mb-lg">
+              <div class="setup-step-card setup-step-card--mint">
+                <span class="setup-step-card__num">1</span>
+                <span class="setup-step-card__label">Map collections</span>
+                <span class="setup-step-card__hint">Choose fields to index</span>
+              </div>
+              <div class="setup-step-card setup-step-card--peach">
+                <span class="setup-step-card__num">2</span>
+                <span class="setup-step-card__label">Index CMS</span>
+                <span class="setup-step-card__hint">Build your search index</span>
+              </div>
+              <div class="setup-step-card setup-step-card--mustard">
+                <span class="setup-step-card__num">3</span>
+                <span class="setup-step-card__label">Embed widget</span>
+                <span class="setup-step-card__hint">Add script to Webflow</span>
+              </div>
             </div>
-            <p class="status-line" id="log"></p>
-          </div>
+
+            <div class="insights-panel mb-lg">
+              <div class="insights-panel__head">
+                <h3 class="title-sm">Embed on your site</h3>
+                <p class="caption text-muted">Add the search script to your Webflow project</p>
+              </div>
+              <div class="setup-code-grid">
+                <div class="setup-code-row">
+                  <span class="setup-code-label">Search URL</span>
+                  <code class="setup-code-value" id="searchUrl"></code>
+                </div>
+                <div class="setup-code-row">
+                  <span class="setup-code-label">Script</span>
+                  <code class="setup-code-value" id="scriptUrl"></code>
+                </div>
+                <div class="setup-code-row">
+                  <span class="setup-code-label">data-search-site</span>
+                  <code class="setup-code-value" id="siteId"></code>
+                </div>
+                <div class="setup-code-row">
+                  <span class="setup-code-label">data-search-token</span>
+                  <code class="setup-code-value" id="searchToken"></code>
+                </div>
+              </div>
+              <p class="insights-callout">Optional: add an empty element with <code>data-search-answer</code> above your results list for AI intro text. Autocomplete runs automatically while typing.</p>
+            </div>
+
+            <div class="insights-panel mb-lg">
+              <div class="insights-panel__head">
+                <h3 class="title-sm">Active site</h3>
+                <p class="caption text-muted">Switch between connected Webflow sites</p>
+              </div>
+              <div class="form-field" style="margin:0">
+                <label for="site">Site</label>
+                <select class="text-input" id="site"></select>
+              </div>
+            </div>
+
+            <div id="collections"></div>
+
+            <div class="insights-panel">
+              <div class="insights-panel__head">
+                <h3 class="title-sm">Index &amp; save</h3>
+                <p class="caption text-muted">Save field mappings, then index or re-index CMS content</p>
+              </div>
+              <div class="btn-row">
+                <button id="save" type="button" class="btn btn-primary">Save mappings</button>
+                <button id="index" type="button" class="btn btn-secondary">Index CMS</button>
+                <button id="reindex" type="button" class="btn btn-secondary">Re-index</button>
+              </div>
+              <p class="status-line mt-md" id="log"></p>
+            </div>
           </div>
         </section>
       </div>
@@ -604,8 +659,14 @@
           .map((c, i) => {
             const f = c.fields || [];
             const m = c.mapping || {};
-            return `<div class="feature-card collection-card" data-i="${i}">
-              <h2><input type="checkbox" data-enabled ${c.enabled ? "checked" : ""} /> ${c.name}</h2>
+            return `<div class="insights-panel collection-card mb-lg" data-i="${i}">
+              <div class="insights-panel__head insights-panel__head--split">
+                <h3 class="title-sm" style="margin:0;display:flex;align-items:center;gap:8px">
+                  <input type="checkbox" data-enabled ${c.enabled ? "checked" : ""} />
+                  ${esc(c.name)}
+                </h3>
+                <span class="gap-summary-pill">${c.enabled ? "Enabled" : "Disabled"}</span>
+              </div>
               <div class="row-2">
                 <div class="form-field"><label>Content type</label><input class="text-input" data-type value="${c.contentType || ""}" /></div>
                 <div class="form-field"><label>URL pattern</label><input class="text-input" data-url value="${c.urlPattern || ""}" /></div>
@@ -1179,12 +1240,34 @@
       }
 
       function volumeBadge(vol) {
-        const colors = { high: "#fcab79", medium: "#a8d8c4", low: "#e0e2e6" };
-        const bg = colors[vol] || colors.low;
-        return `<span style="display:inline-block;font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;background:${bg};color:#181d26;text-transform:capitalize">${esc(vol || "low")}</span>`;
+        const cls =
+          vol === "high"
+            ? "trend-badge--up"
+            : vol === "medium"
+              ? "trend-badge--neutral"
+              : "trend-badge--neutral";
+        return `<span class="trend-badge ${cls}">${esc(vol || "low")} volume</span>`;
       }
 
+      const trendSurfaces = ["peach", "mint", "mustard", "cream"];
+
       function renderContentInsights(data) {
+        const stats = [
+          [data.eventsAnalyzed?.toLocaleString() ?? "0", "Searches analyzed", "mint"],
+          [data.uniqueQueries?.toLocaleString() ?? "0", "Unique queries", "peach"],
+          [(data.contentGaps || []).length.toLocaleString(), "Content gaps", "mustard"],
+          [(data.marketingSuggestions || []).length.toLocaleString(), "Suggestions", "cream"],
+        ];
+        $("intelligenceStats").innerHTML = stats
+          .map(
+            ([value, label, surface]) =>
+              `<div class="insights-stat-card insights-stat-card--${surface} insights-stat-card--static">
+                <div class="insights-stat-card__label">${esc(label)}</div>
+                <div class="insights-stat-card__value">${esc(String(value))}</div>
+              </div>`
+          )
+          .join("");
+
         $("insightSummary").textContent = data.summary || "";
         $("insightMeta").textContent =
           `${data.eventsAnalyzed} searches analyzed · ${data.uniqueQueries} unique queries · ${fmtDate(data.analyzedAt)}`;
@@ -1192,45 +1275,45 @@
         $("insightTrends").innerHTML = (data.trends || []).length
           ? (data.trends || [])
               .map(
-                (t) =>
-                  `<div class="demo-grid-card demo-grid-card--soft mb-md">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                (t, i) =>
+                  `<div class="intelligence-trend-card intelligence-trend-card--${trendSurfaces[i % trendSurfaces.length]}">
+                    <div class="intelligence-trend-card__head">
                       <strong class="label-md">${esc(t.topic)}</strong>
                       ${volumeBadge(t.volume)}
                     </div>
-                    <p class="body-md text-muted" style="margin:0 0 8px">${esc(t.description)}</p>
-                    <p class="caption" style="margin:0">Examples: ${(t.exampleQueries || []).map(esc).join(", ")}</p>
+                    <p class="body-md text-muted">${esc(t.description)}</p>
+                    <p class="caption">Examples: ${(t.exampleQueries || []).map(esc).join(", ")}</p>
                   </div>`
               )
               .join("")
-          : `<p class="body-md text-muted">Not enough data to identify trends yet.</p>`;
+          : `<p class="body-md text-muted table-empty">Not enough data to identify trends yet.</p>`;
 
         $("insightGaps").innerHTML = (data.contentGaps || []).length
-          ? `<table class="data-table"><thead><tr><th>Query</th><th>Searches</th><th>Gap</th></tr></thead><tbody>` +
+          ? `<table class="data-table data-table--insights"><thead><tr><th>Query</th><th>Searches</th><th>Gap</th></tr></thead><tbody>` +
             (data.contentGaps || [])
               .map(
                 (g) =>
-                  `<tr><td>${esc(g.query)}</td><td>${g.searches ?? "—"}</td><td>${esc(g.note)}</td></tr>`
+                  `<tr><td class="prompt-cell">${esc(g.query)}</td><td><strong>${g.searches ?? "—"}</strong></td><td>${esc(g.note)}</td></tr>`
               )
               .join("") +
             `</tbody></table>`
-          : `<p class="body-md text-muted">No major content gaps detected.</p>`;
+          : `<p class="body-md text-muted table-empty">No major content gaps detected.</p>`;
 
         $("insightSuggestions").innerHTML = (data.marketingSuggestions || []).length
           ? (data.marketingSuggestions || [])
               .map(
                 (s) =>
-                  `<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:16px;margin-bottom:12px">
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:6px">
-                      <strong style="color:#fff;font-size:16px">${esc(s.title)}</strong>
-                      <span style="font-size:12px;color:rgba(255,255,255,0.75);text-transform:uppercase">${esc(s.format)}</span>
+                  `<div class="suggestion-card">
+                    <div class="suggestion-card__head">
+                      <strong class="label-md">${esc(s.title)}</strong>
+                      <span class="quality-badge quality-badge--weak">${esc(s.format)}</span>
                     </div>
-                    <p class="body-md" style="color:rgba(255,255,255,0.9);margin:0 0 8px">${esc(s.rationale)}</p>
-                    <p class="caption" style="color:rgba(255,255,255,0.7);margin:0">Targets: ${(s.targetQueries || []).map(esc).join(", ")}</p>
+                    <p class="body-md text-muted">${esc(s.rationale)}</p>
+                    <p class="caption">Targets: ${(s.targetQueries || []).map(esc).join(", ")}</p>
                   </div>`
               )
               .join("")
-          : `<p class="body-md" style="color:rgba(255,255,255,0.9)">Run analysis again once you have more search data.</p>`;
+          : `<p class="body-md text-muted table-empty">Run analysis again once you have more search data.</p>`;
       }
 
       async function runContentAnalysis() {
@@ -1323,8 +1406,8 @@
           $("siteId").textContent = me.siteId;
           $("searchToken").textContent = me.searchToken || "(run migration 20240828000005_search_token.sql)";
           $("siteMeta").textContent = me.lastIndexedAt
-            ? `Last indexed ${new Date(me.lastIndexedAt).toLocaleString()}`
-            : "Not indexed yet";
+            ? `${me.siteName || me.siteId} · Last indexed ${new Date(me.lastIndexedAt).toLocaleString()}`
+            : `${me.siteName || me.siteId} · Not indexed yet`;
           $("site").innerHTML = (me.sites || [])
             .map(
               (s) =>
