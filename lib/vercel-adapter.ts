@@ -70,6 +70,17 @@ export async function runVercelHandler(
       return vercelRes;
     },
     getHeader(name: string) {
+      const lower = name.toLowerCase();
+      if (lower === "set-cookie") {
+        const all =
+          typeof headers.getSetCookie === "function" ? headers.getSetCookie() : [];
+        if (all.length === 0) {
+          const single = headers.get("set-cookie");
+          return single ?? undefined;
+        }
+        if (all.length === 1) return all[0];
+        return all;
+      }
       return headers.get(name) ?? undefined;
     },
     redirect(statusOrUrl: number | string, url?: string) {

@@ -1,13 +1,15 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
 import { normalizeSupabaseUrl, getServiceClient } from "../lib/supabase.js";
 import {
   AUTH_ACCESS_COOKIE,
+  AUTH_REFRESH_COOKIE,
+  authCookieOptions,
   readCookie,
   setCookie,
   clearCookie,
-  AUTH_REFRESH_COOKIE,
 } from "./session.js";
 
 function authClient() {
@@ -30,6 +32,16 @@ export function setAuthCookies(
   setCookie(res, AUTH_REFRESH_COOKIE, refreshToken);
 }
 
+export function setAuthCookiesOnResponse(
+  response: NextResponse,
+  accessToken: string,
+  refreshToken: string
+): void {
+  const opts = authCookieOptions();
+  response.cookies.set(AUTH_ACCESS_COOKIE, accessToken, opts);
+  response.cookies.set(AUTH_REFRESH_COOKIE, refreshToken, opts);
+}
+
 export function clearAuthCookies(res: VercelResponse): void {
   clearCookie(res, AUTH_ACCESS_COOKIE);
   clearCookie(res, AUTH_REFRESH_COOKIE);
@@ -37,6 +49,12 @@ export function clearAuthCookies(res: VercelResponse): void {
 
 export async function getAuthUser(req: VercelRequest): Promise<User | null> {
   const token = readCookie(req, AUTH_ACCESS_COOKIE);
+  return getAuthUserFromAccessToken(token);
+}
+
+export async function getAuthUserFromAccessToken(
+  token: string | null | undefined
+): Promise<User | null> {
   if (!token) return null;
 
   const client = authClient();

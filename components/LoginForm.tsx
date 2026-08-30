@@ -11,20 +11,30 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   async function auth(action: "login" | "signup") {
     setError("");
-    const res = await fetch("/api/auth/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, email, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error || "Failed");
-      return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ action, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed");
+        return;
+      }
+      router.replace(next);
+      router.refresh();
+    } catch {
+      setError("Network error — check your connection and try again.");
+    } finally {
+      setSubmitting(false);
     }
-    router.replace(next);
   }
 
   function onSubmit(e: FormEvent) {
@@ -71,15 +81,27 @@ export function LoginForm() {
       </div>
       <div className="form-error">{error}</div>
       <div className="btn-row" style={{ flexDirection: "column", marginTop: 24 }}>
-        <button type="submit" className="btn btn-primary btn-block">
-          Sign in
+        <button
+          type="submit"
+          className={`btn btn-primary btn-block${submitting ? " is-loading" : ""}`}
+          disabled={submitting}
+        >
+          {submitting ? (
+            <>
+              <span className="index-spinner" aria-hidden style={{ marginRight: 8 }} />
+              <span className="btn-label">Signing in…</span>
+            </>
+          ) : (
+            "Sign in"
+          )}
         </button>
         <button
           type="button"
-          className="btn btn-secondary btn-block"
+          className={`btn btn-secondary btn-block${submitting ? " is-loading" : ""}`}
+          disabled={submitting}
           onClick={() => auth("signup")}
         >
-          Create account
+          {submitting ? "Please wait…" : "Create account"}
         </button>
       </div>
     </form>

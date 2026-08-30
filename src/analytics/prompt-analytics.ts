@@ -8,6 +8,7 @@ import {
 } from "./content-gaps.js";
 
 const MAX_EVENTS = 50000;
+const MAX_HISTORICAL_NORMS = 20000;
 const PAGE_SIZE = 1000;
 
 interface SearchEventRow {
@@ -175,7 +176,7 @@ async function fetchHistoricalNorms(
   const norms = new Set<string>();
   let offset = 0;
 
-  while (true) {
+  while (norms.size < MAX_HISTORICAL_NORMS) {
     const { data, error } = await supabase
       .from("search_events")
       .select("query_normalized")

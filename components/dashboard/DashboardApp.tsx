@@ -66,7 +66,7 @@ export function DashboardApp() {
     let cancelled = false;
     (async () => {
       try {
-        const authRes = await fetch("/api/auth/session");
+        const authRes = await fetch("/api/auth/session", { cache: "no-store" });
         const auth = await authRes.json();
         if (!auth.authenticated) {
           router.replace("/login?next=/app");
@@ -74,18 +74,21 @@ export function DashboardApp() {
         }
         if (cancelled) return;
 
-        const meRes = await fetch("/api/app/me");
+        const meRes = await fetch("/api/app/me", { cache: "no-store" });
         const meData = (await meRes.json()) as MeResponse;
         if (cancelled) return;
 
         setMe(meData);
+        setBooting(false);
+
         if (meData.connected) {
-          await loadAnalytics({ days: 30, force: true });
+          void loadAnalytics({ days: 30, force: true });
         }
       } catch {
-        if (!cancelled) router.replace("/login");
-      } finally {
-        if (!cancelled) setBooting(false);
+        if (!cancelled) {
+          setBooting(false);
+          router.replace("/login");
+        }
       }
     })();
     return () => {
@@ -179,13 +182,11 @@ export function DashboardApp() {
       {tab === "insights" && (
         <>
           {analyticsLoading && !analytics ? (
-            <div className="prompt-stat-grid mb-lg">
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className={`skeleton-stat insights-stat-card insights-stat-card--${["peach", "mint", "mustard", "cream"][i]}`}
-                />
-              ))}
+            <div className="insights-panel mb-lg">
+              <div className="index-progress__head" style={{ padding: "8px 0" }}>
+                <span className="index-spinner" aria-hidden />
+                <p className="index-progress__title">Loading search insights…</p>
+              </div>
             </div>
           ) : analytics ? (
             <div id="insightsData" className={syncing ? "is-syncing" : ""}>
@@ -202,7 +203,20 @@ export function DashboardApp() {
                 onRefresh={() => loadAnalytics({ force: true, background: true })}
               />
             </div>
-          ) : null}
+          ) : (
+            <div className="insights-panel insights-panel--empty mb-lg">
+              <p className="body-md text-muted" style={{ margin: 0 }}>
+                Insights could not be loaded. Try refreshing the tab.
+              </p>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm mt-md"
+                onClick={() => loadAnalytics({ force: true })}
+              >
+                Retry
+              </button>
+            </div>
+          )}
         </>
       )}
 

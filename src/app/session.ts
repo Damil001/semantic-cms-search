@@ -61,6 +61,22 @@ export function readCookie(req: VercelRequest, name: string): string | undefined
   return req.cookies?.[name];
 }
 
+export function authCookieOptions(): {
+  httpOnly: boolean;
+  secure: boolean;
+  sameSite: "lax";
+  path: string;
+  maxAge: number;
+} {
+  return {
+    httpOnly: true,
+    secure: Boolean(process.env.VERCEL),
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  };
+}
+
 export async function getInstallForUser(
   req: VercelRequest,
   userId: string
