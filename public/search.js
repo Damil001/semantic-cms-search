@@ -135,6 +135,25 @@
     });
   }
 
+  function randomId() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return "v-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  }
+
+  function storedId(storage, key) {
+    try {
+      var existing = storage.getItem(key);
+      if (existing) return existing;
+      var id = randomId();
+      storage.setItem(key, id);
+      return id;
+    } catch (e) {
+      return randomId();
+    }
+  }
+
   function deriveSuggestEndpoint(searchEndpoint, root) {
     var custom =
       root.getAttribute("data-search-suggest-endpoint") ||
@@ -204,6 +223,8 @@
     }
 
     var suggestEndpoint = deriveSuggestEndpoint(endpoint, root);
+    var visitorId = storedId(localStorage, "cms-search-visitor");
+    var sessionId = storedId(sessionStorage, "cms-search-session");
 
     var input = first(root, [
       "[data-search-input]",
@@ -573,6 +594,8 @@
       url.searchParams.set("limit", "20");
       url.searchParams.set("site", siteId);
       url.searchParams.set("token", searchToken);
+      url.searchParams.set("visitor", visitorId);
+      url.searchParams.set("session", sessionId);
       var types = activeTypes();
       if (types.length) url.searchParams.set("types", types.join(","));
 

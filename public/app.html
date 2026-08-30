@@ -132,36 +132,71 @@
               <p class="caption" id="analyticsMeta" style="margin:0">Last 30 days</p>
               <p class="caption text-muted" id="analyticsUpdated" style="margin:4px 0 0"></p>
             </div>
-            <button type="button" class="btn btn-ghost hidden" id="refreshAnalytics" style="padding:4px 10px;font-size:13px">Refresh</button>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+              <div class="timeframe-rail" id="timeframeRail">
+                <button type="button" class="active" data-days="7">7 days</button>
+                <button type="button" data-days="30">30 days</button>
+                <button type="button" data-days="90">90 days</button>
+              </div>
+              <button type="button" class="btn btn-ghost hidden" id="refreshAnalytics" style="padding:4px 10px;font-size:13px">Refresh</button>
+            </div>
           </div>
 
           <div id="insightsData">
-          <div class="demo-grid mb-lg" id="stats"></div>
+          <div class="prompt-stat-grid mb-lg" id="stats"></div>
 
           <div class="feature-card mb-lg">
-            <h3 class="title-sm mb-md">Top searches</h3>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Query</th>
-                  <th>Volume</th>
-                  <th>Avg results</th>
-                  <th>Last seen</th>
-                </tr>
-              </thead>
-              <tbody id="topQueries"></tbody>
-            </table>
-            <p class="text-warn hidden mt-md" id="noAnalytics">
-              No searches logged yet. Embed search on your site and try a few queries.
-            </p>
+            <h3 class="title-sm mb-md">New vs. returning prompts</h3>
+            <div class="new-returning-bar mb-md" id="newReturningBar"></div>
+            <p class="body-md text-muted" id="newReturningInsight" style="margin:0"></p>
           </div>
 
-          <div class="feature-card">
-            <h3 class="title-sm mb-md">Recent searches</h3>
+          <div class="feature-card mb-lg">
+            <h3 class="title-sm mb-md">Prompt volume over time</h3>
+            <div class="prompt-chart-wrap" id="volumeChart"></div>
+            <p class="body-md text-muted mt-md" id="volumeInsight" style="margin:0"></p>
+          </div>
+
+          <div class="feature-card mb-lg">
+            <h3 class="title-sm mb-md">Most popular prompts</h3>
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Query</th>
+                  <th>Prompt</th>
+                  <th>Volume</th>
+                  <th>% of total</th>
+                  <th>Trend</th>
+                </tr>
+              </thead>
+              <tbody id="popularPrompts"></tbody>
+            </table>
+          </div>
+
+          <div class="feature-card mb-lg">
+            <h3 class="title-sm mb-md">Trending prompts</h3>
+            <p class="caption text-muted mb-md">Fastest growth vs. the previous equivalent period (not the same as highest volume).</p>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Prompt</th>
+                  <th>Volume</th>
+                  <th>Growth</th>
+                </tr>
+              </thead>
+              <tbody id="trendingPrompts"></tbody>
+            </table>
+          </div>
+
+          <p class="text-warn hidden mb-lg" id="noAnalytics">
+            No prompts logged yet. Embed search on your site and try a few queries.
+          </p>
+
+          <div class="feature-card">
+            <h3 class="title-sm mb-md">Recent prompts</h3>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Prompt</th>
                   <th>Results</th>
                   <th>When</th>
                 </tr>
@@ -320,7 +355,8 @@
       let analyticsClockTimer = null;
       let activeTab = "insights";
       let collectionsLoaded = false;
-      const statSurfaces = ["peach", "mint", "mustard"];
+      let analyticsDays = 30;
+      const statSurfaces = ["peach", "mint", "mustard", "peach", "mint", "mustard"];
       const ANALYTICS_STALE_MS = 2 * 60 * 1000;
 
       function setSkeleton(id, show) {
@@ -545,29 +581,99 @@
         log.textContent = `Done. Indexed ${n} items.`;
       }
 
+      function fmtChange(m) {
+        if (!m || m.changePercent == null) return '<span class="metric-change metric-change--muted">— vs prev period</span>';
+        const arrow = m.direction === "up" ? "↑" : m.direction === "down" ? "↓" : "→";
+        const cls =
+          m.direction === "up"
+            ? "metric-change--up"
+            : m.direction === "down"
+              ? "metric-change--down"
+              : "metric-change--muted";
+        return `<span class="metric-change ${cls}">${arrow} ${Math.abs(m.changePercent)}% vs prev period</span>`;
+      }
+
+      function renderVolumeChart(points) {
+        const el = $("volumeChart");
+        if (!points || !points.length) {
+          el.innerHTML = '<p class="body-md text-muted" style="margin:0">No volume data yet.</p>';
+          return;
+        }
+        const max = Math.max(...points.map((p) => p.count), 1);
+        const w = 640;
+        const h = 160;
+        const pad = { l: 8, r: 8, t: 12, b: 24 };
+        const innerW = w - pad.l - pad.r;
+        const innerH = h - pad.t - pad.b;
+        const coords = points.map((p, i) => {
+          const x = pad.l + (points.length <= 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
+          const y = pad.t + innerH - (p.count / max) * innerH;
+          return { x, y, ...p };
+        });
+        const line = coords.map((c) => `${c.x},${c.y}`).join(" ");
+        const area = `${pad.l},${pad.t + innerH} ${line} ${pad.l + innerW},${pad.t + innerH}`;
+        const labels = [coords[0], coords[coords.length - 1]]
+          .filter(Boolean)
+          .map(
+            (c) =>
+              `<text x="${c.x}" y="${h - 4}" text-anchor="${c === coords[0] ? "start" : "end"}" class="prompt-chart-label">${esc(c.date)}</text>`
+          )
+          .join("");
+        el.innerHTML = `<svg class="prompt-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Prompt volume over time">
+          <polygon points="${area}" class="prompt-chart-area" />
+          <polyline points="${line}" class="prompt-chart-line" fill="none" />
+          ${labels}
+        </svg>`;
+      }
+
       function renderAnalytics(d) {
         $("analyticsMeta").textContent = `Last ${d.days} days · ${me.siteName || me.siteId}`;
-        const stats = [
-          [d.total, "Total searches"],
-          [d.zeroResults, "Zero results"],
-          [d.moreThanFive, "More than 5 results"],
+        const cards = [
+          [d.totalPrompts?.display ?? d.total, "Total prompts", d.totalPrompts],
+          [d.uniquePrompts?.display ?? "0", "Unique prompts", d.uniquePrompts],
+          [d.searchesPerVisitor?.display ?? "—", "Searches / visitor", d.searchesPerVisitor],
+          [d.searchesPerSession?.display ?? "—", "Searches / session", d.searchesPerSession],
         ];
-        $("stats").innerHTML = stats
+        $("stats").innerHTML = cards
           .map(
-            ([n, label], i) =>
+            ([value, label, metric], i) =>
               `<div class="demo-grid-card demo-grid-card--${statSurfaces[i]}">
-                <div class="stat-value">${n}</div>
-                <div class="stat-label">${label}</div>
+                <div class="stat-value">${esc(String(value))}</div>
+                <div class="stat-label">${esc(label)}</div>
+                ${fmtChange(metric)}
               </div>`
           )
           .join("");
-        $("noAnalytics").classList.toggle("hidden", d.total > 0);
-        $("topQueries").innerHTML = (d.topQueries || [])
-          .map(
-            (q) =>
-              `<tr><td>${esc(q.query)}</td><td>${q.count}</td><td>${q.avgResultCount}</td><td>${fmtDate(q.lastAt)}</td></tr>`
-          )
-          .join("");
+
+        const nr = d.newVsReturning || { newCount: 0, returningCount: 0, newPercent: 0, returningPercent: 0 };
+        $("newReturningBar").innerHTML = `<div class="new-returning-segment new-returning-segment--new" style="width:${nr.newPercent}%"></div><div class="new-returning-segment new-returning-segment--returning" style="width:${nr.returningPercent}%"></div>`;
+        $("newReturningInsight").textContent =
+          nr.newCount + nr.returningCount > 0
+            ? `${nr.newPercent}% of prompts (${nr.newCount.toLocaleString()}) are new questions not asked before this period. ${nr.returningPercent}% (${nr.returningCount.toLocaleString()}) are returning prompts.`
+            : "No prompt data for this period yet.";
+
+        renderVolumeChart(d.volumeOverTime || []);
+        $("volumeInsight").textContent = d.volumeInsight || "";
+
+        $("popularPrompts").innerHTML = (d.popularPrompts || []).length
+          ? (d.popularPrompts || [])
+              .map(
+                (p) =>
+                  `<tr><td>${esc(p.query)}</td><td>${p.count.toLocaleString()}</td><td>${p.percentOfTotal}%</td><td>${p.trendPercent != null ? (p.trendPercent >= 0 ? "↑" : "↓") + " " + Math.abs(p.trendPercent) + "%" : "—"}</td></tr>`
+              )
+              .join("")
+          : '<tr><td colspan="4" class="text-muted">No popular prompts yet.</td></tr>';
+
+        $("trendingPrompts").innerHTML = (d.trendingPrompts || []).length
+          ? (d.trendingPrompts || [])
+              .map(
+                (p) =>
+                  `<tr><td>${esc(p.query)}</td><td>${p.currentCount.toLocaleString()}</td><td class="metric-change--up">↑ ${p.growthPercent}%</td></tr>`
+              )
+              .join("")
+          : '<tr><td colspan="3" class="text-muted">Not enough repeat growth yet — trending appears when prompts accelerate vs. the previous period.</td></tr>';
+
+        $("noAnalytics").classList.toggle("hidden", (d.total || 0) > 0);
         $("recentQueries").innerHTML = (d.recentQueries || [])
           .map(
             (q) =>
@@ -581,13 +687,14 @@
       async function loadAnalytics(options = {}) {
         const background = options.background === true;
         const force = options.force === true;
+        const days = options.days ?? analyticsDays;
 
         if (analyticsLoadPromise) {
           await analyticsLoadPromise;
           if (!force) return;
         }
 
-        const hasCache = !!analyticsCache;
+        const hasCache = !!analyticsCache && analyticsCache.days === days;
         if (hasCache && !force && !isAnalyticsStale()) {
           renderAnalytics(analyticsCache);
           return;
@@ -602,12 +709,13 @@
 
         analyticsLoadPromise = (async () => {
           try {
-            const res = await fetch("/api/app/analytics?days=30");
+            const res = await fetch(`/api/app/analytics?days=${days}`);
             if (!res.ok) return;
-            const d = await res.json();
-            analyticsCache = d;
+            const data = await res.json();
+            analyticsCache = data;
+            analyticsDays = days;
             analyticsFetchedAt = Date.now();
-            renderAnalytics(d);
+            renderAnalytics(data);
           } finally {
             if (showSkeleton) showInsightsLoading(false);
             setAnalyticsSyncing(false);
@@ -705,6 +813,18 @@
       }
 
       $("analyzeBtn").addEventListener("click", runContentAnalysis);
+
+      $("timeframeRail").addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-days]");
+        if (!btn) return;
+        const days = Number.parseInt(btn.getAttribute("data-days"), 10);
+        if (!Number.isFinite(days) || days === analyticsDays) return;
+        document.querySelectorAll("#timeframeRail button").forEach((b) => {
+          b.classList.toggle("active", b === btn);
+        });
+        analyticsCache = null;
+        loadAnalytics({ days, force: true, showSkeleton: true });
+      });
 
       $("refreshAnalytics").addEventListener("click", () => {
         loadAnalytics({ force: true, background: true });

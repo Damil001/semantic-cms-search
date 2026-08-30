@@ -100,6 +100,10 @@ export default async function handler(
       siteId: auth.siteId,
       query: q.trim(),
       resultCount: results.length,
+      visitorId:
+        typeof req.query.visitor === "string" ? req.query.visitor : undefined,
+      sessionId:
+        typeof req.query.session === "string" ? req.query.session : undefined,
     });
 
     const body: SearchResponse = {

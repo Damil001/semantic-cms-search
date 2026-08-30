@@ -510,6 +510,104 @@ select.text-input:focus {
   margin-top: var(--space-xs);
 }
 
+.prompt-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+
+.metric-change {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: var(--space-xs);
+}
+
+.metric-change--up {
+  color: #0d6832;
+}
+
+.metric-change--down {
+  color: #b42318;
+}
+
+.metric-change--muted {
+  color: var(--color-muted);
+}
+
+.timeframe-rail {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 999px;
+  background: var(--color-canvas);
+}
+
+.timeframe-rail button {
+  border: none;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--color-muted);
+}
+
+.timeframe-rail button.active {
+  background: var(--color-ink);
+  color: #fff;
+}
+
+.new-returning-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-surface-soft);
+}
+
+.new-returning-segment--new {
+  background: var(--color-signature-mint);
+}
+
+.new-returning-segment--returning {
+  background: var(--color-signature-peach);
+}
+
+.prompt-chart-wrap {
+  width: 100%;
+  min-height: 160px;
+}
+
+.prompt-chart {
+  width: 100%;
+  height: 160px;
+  display: block;
+}
+
+.prompt-chart-area {
+  fill: rgba(24, 29, 38, 0.08);
+}
+
+.prompt-chart-line {
+  stroke: var(--color-ink);
+  stroke-width: 2;
+}
+
+.prompt-chart-label {
+  fill: var(--color-muted);
+  font-size: 11px;
+  font-family: var(--font-sans);
+}
+
+#insightsData.is-syncing {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
 /* Tabs */
 
 .tab-rail {
