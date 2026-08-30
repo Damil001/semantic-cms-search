@@ -23,7 +23,18 @@ export default async function handler(
 
   const collections = await listCollections(token, install.site_id);
   const detailed = await Promise.all(
-    collections.map((c) => getCollection(token, c.id).catch(() => c))
+    collections.map(async (listed) => {
+      try {
+        const full = await getCollection(token, listed.id);
+        const fields =
+          full.fields && full.fields.length > 0
+            ? full.fields
+            : listed.fields ?? [];
+        return { ...listed, ...full, fields };
+      } catch {
+        return listed;
+      }
+    })
   );
 
   const supabase = getServiceClient();
@@ -52,5 +63,6 @@ export default async function handler(
     };
   });
 
+  res.setHeader("Cache-Control", "no-store");
   res.status(200).json({ collections: payload, origin });
 }

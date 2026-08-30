@@ -69,27 +69,87 @@ function computeOverallPercent(rows: CollectionIndexRow[]): number | null {
   return hasUnknown && pct < 5 ? null : Math.min(100, Math.round(pct));
 }
 
+function mergeCollectionDrafts(
+  incoming: Collection[],
+  previous: CollectionDraft[]
+): { collections: CollectionDraft[]; newFieldCount: number } {
+  const previousById = new Map(previous.map((c) => [c.collectionId, c]));
+  let newFieldCount = 0;
+
+  const collections = incoming.map((c) => {
+    const local = previousById.get(c.collectionId);
+    const previousSlugs = new Set((local?.fields ?? []).map((f) => f.slug));
+    for (const field of c.fields ?? []) {
+      if (!previousSlugs.has(field.slug)) newFieldCount += 1;
+    }
+
+    return {
+      ...c,
+      enabled: local?.enabled ?? c.enabled,
+      contentType: local?.contentType ?? c.contentType,
+      urlPattern: local?.urlPattern ?? c.urlPattern,
+      fields: c.fields ?? [],
+      mapping: local?.mapping ?? { ...c.mapping },
+    };
+  });
+
+  return { collections, newFieldCount };
+}
+
 export function SetupTab({ me, onSiteMetaChange }: Props) {
   const [collections, setCollections] = useState<CollectionDraft[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshNotice, setRefreshNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [activeAction, setActiveAction] = useState<"save" | "index" | "reindex" | null>(null);
   const [indexProgress, setIndexProgress] = useState<IndexProgress | null>(null);
 
-  const loadCollections = useCallback(async () => {
-    setLoading(true);
+  const loadCollections = useCallback(async (options?: { merge?: boolean }) => {
+    const merge = options?.merge ?? false;
+    if (merge) {
+      setRefreshing(true);
+      setRefreshNotice(null);
+    } else {
+      setLoading(true);
+    }
+
     try {
-      const res = await fetch("/api/app/collections");
-      if (!res.ok) return;
+      const res = await fetch("/api/app/collections", { cache: "no-store" });
+      if (!res.ok) {
+        if (merge) {
+          setRefreshNotice("Could not refresh fields from Webflow. Try again.");
+        }
+        return;
+      }
       const data = await res.json();
-      setCollections(
-        (data.collections ?? []).map((c: Collection) => ({
-          ...c,
-          mapping: { ...c.mapping },
-        }))
-      );
+      const incoming = (data.collections ?? []) as Collection[];
+
+      if (merge) {
+        let notice = "";
+        setCollections((prev) => {
+          const { collections: merged, newFieldCount } = mergeCollectionDrafts(incoming, prev);
+          notice =
+            newFieldCount > 0
+              ? `Found ${newFieldCount} new CMS field${newFieldCount === 1 ? "" : "s"}. Map them below, then re-index.`
+              : "Field list is up to date with Webflow.";
+          return merged;
+        });
+        setRefreshNotice(notice);
+      } else {
+        setCollections(
+          incoming.map((c) => ({
+            ...c,
+            mapping: { ...c.mapping },
+          }))
+        );
+      }
     } finally {
-      setLoading(false);
+      if (merge) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -312,7 +372,36 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             {siteMetaText}
           </p>
         </div>
+        <div className="insights-toolbar__actions">
+          <button
+            type="button"
+            className={`btn btn-secondary btn-sm${refreshing ? " is-loading" : ""}`}
+            disabled={loading || refreshing || busy}
+            onClick={() => loadCollections({ merge: true })}
+          >
+            {refreshing ? (
+              <>
+                <span className="index-spinner" aria-hidden style={{ marginRight: 8 }} />
+                <span className="btn-label">Refreshing…</span>
+              </>
+            ) : (
+              "Refresh fields"
+            )}
+          </button>
+        </div>
       </div>
+
+      {refreshNotice && (
+        <p className={`setup-refresh-notice${refreshNotice.includes("Could not") ? " setup-refresh-notice--error" : ""}`}>
+          {refreshNotice}
+        </p>
+      )}
+
+      <p className="caption text-muted mb-lg" style={{ marginTop: refreshNotice ? undefined : 0 }}>
+        Field dropdowns load from Webflow when you open this page. After adding or renaming CMS fields, click{" "}
+        <strong>Refresh fields</strong> — then map searchable content to <strong>Body</strong> (embedded for search) or{" "}
+        <strong>Excerpt</strong>, save, and re-index.
+      </p>
 
       <div className="setup-steps-grid mb-lg">
         <div className="setup-step-card setup-step-card--mint">
@@ -395,7 +484,12 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                 />
                 {c.name}
               </h3>
-              <span className="gap-summary-pill">{c.enabled ? "Enabled" : "Disabled"}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span className="gap-summary-pill">
+                  {(c.fields ?? []).length} field{(c.fields ?? []).length === 1 ? "" : "s"}
+                </span>
+                <span className="gap-summary-pill">{c.enabled ? "Enabled" : "Disabled"}</span>
+              </div>
             </div>
             <div className="row-2">
               <div className="form-field">

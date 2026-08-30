@@ -1354,6 +1354,26 @@ select.text-input:focus {
   opacity: 0.85;
 }
 
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.setup-refresh-notice {
+  margin: calc(-1 * var(--space-sm)) 0 var(--space-lg);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--color-ink);
+  background: linear-gradient(155deg, rgba(168, 216, 196, 0.35) 0%, rgba(255, 255, 255, 0.92) 100%);
+  border: 1px solid rgba(107, 184, 154, 0.35);
+}
+
+.setup-refresh-notice--error {
+  background: linear-gradient(155deg, rgba(252, 171, 121, 0.25) 0%, rgba(255, 255, 255, 0.92) 100%);
+  border-color: rgba(232, 120, 90, 0.35);
+}
+
 .setup-code-grid {
   display: grid;
   gap: var(--space-sm);
