@@ -277,11 +277,22 @@ export function DashboardApp() {
         </>
       )}
 
-      {tab === "intelligence" && me && <IntelligenceTab />}
-
-      {tab === "aeo" && me && <AeoTab />}
-
-      {tab === "setup" && me && <SetupTab me={me} onSiteMetaChange={() => {}} />}
+      {/* Keep report tabs mounted so in-memory state survives toggles; server also persists. */}
+      {me && (
+        <div hidden={tab !== "intelligence"}>
+          <IntelligenceTab />
+        </div>
+      )}
+      {me && (
+        <div hidden={tab !== "aeo"}>
+          <AeoTab />
+        </div>
+      )}
+      {me && (
+        <div hidden={tab !== "setup"}>
+          <SetupTab me={me} onSiteMetaChange={() => {}} />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { AeoBrief, AeoPageScore, AeoReport } from "@/lib/types";
 import { fmtDate } from "@/lib/format";
 
@@ -59,14 +59,45 @@ function BriefCard({ brief }: { brief: AeoBrief }) {
 export function AeoTab() {
   const [days, setDays] = useState(30);
   const [loading, setLoading] = useState(false);
+  const [booting, setBooting] = useState(true);
   const [error, setError] = useState("");
   const [data, setData] = useState<AeoReport | null>(null);
 
-  const run = useCallback(async (d: number) => {
+  const loadCached = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/app/aeo?days=30`, {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (!res.ok) return;
+      const json = (await res.json()) as AeoReport & {
+        cached?: boolean;
+        savedAt?: string;
+        error?: string;
+      };
+      if (json.error) return;
+      if (json.stats) {
+        setData(json);
+        if (json.days) setDays(json.days);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setBooting(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadCached();
+  }, [loadCached]);
+
+  const run = useCallback(async (d: number, refresh: boolean) => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/app/aeo?days=${d}`, {
+      const qs = new URLSearchParams({ days: String(d) });
+      if (refresh) qs.set("refresh", "1");
+      const res = await fetch(`/api/app/aeo?${qs}`, {
         cache: "no-store",
         credentials: "same-origin",
       });
@@ -76,7 +107,6 @@ export function AeoTab() {
       setDays(d);
     } catch (err) {
       setError(err instanceof Error ? err.message : "AEO analysis failed");
-      setData(null);
     } finally {
       setLoading(false);
     }
@@ -94,7 +124,8 @@ export function AeoTab() {
           </p>
           {data && (
             <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
-              Last run {fmtDate(data.analyzedAt)} · last {data.days} days of search gaps
+              Saved report from {fmtDate(data.analyzedAt)} · last {data.days} days of search gaps.
+              Re-run anytime for new findings.
             </p>
           )}
         </div>
@@ -105,8 +136,8 @@ export function AeoTab() {
                 key={d}
                 type="button"
                 className={days === d ? "active" : ""}
-                disabled={loading}
-                onClick={() => run(d)}
+                disabled={loading || booting}
+                onClick={() => run(d, true)}
               >
                 {d} days
               </button>
@@ -115,10 +146,14 @@ export function AeoTab() {
           <button
             type="button"
             className="btn btn-primary"
-            disabled={loading}
-            onClick={() => run(days)}
+            disabled={loading || booting}
+            onClick={() => run(days, true)}
           >
-            {loading ? "Analyzing…" : data ? "Refresh AEO" : "Run AEO analysis"}
+            {loading
+              ? "Analyzing…"
+              : data
+                ? "Re-run AEO"
+                : "Run AEO analysis"}
           </button>
         </div>
       </div>
@@ -129,7 +164,7 @@ export function AeoTab() {
         </p>
       )}
 
-      {loading && (
+      {(loading || booting) && !data && (
         <div className="prompt-stat-grid mb-lg">
           {[0, 1, 2, 3].map((i) => (
             <div
@@ -142,23 +177,33 @@ export function AeoTab() {
         </div>
       )}
 
-      {!loading && !data && !error && (
+      {loading && data && (
+        <p className="insights-callout mb-lg">
+          Refreshing AEO report… previous results stay visible until the new run finishes.
+        </p>
+      )}
+
+      {!loading && !booting && !data && !error && (
         <div className="insights-panel insights-panel--empty mb-lg">
           <div className="empty-state">
             <h2 className="title-lg">Draft AEO helper</h2>
             <p className="body-md text-muted">
               Runs answer-readiness scores on your indexed CMS pages and builds briefs from
-              on-site questions that currently get weak or zero results. This is a first draft for
-              testing — not a guarantee of ChatGPT citations.
+              on-site questions that currently get weak or zero results. Reports are saved so they
+              stay after you switch tabs.
             </p>
-            <button type="button" className="btn btn-primary mt-md" onClick={() => run(30)}>
+            <button
+              type="button"
+              className="btn btn-primary mt-md"
+              onClick={() => run(30, true)}
+            >
               Run AEO analysis
             </button>
           </div>
         </div>
       )}
 
-      {data && !loading && (
+      {data && (
         <>
           <p className="body-md mb-lg" style={{ maxWidth: "62ch" }}>
             {data.summary}

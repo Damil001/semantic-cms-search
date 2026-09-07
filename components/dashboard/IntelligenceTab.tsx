@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ContentInsightsResponse } from "@/lib/types";
 import { fmtDate } from "@/lib/format";
 
@@ -19,18 +19,43 @@ function volumeBadge(vol: string) {
 export function IntelligenceTab() {
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
+  const [booting, setBooting] = useState(true);
   const [data, setData] = useState<ContentInsightsResponse | null>(null);
+
+  const loadCached = useCallback(async () => {
+    try {
+      const res = await fetch("/api/app/content-insights", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json?.cached && json.report) {
+        setData(json.report as ContentInsightsResponse);
+        setStatus(
+          `Saved report from ${fmtDate(String(json.savedAt ?? json.report.analyzedAt))}. Re-run anytime for new findings.`
+        );
+      }
+    } catch {
+      /* ignore cache miss */
+    } finally {
+      setBooting(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadCached();
+  }, [loadCached]);
 
   async function runAnalysis() {
     setLoading(true);
     setStatus("Analyzing up to 15,000 past searches… this may take 30–60 seconds.");
-    setData(null);
     try {
       const res = await fetch("/api/app/content-insights", { method: "POST" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Analysis failed");
       setData(json);
-      setStatus("Analysis complete.");
+      setStatus("Report saved. You can leave this tab and come back anytime.");
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Analysis failed");
     } finally {
@@ -58,15 +83,19 @@ export function IntelligenceTab() {
           <button
             type="button"
             className="btn btn-primary"
-            disabled={loading}
+            disabled={loading || booting}
             onClick={runAnalysis}
           >
-            {loading ? "Analyzing…" : "Analyze search trends"}
+            {loading
+              ? "Analyzing…"
+              : data
+                ? "Re-run analysis"
+                : "Analyze search trends"}
           </button>
         </div>
       </div>
 
-      {loading && (
+      {(loading || booting) && !data && (
         <div className="prompt-stat-grid mb-lg">
           {[0, 1, 2].map((i) => (
             <div
@@ -77,7 +106,11 @@ export function IntelligenceTab() {
         </div>
       )}
 
-      {!loading && !data && (
+      {loading && data && (
+        <p className="insights-callout mb-lg">Refreshing report… previous results stay visible until the new run finishes.</p>
+      )}
+
+      {!loading && !booting && !data && (
         <div className="insights-panel insights-panel--empty mb-lg">
           <div className="empty-state">
             <span className="empty-state__icon" aria-hidden="true">
@@ -87,13 +120,13 @@ export function IntelligenceTab() {
             </span>
             <h3 className="title-sm">Ready when you are</h3>
             <p className="body-md text-muted">
-              Run an analysis to see what visitors are searching for, where content is missing, and what your team should write next.
+              Run an analysis to see what visitors are searching for, where content is missing, and what your team should write next. Reports are saved to your site so they stay after you switch tabs.
             </p>
           </div>
         </div>
       )}
 
-      {data && !loading && (
+      {data && (
         <>
           <div className="prompt-stat-grid mb-lg">
             {[
