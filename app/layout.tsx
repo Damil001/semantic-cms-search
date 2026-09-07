@@ -3,8 +3,12 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Search Intelligence",
+  title: {
+    default: "Talaash",
+    template: "%s · Talaash",
+  },
   description: "Semantic search and analytics for Webflow CMS",
+  metadataBase: new URL("https://www.talaash.org"),
 };
 
 export default function RootLayout({
@@ -27,7 +31,7 @@ export default function RootLayout({
               gap: 16,
             }}
           >
-            <span>Search Intelligence</span>
+            <span>Talaash</span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
               <Link href="/install">Install</Link>
               <Link href="/pricing">Pricing</Link>

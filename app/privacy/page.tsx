@@ -1,14 +1,14 @@
 import { LegalPage } from "@/components/LegalPage";
 
 export const metadata = {
-  title: "Privacy Policy · Search Intelligence",
+  title: "Privacy Policy · Talaash",
 };
 
 export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy">
       <p>
-        Search Intelligence (“we”, “our”) provides semantic search and analytics for Webflow CMS
+        Talaash (“we”, “our”) provides semantic search and analytics for Webflow CMS
         sites. This policy explains what we collect and how we use it.
       </p>
 

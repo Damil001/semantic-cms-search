@@ -5,7 +5,7 @@ import { TopNav } from "@/components/TopNav";
 import { getUserFromAccessTokenFast } from "@/src/app/goauth";
 
 export const metadata = {
-  title: "Install · Search Intelligence",
+  title: "Install · Talaash",
   description: "Connect Webflow and set up semantic CMS search",
 };
 
@@ -37,10 +37,10 @@ export default async function InstallPage({
     <>
       <TopNav showAuth={false} />
       <main className="container section--tight" style={{ maxWidth: 640, paddingBottom: 96 }}>
-        <h1 className="title-lg">Install Search Intelligence</h1>
+        <h1 className="title-lg">Install Talaash</h1>
         <p className="body-md text-muted mt-md">
           Connect your Webflow site, index CMS collections, and embed semantic search — the same
-          flow as Finsweet-style attributes, powered by your hosted Search Intelligence app.
+          flow as Finsweet-style attributes, powered by your hosted Talaash app.
         </p>
 
         {denied && (
@@ -50,7 +50,7 @@ export default async function InstallPage({
         )}
 
         <ol className="body-md mt-lg" style={{ paddingLeft: 20, lineHeight: 1.7 }}>
-          <li>Create or sign in to your Search Intelligence account</li>
+          <li>Create or sign in to your Talaash account</li>
           <li>Approve Webflow access (<code>sites:read</code>, <code>cms:read</code>)</li>
           <li>Map collections, index content, copy embed values into Webflow Designer</li>
         </ol>

@@ -1,20 +1,20 @@
 import { LegalPage } from "@/components/LegalPage";
 
 export const metadata = {
-  title: "Terms of Use · Search Intelligence",
+  title: "Terms of Use · Talaash",
 };
 
 export default function TermsPage() {
   return (
     <LegalPage title="Terms of Use">
       <p>
-        By creating an account or installing Search Intelligence for Webflow, you agree to these
+        By creating an account or installing Talaash for Webflow, you agree to these
         terms.
       </p>
 
       <h2 className="title-sm">The service</h2>
       <p>
-        Search Intelligence indexes Webflow CMS content you authorize, provides a search API and
+        Talaash indexes Webflow CMS content you authorize, provides a search API and
         embeddable widget, and shows analytics in a hosted dashboard. Features may change as we
         improve the product.
       </p>

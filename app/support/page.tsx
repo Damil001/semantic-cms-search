@@ -1,14 +1,14 @@
 import { LegalPage } from "@/components/LegalPage";
 
 export const metadata = {
-  title: "Support · Search Intelligence",
+  title: "Support · Talaash",
 };
 
 export default function SupportPage() {
   return (
     <LegalPage title="Support">
       <p>
-        Need help installing Search Intelligence on Webflow, indexing CMS collections, or embedding
+        Need help installing Talaash on Webflow, indexing CMS collections, or embedding
         the search widget?
       </p>
 

@@ -14,7 +14,7 @@ export function LegalPage({
       <TopNav showAuth={false} />
       <main className="container section--tight" style={{ maxWidth: 720, paddingBottom: 96 }}>
         <p className="caption text-muted" style={{ marginBottom: 8 }}>
-          <Link href="/app">Search Intelligence</Link>
+          <Link href="/">Talaash</Link>
         </p>
         <h1 className="title-lg" style={{ marginBottom: 8 }}>
           {title}

@@ -23,8 +23,8 @@ export function TopNav({
 
   return (
     <nav className="top-nav">
-      <Link className="top-nav__brand" href="/app">
-        Search Intelligence
+      <Link className="top-nav__brand" href="/">
+        Talaash
       </Link>
       <div className="top-nav__cluster">
         {showAuth && email ? (
@@ -35,9 +35,14 @@ export function TopNav({
             </button>
           </>
         ) : (
-          <Link className="body-md" href="/pricing">
-            Pricing
-          </Link>
+          <>
+            <Link className="body-md" href="/pricing">
+              Pricing
+            </Link>
+            <Link className="body-md" href="/install">
+              Install
+            </Link>
+          </>
         )}
       </div>
     </nav>
