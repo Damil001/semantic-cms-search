@@ -11,6 +11,9 @@ Production domain: **`https://www.talaash.org`** (also `talaash.org` → www).
 | **App home / Application URL** | `https://www.talaash.org/app` |
 | **Install URL** | `https://www.talaash.org/install` |
 | **Redirect URI** | `https://www.talaash.org/api/oauth/callback` |
+
+**Important:** Use **`www.talaash.org` everywhere** (Webflow Redirect URI, `WEBFLOW_REDIRECT_URI`, and when clicking Install). Mixing `talaash.org` and `www.talaash.org` breaks OAuth cookies and causes callback errors.
+
 | **Scopes** | `sites:read`, `cms:read` |
 | **Privacy Policy** | `https://www.talaash.org/privacy` |
 | **Terms** | `https://www.talaash.org/terms` |

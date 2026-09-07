@@ -13,25 +13,25 @@ export const dynamic = "force-dynamic";
 
 /**
  * Marketplace Install URL should point here:
- *   https://YOUR_PRODUCTION_DOMAIN/install
- *
- * Flow: sign in (if needed) → Webflow OAuth → /app Setup.
+ *   https://www.talaash.org/install
  */
 export default async function InstallPage({
   searchParams,
 }: {
-  searchParams: Promise<{ oauth?: string }>;
+  searchParams: Promise<{ oauth?: string; message?: string }>;
 }) {
   const params = await searchParams;
   const jar = await cookies();
   const token = jar.get("sb_access")?.value;
   const user = token ? await getUserFromAccessTokenFast(token) : null;
 
-  if (user && params.oauth !== "denied") {
+  const oauthStatus = params.oauth;
+  const blockedAuto =
+    oauthStatus === "denied" || oauthStatus === "error";
+
+  if (user && !blockedAuto) {
     redirect("/api/oauth/start");
   }
-
-  const denied = params.oauth === "denied";
 
   return (
     <>
@@ -43,9 +43,16 @@ export default async function InstallPage({
           flow as Finsweet-style attributes, powered by your hosted Talaash app.
         </p>
 
-        {denied && (
+        {oauthStatus === "denied" && (
           <p className="insights-callout mt-md" role="alert">
             Webflow authorization was cancelled. You can try again whenever you&apos;re ready.
+          </p>
+        )}
+
+        {oauthStatus === "error" && (
+          <p className="insights-callout mt-md" role="alert">
+            {params.message ||
+              "Webflow authorization failed. Use https://www.talaash.org (with www), then try again."}
           </p>
         )}
 
@@ -66,6 +73,11 @@ export default async function InstallPage({
             Setup help
           </Link>
         </div>
+
+        <p className="caption text-muted mt-lg">
+          Always install from <strong>https://www.talaash.org</strong> (include{" "}
+          <code>www</code>) so OAuth cookies stay on the same host.
+        </p>
 
         <p className="caption text-muted mt-lg">
           By continuing you agree to our <Link href="/terms">Terms</Link> and{" "}

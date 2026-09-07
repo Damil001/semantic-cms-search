@@ -33,30 +33,16 @@ function cookieSuffix(): string {
 }
 
 export function setCookie(res: VercelResponse, name: string, value: string): void {
-  const prev = res.getHeader("Set-Cookie");
-  const next = `${name}=${value}${cookieSuffix()}`;
-  if (!prev) {
-    res.setHeader("Set-Cookie", next);
-  } else if (Array.isArray(prev)) {
-    res.setHeader("Set-Cookie", [...prev, next]);
-  } else {
-    res.setHeader("Set-Cookie", [String(prev), next]);
-  }
+  // Adapter appends Set-Cookie headers; pass one cookie per call.
+  res.setHeader("Set-Cookie", `${name}=${value}${cookieSuffix()}`);
 }
 
 export function clearCookie(res: VercelResponse, name: string): void {
-  // Must match setCookie attributes (incl. Secure on Vercel) or the browser
-  // keeps the old cookie. Append — never overwrite — so logout can clear several.
   const secure = process.env.VERCEL ? "; Secure" : "";
-  const next = `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
-  const prev = res.getHeader("Set-Cookie");
-  if (!prev) {
-    res.setHeader("Set-Cookie", next);
-  } else if (Array.isArray(prev)) {
-    res.setHeader("Set-Cookie", [...prev, next]);
-  } else {
-    res.setHeader("Set-Cookie", [String(prev), next]);
-  }
+  res.setHeader(
+    "Set-Cookie",
+    `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`
+  );
 }
 
 export function readCookie(req: VercelRequest, name: string): string | undefined {

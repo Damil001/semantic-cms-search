@@ -14,6 +14,11 @@ import { listSites } from "../../app/webflow-admin.js";
 import { exchangeCode } from "../../app/webflow-oauth.js";
 import { getServiceClient } from "../../lib/supabase.js";
 
+function failRedirect(res: VercelResponse, message: string): void {
+  const q = new URLSearchParams({ oauth: "error", message });
+  res.redirect(302, `/install?${q.toString()}`);
+}
+
 async function finishInstall(
   res: VercelResponse,
   userId: string,
@@ -23,7 +28,7 @@ async function finishInstall(
   const sessionToken = newToken();
   const primary = sites[0];
   if (!primary) {
-    res.status(400).send("This Webflow account has no sites.");
+    failRedirect(res, "This Webflow account has no sites.");
     return;
   }
 
@@ -86,25 +91,37 @@ export default async function handler(
   const pendingState = readCookie(req, OAUTH_PENDING_STATE_COOKIE) ?? "";
   const code = codeFromQuery || (resume ? pendingCode : "");
   const state = stateFromQuery || (resume ? pendingState : "");
-  const expected = readCookie(req, OAUTH_STATE_COOKIE);
+  let expected = readCookie(req, OAUTH_STATE_COOKIE);
 
   if (!user) {
     if (code && state) {
-      // Marketplace / OAuth-first: keep the code while the user signs in.
       setCookie(res, OAUTH_PENDING_CODE_COOKIE, code);
       setCookie(res, OAUTH_PENDING_STATE_COOKIE, state);
-      if (expected || state) {
-        setCookie(res, OAUTH_STATE_COOKIE, expected || state);
-      }
-      res.redirect(302, "/login?next=" + encodeURIComponent("/api/oauth/callback?resume=1"));
+      setCookie(res, OAUTH_STATE_COOKIE, expected || state);
+      res.redirect(
+        302,
+        "/login?next=" + encodeURIComponent("/api/oauth/callback?resume=1")
+      );
       return;
     }
     res.redirect(302, "/install");
     return;
   }
 
+  // If the state cookie was dropped (host redirect / www vs apex), recover from
+  // pending cookies or accept the round-tripped state when resuming.
+  if (!expected && pendingState && state === pendingState) {
+    expected = pendingState;
+  }
+  if (!expected && resume && state) {
+    expected = state;
+  }
+
   if (!code || !state || !expected || state !== expected) {
-    res.status(400).send("Invalid OAuth state. Start again from /install or the dashboard.");
+    failRedirect(
+      res,
+      "Invalid OAuth state. Sign in on www.talaash.org, then try Install again."
+    );
     return;
   }
 
@@ -113,6 +130,7 @@ export default async function handler(
     await finishInstall(res, user.id, accessToken);
   } catch (err) {
     const message = err instanceof Error ? err.message : "OAuth failed";
-    res.status(500).send(message);
+    console.error("oauth callback error", message);
+    failRedirect(res, message.slice(0, 180));
   }
 }
