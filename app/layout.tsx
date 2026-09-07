@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import "./globals.css";
 
@@ -9,6 +9,43 @@ export const metadata: Metadata = {
   },
   description: "Semantic search and analytics for Webflow CMS",
   metadataBase: new URL("https://www.talaash.org"),
+  applicationName: "Talaash",
+  icons: {
+    icon: [
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: ["/favicon.png"],
+  },
+  manifest: "/site.webmanifest",
+  openGraph: {
+    title: "Talaash",
+    description: "Semantic search and analytics for Webflow CMS",
+    url: "https://www.talaash.org",
+    siteName: "Talaash",
+    images: [
+      {
+        url: "/brand/talaash-logo.png",
+        width: 512,
+        height: 512,
+        alt: "Talaash",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Talaash",
+    description: "Semantic search and analytics for Webflow CMS",
+    images: ["/brand/talaash-logo.png"],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#181d26",
 };
 
 export default function RootLayout({
