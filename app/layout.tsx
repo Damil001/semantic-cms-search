@@ -28,7 +28,13 @@ export default function RootLayout({
             }}
           >
             <span>Search Intelligence</span>
-            <Link href="/pricing">Pricing</Link>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+              <Link href="/install">Install</Link>
+              <Link href="/pricing">Pricing</Link>
+              <Link href="/support">Support</Link>
+              <Link href="/privacy">Privacy</Link>
+              <Link href="/terms">Terms</Link>
+            </div>
           </div>
         </footer>
       </body>

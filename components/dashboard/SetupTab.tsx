@@ -124,6 +124,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshNotice, setRefreshNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
   const [activeAction, setActiveAction] = useState<"save" | "index" | "reindex" | null>(null);
   const [indexProgress, setIndexProgress] = useState<IndexProgress | null>(null);
 
@@ -505,6 +506,39 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
               </option>
             ))}
           </select>
+        </div>
+        <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={disconnecting}
+            onClick={async () => {
+              if (
+                !window.confirm(
+                  "Disconnect Webflow? This revokes and deletes the stored OAuth token. Search will stop working until you reconnect."
+                )
+              ) {
+                return;
+              }
+              setDisconnecting(true);
+              try {
+                const res = await fetch("/api/app/disconnect", { method: "POST" });
+                if (!res.ok) {
+                  const data = await res.json().catch(() => ({}));
+                  window.alert(data.error || "Disconnect failed");
+                  return;
+                }
+                window.location.href = "/app";
+              } finally {
+                setDisconnecting(false);
+              }
+            }}
+          >
+            {disconnecting ? "Disconnecting…" : "Disconnect Webflow"}
+          </button>
+          <a className="caption text-muted" href="/support">
+            Setup help
+          </a>
         </div>
       </div>
 

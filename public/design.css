@@ -1928,6 +1928,31 @@ code {
   color: var(--color-muted);
 }
 
+.legal-prose h2 {
+  margin: 28px 0 10px;
+}
+
+.legal-prose p,
+.legal-prose li {
+  color: var(--color-ink);
+  line-height: 1.65;
+}
+
+.legal-prose ul,
+.legal-prose ol {
+  padding-left: 1.25rem;
+  margin: 0 0 16px;
+}
+
+.legal-prose li + li {
+  margin-top: 8px;
+}
+
+.legal-prose a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .collection-card h3 {
   font-size: 18px;
   font-weight: 500;

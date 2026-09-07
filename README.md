@@ -36,10 +36,13 @@ Production build: `npm run build && npm start`
 
 This is the Finsweet-like product flow: **you** deploy one backend. **They** install/connect the app, index CMS, and later hit **Re-index**.
 
+**Marketplace:** see [`docs/MARKETPLACE.md`](docs/MARKETPLACE.md) for Install URL, legal pages, and the submission checklist.
+
 1. Create a [Webflow Data Client App](https://developers.webflow.com/) with scopes `sites:read` and `cms:read`.
 2. Redirect URL: `https://YOUR_VERCEL_APP/api/oauth/callback`
 3. Application URL / App home: `https://YOUR_VERCEL_APP/app`
-4. Deploy this repo to Vercel with:
+4. **Install URL (Marketplace):** `https://YOUR_VERCEL_APP/install`
+5. Deploy this repo to Vercel with:
 
 ```
 WEBFLOW_CLIENT_ID=

@@ -46,3 +46,25 @@ export async function exchangeCode(code: string): Promise<string> {
   }
   return data.access_token;
 }
+
+/** Best-effort revoke so tokens are invalidated when the user disconnects. */
+export async function revokeAccessToken(accessToken: string): Promise<void> {
+  const clientId = process.env.WEBFLOW_CLIENT_ID;
+  const clientSecret = process.env.WEBFLOW_CLIENT_SECRET;
+  if (!clientId || !clientSecret || !accessToken) return;
+
+  try {
+    await fetch("https://webflow.com/oauth/revoke_authorization", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        access_token: accessToken,
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch (err) {
+    console.error("Webflow token revoke failed", err);
+  }
+}

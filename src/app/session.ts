@@ -4,6 +4,8 @@ import { getServiceClient } from "../lib/supabase.js";
 
 export const SESSION_COOKIE = "wf_session";
 export const OAUTH_STATE_COOKIE = "wf_oauth_state";
+export const OAUTH_PENDING_CODE_COOKIE = "wf_oauth_pending_code";
+export const OAUTH_PENDING_STATE_COOKIE = "wf_oauth_pending_state";
 export const AUTH_ACCESS_COOKIE = "sb_access";
 export const AUTH_REFRESH_COOKIE = "sb_refresh";
 

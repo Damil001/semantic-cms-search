@@ -10,6 +10,7 @@ type InstallRow = {
   site_name: string | null;
   search_token: string;
   last_indexed_at: string | null;
+  access_token: string | null;
 };
 
 export async function GET(request: NextRequest) {
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const installRes = await fetch(
-      `${url}/rest/v1/webflow_installs?user_id=eq.${encodeURIComponent(user.id)}&order=updated_at.desc&limit=1&select=site_id,site_name,search_token,last_indexed_at`,
+      `${url}/rest/v1/webflow_installs?user_id=eq.${encodeURIComponent(user.id)}&order=updated_at.desc&limit=1&select=site_id,site_name,search_token,last_indexed_at,access_token`,
       {
         headers: {
           apikey: serviceKey,
@@ -53,7 +54,14 @@ export async function GET(request: NextRequest) {
     console.error("me install lookup failed", err);
   }
 
-  if (!install) {
+  const connected = Boolean(
+    install?.site_id &&
+      install.search_token &&
+      install.access_token &&
+      install.access_token.trim()
+  );
+
+  if (!connected || !install) {
     return NextResponse.json({
       authenticated: true,
       email: user.email,

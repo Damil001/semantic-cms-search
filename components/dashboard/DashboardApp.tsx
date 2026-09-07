@@ -88,6 +88,11 @@ export function DashboardApp() {
     let cancelled = false;
 
     (async () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("connected") === "1") {
+        setTab("setup");
+      }
+
       const auth = await fetchJson<{ authenticated?: boolean }>("/api/auth/session");
       if (cancelled) return;
 
@@ -108,6 +113,10 @@ export function DashboardApp() {
       setBooting(false);
 
       if (meData.connected) {
+        if (params.get("connected") === "1") {
+          setTab("setup");
+          window.history.replaceState({}, "", "/app");
+        }
         void loadAnalytics({ days: 30, force: true });
       }
     })();
@@ -193,7 +202,7 @@ export function DashboardApp() {
             <p className="body-md text-muted">
               Authorize CMS read access, map your collections, index content, and embed search on your site.
             </p>
-            <a className="btn btn-primary mt-md" href="/api/oauth/start">
+            <a className="btn btn-primary mt-md" href="/install">
               Connect Webflow
             </a>
           </div>
