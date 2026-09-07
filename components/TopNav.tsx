@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -24,6 +25,13 @@ export function TopNav({
   return (
     <nav className="top-nav">
       <Link className="top-nav__brand" href="/">
+        <Image
+          src="/brand/talaash-logo.png"
+          alt=""
+          width={28}
+          height={28}
+          className="top-nav__logo"
+        />
         Talaash
       </Link>
       <div className="top-nav__cluster">
@@ -39,7 +47,7 @@ export function TopNav({
             <Link className="body-md" href="/pricing">
               Pricing
             </Link>
-            <Link className="body-md" href="/install">
+            <Link className="btn btn-primary btn-sm" href="/install">
               Install
             </Link>
           </>

@@ -1,153 +1,145 @@
-"use client";
-
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { TopNav } from "@/components/TopNav";
 
 export function LandingPage() {
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const id = window.requestAnimationFrame(() => setReady(true));
-    return () => window.cancelAnimationFrame(id);
-  }, []);
-
   return (
-    <div className={`talaash${ready ? " talaash--ready" : ""}`}>
-      <header className="talaash-nav">
-        <Link className="talaash-nav__brand" href="/">
-          Talaash
-        </Link>
-        <div className="talaash-nav__links">
-          <Link href="/pricing">Pricing</Link>
-          <Link href="/support">Support</Link>
-          <Link className="talaash-nav__cta" href="/install">
-            Install
-          </Link>
-        </div>
-      </header>
+    <div className="landing">
+      <TopNav showAuth={false} />
 
-      <section className="talaash-hero" aria-label="Talaash">
-        <div className="talaash-hero__atmosphere" aria-hidden="true">
-          <div className="talaash-hero__wash" />
-          <div className="talaash-hero__grid" />
-          <svg className="talaash-hero__ripples" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
-            <defs>
-              <radialGradient id="talaashRipple" cx="50%" cy="42%" r="55%">
-                <stop offset="0%" stopColor="rgba(20, 140, 132, 0.35)" />
-                <stop offset="55%" stopColor="rgba(15, 60, 72, 0.12)" />
-                <stop offset="100%" stopColor="rgba(15, 60, 72, 0)" />
-              </radialGradient>
-            </defs>
-            <rect width="1200" height="800" fill="url(#talaashRipple)" />
-            <g className="talaash-hero__rings" fill="none" stroke="rgba(15, 55, 65, 0.28)" strokeWidth="1.25">
-              <circle className="talaash-ring talaash-ring--1" cx="600" cy="340" r="70" />
-              <circle className="talaash-ring talaash-ring--2" cx="600" cy="340" r="140" />
-              <circle className="talaash-ring talaash-ring--3" cx="600" cy="340" r="230" />
-              <circle className="talaash-ring talaash-ring--4" cx="600" cy="340" r="340" />
-            </g>
-            <g className="talaash-hero__nodes">
-              <circle cx="420" cy="250" r="5" fill="#0f3741" />
-              <circle cx="760" cy="220" r="4" fill="#148c84" />
-              <circle cx="820" cy="400" r="6" fill="#0f3741" />
-              <circle cx="380" cy="430" r="4.5" fill="#148c84" />
-              <circle cx="540" cy="520" r="5" fill="#0f3741" />
-              <circle cx="700" cy="500" r="3.5" fill="#0f3741" />
-              <path
-                d="M420 250 L540 340 L760 220 M540 340 L820 400 M540 340 L380 430 M540 340 L540 520 M540 340 L700 500"
-                stroke="rgba(20, 140, 132, 0.45)"
-                strokeWidth="1.5"
-                fill="none"
-              />
-              <circle className="talaash-hero__pulse" cx="600" cy="340" r="10" fill="#148c84" />
-            </g>
-          </svg>
-        </div>
-
-        <div className="talaash-hero__copy">
-          <p className="talaash-hero__brand">Talaash</p>
-          <h1 className="talaash-hero__headline">One search across your Webflow CMS.</h1>
-          <p className="talaash-hero__lede">
-            Visitors ask in plain language. Talaash ranks blogs, webinars, and collections by meaning —
-            then shows you what they looked for.
+      <section className="hero-band landing-hero">
+        <div className="container" style={{ padding: 0 }}>
+          <div className="landing-hero__brand">
+            <Image
+              src="/brand/talaash-logo.png"
+              alt="Talaash"
+              width={72}
+              height={72}
+              className="landing-logo landing-logo--hero"
+              priority
+            />
+            <p className="landing-hero__name">Talaash</p>
+          </div>
+          <h1 className="display-lg landing-hero__headline">
+            One search across your Webflow CMS.
+          </h1>
+          <p className="body-md text-muted landing-hero__lede">
+            Visitors ask in plain language. Talaash ranks blogs, webinars, and collections by
+            meaning — then shows you what they looked for.
           </p>
-          <div className="talaash-hero__actions">
-            <Link className="talaash-btn talaash-btn--primary" href="/install">
+          <div className="landing-hero__actions">
+            <Link className="btn btn-primary" href="/install">
               Get started
             </Link>
-            <a className="talaash-btn talaash-btn--ghost" href="#how">
-              See how it works
+            <a className="btn btn-secondary" href="#how">
+              How it works
             </a>
           </div>
         </div>
       </section>
 
-      <section className="talaash-section" id="how">
-        <div className="talaash-section__inner">
-          <h2 className="talaash-section__title">Connect. Index. Embed.</h2>
-          <p className="talaash-section__lede">
-            Install the Webflow app, map the fields that matter, and drop a Designer-native search
-            onto your site — no rebuild of your layout.
+      <section className="landing-band" id="how">
+        <div className="container" style={{ padding: 0 }}>
+          <h2 className="title-lg">Connect. Index. Embed.</h2>
+          <p className="body-md text-muted mt-md" style={{ maxWidth: "52ch" }}>
+            The same setup flow as the dashboard — authorize Webflow, map fields, and drop a
+            Designer-native search onto your site.
           </p>
-          <ol className="talaash-steps">
-            <li>
-              <span className="talaash-steps__num">01</span>
-              <span className="talaash-steps__label">Connect Webflow</span>
-              <span className="talaash-steps__text">Authorize CMS read access for your site.</span>
-            </li>
-            <li>
-              <span className="talaash-steps__num">02</span>
-              <span className="talaash-steps__label">Index collections</span>
-              <span className="talaash-steps__text">Choose embed fields and build the vector index.</span>
-            </li>
-            <li>
-              <span className="talaash-steps__num">03</span>
-              <span className="talaash-steps__label">Publish search</span>
-              <span className="talaash-steps__text">Add the script and attributes in Webflow Designer.</span>
-            </li>
-          </ol>
+
+          <div className="setup-steps-grid landing-steps mt-lg">
+            <div className="setup-step-card setup-step-card--mint">
+              <span className="setup-step-card__num">1</span>
+              <span className="setup-step-card__label">Connect Webflow</span>
+              <span className="setup-step-card__hint">Authorize CMS read access</span>
+            </div>
+            <div className="setup-step-card setup-step-card--peach">
+              <span className="setup-step-card__num">2</span>
+              <span className="setup-step-card__label">Index CMS</span>
+              <span className="setup-step-card__hint">Choose fields and build the index</span>
+            </div>
+            <div className="setup-step-card setup-step-card--mustard">
+              <span className="setup-step-card__num">3</span>
+              <span className="setup-step-card__label">Embed widget</span>
+              <span className="setup-step-card__hint">Add script in Webflow Designer</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="talaash-section talaash-section--alt">
-        <div className="talaash-section__inner">
-          <h2 className="talaash-section__title">Search intelligence, not just a box.</h2>
-          <p className="talaash-section__lede">
+      <section className="landing-band landing-band--soft">
+        <div className="container" style={{ padding: 0 }}>
+          <h2 className="title-lg">Search intelligence, not just a box.</h2>
+          <p className="body-md text-muted mt-md" style={{ maxWidth: "52ch" }}>
             After the widget is live, Insights surfaces popular prompts, trends, and content gaps so
             you know what to publish next.
           </p>
-          <div className="talaash-split">
-            <div>
-              <h3 className="talaash-split__title">Meaning-ranked results</h3>
-              <p>
-                Semantic + keyword fusion returns one ranked list across CMS types — the answer
-                visitors meant, not only exact keyword hits.
+
+          <div className="landing-panel-grid mt-lg">
+            <div className="insights-panel">
+              <div className="insights-panel__head">
+                <h3 className="title-sm">Meaning-ranked results</h3>
+                <p className="caption text-muted">
+                  Semantic + keyword fusion across CMS types
+                </p>
+              </div>
+              <p className="body-md">
+                One ranked list for blogs, webinars, and collections — the answer visitors meant,
+                not only exact keyword hits.
               </p>
             </div>
-            <div>
-              <h3 className="talaash-split__title">Designed in Webflow</h3>
-              <p>
-                Style a Collection Item once. Talaash clones your card for results — Finsweet-style
-                attributes, your visual system.
+            <div className="insights-panel">
+              <div className="insights-panel__head">
+                <h3 className="title-sm">Designed in Webflow</h3>
+                <p className="caption text-muted">Finsweet-style attributes</p>
+              </div>
+              <p className="body-md">
+                Style a Collection Item once. Talaash clones your card for results — your layout,
+                your visual system.
+              </p>
+            </div>
+            <div className="insights-panel">
+              <div className="insights-panel__head">
+                <h3 className="title-sm">Prompt analytics</h3>
+                <p className="caption text-muted">Same Insights tab as the app</p>
+              </div>
+              <p className="body-md">
+                See volume, popular queries, and content gaps in the dashboard you already use to
+                index and embed.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="talaash-closing">
-        <div className="talaash-closing__inner">
-          <p className="talaash-closing__brand">Talaash</p>
-          <h2 className="talaash-closing__title">Ready to put semantic search on your site?</h2>
-          <p className="talaash-closing__lede">
-            Start on Webflow Marketplace install, or open the dashboard and connect your site.
-          </p>
-          <div className="talaash-hero__actions">
-            <Link className="talaash-btn talaash-btn--primary" href="/install">
-              Install Talaash
-            </Link>
-            <Link className="talaash-btn talaash-btn--ghost" href="/login">
-              Sign in
-            </Link>
+      <section className="landing-band">
+        <div className="container" style={{ padding: 0 }}>
+          <div className="insights-panel landing-cta-panel">
+            <div className="landing-cta-panel__row">
+              <Image
+                src="/brand/talaash-logo.png"
+                alt=""
+                width={48}
+                height={48}
+                className="landing-logo"
+              />
+              <div>
+                <h2 className="title-lg" style={{ marginBottom: 8 }}>
+                  Ready to put semantic search on your site?
+                </h2>
+                <p className="body-md text-muted" style={{ margin: 0, maxWidth: "48ch" }}>
+                  Install Talaash, connect Webflow, and embed from Setup — same style guide as the
+                  dashboard.
+                </p>
+              </div>
+            </div>
+            <div className="landing-hero__actions mt-lg">
+              <Link className="btn btn-primary" href="/install">
+                Install Talaash
+              </Link>
+              <Link className="btn btn-secondary" href="/login">
+                Sign in
+              </Link>
+            </div>
           </div>
         </div>
       </section>
