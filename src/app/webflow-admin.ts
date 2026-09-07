@@ -1,4 +1,32 @@
+import { getServiceClient } from "../lib/supabase.js";
+
 const API = "https://api.webflow.com/v2";
+
+export class WebflowAuthRevokedError extends Error {
+  constructor(message = "Webflow authorization revoked") {
+    super(message);
+    this.name = "WebflowAuthRevokedError";
+  }
+}
+
+/** Clear stored OAuth token when Webflow returns persistent 401 (revocation). */
+export async function clearInstallAccessTokenByToken(
+  accessToken: string
+): Promise<void> {
+  if (!accessToken) return;
+  try {
+    const supabase = getServiceClient();
+    await supabase
+      .from("webflow_installs")
+      .update({
+        access_token: "",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("access_token", accessToken);
+  } catch (err) {
+    console.error("failed to clear revoked Webflow token", err);
+  }
+}
 
 async function wf<T>(token: string, path: string): Promise<T> {
   const res = await fetch(`${API}${path}`, {
@@ -7,6 +35,12 @@ async function wf<T>(token: string, path: string): Promise<T> {
       Accept: "application/json",
     },
   });
+  if (res.status === 401) {
+    await clearInstallAccessTokenByToken(token);
+    throw new WebflowAuthRevokedError(
+      `Webflow authorization revoked (401 ${path}). Reconnect Webflow in Setup.`
+    );
+  }
   if (!res.ok) {
     throw new Error(`Webflow ${res.status} ${path}: ${await res.text()}`);
   }
@@ -65,7 +99,9 @@ export async function getCollection(
 export function publicSiteOrigin(site: WfSite): string {
   const custom = site.customDomains?.[0]?.url;
   if (custom) {
-    return custom.startsWith("http") ? custom.replace(/\/$/, "") : `https://${custom.replace(/\/$/, "")}`;
+    return custom.startsWith("http")
+      ? custom.replace(/\/$/, "")
+      : `https://${custom.replace(/\/$/, "")}`;
   }
   if (site.shortName) {
     return `https://${site.shortName}.webflow.io`;
@@ -113,15 +149,17 @@ export function guessFields(fields: WfField[] | undefined): {
   const dates = byType("DateTime").concat(byType("Date"));
 
   return {
-    title: slugOf((f) => f.slug === "name" || f.slug === "title", plain[0]?.slug ?? "name"),
+    title: slugOf(
+      (f) => f.slug === "name" || f.slug === "title",
+      plain[0]?.slug ?? "name"
+    ),
     body: rich[0]?.slug ?? plain.find((f) => f.slug !== "name")?.slug ?? "name",
-    excerpt:
-      slugOf(
-        (f) =>
-          /excerpt|summary|blurb|description|subtitle/i.test(f.slug) ||
-          /excerpt|summary|blurb/i.test(f.displayName),
-        plain.find((f) => f.slug !== "name")?.slug ?? ""
-      ),
+    excerpt: slugOf(
+      (f) =>
+        /excerpt|summary|blurb|description|subtitle/i.test(f.slug) ||
+        /excerpt|summary|blurb/i.test(f.displayName),
+      plain.find((f) => f.slug !== "name")?.slug ?? ""
+    ),
     slug: slugOf((f) => f.slug === "slug" || f.type === "Link", "slug"),
     image: images[0]?.slug ?? "",
     date: dates[0]?.slug ?? "",

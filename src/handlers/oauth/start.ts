@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthUser } from "../../app/auth.js";
 import { OAUTH_STATE_COOKIE, newToken, setCookie } from "../../app/session.js";
+import { createOAuthState } from "../../app/oauth-state.js";
 import { oauthAuthorizeUrl } from "../../app/webflow-oauth.js";
 
 export default async function handler(
@@ -18,7 +19,14 @@ export default async function handler(
     return;
   }
 
-  const state = newToken();
-  setCookie(res, OAUTH_STATE_COOKIE, state);
-  res.redirect(302, oauthAuthorizeUrl(state));
+  try {
+    const state = newToken();
+    await createOAuthState(user.id, state);
+    setCookie(res, OAUTH_STATE_COOKIE, state);
+    res.redirect(302, oauthAuthorizeUrl(state));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "OAuth start failed";
+    console.error(message);
+    res.redirect(302, "/install?oauth=error&message=" + encodeURIComponent(message));
+  }
 }

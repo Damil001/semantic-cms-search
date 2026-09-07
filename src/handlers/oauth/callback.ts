@@ -10,6 +10,7 @@ import {
   readCookie,
   setCookie,
 } from "../../app/session.js";
+import { consumeOAuthState } from "../../app/oauth-state.js";
 import { listSites } from "../../app/webflow-admin.js";
 import { exchangeCode } from "../../app/webflow-oauth.js";
 import { getServiceClient } from "../../lib/supabase.js";
@@ -91,13 +92,12 @@ export default async function handler(
   const pendingState = readCookie(req, OAUTH_PENDING_STATE_COOKIE) ?? "";
   const code = codeFromQuery || (resume ? pendingCode : "");
   const state = stateFromQuery || (resume ? pendingState : "");
-  let expected = readCookie(req, OAUTH_STATE_COOKIE);
 
   if (!user) {
     if (code && state) {
       setCookie(res, OAUTH_PENDING_CODE_COOKIE, code);
       setCookie(res, OAUTH_PENDING_STATE_COOKIE, state);
-      setCookie(res, OAUTH_STATE_COOKIE, expected || state);
+      setCookie(res, OAUTH_STATE_COOKIE, state);
       res.redirect(
         302,
         "/login?next=" + encodeURIComponent("/api/oauth/callback?resume=1")
@@ -108,24 +108,24 @@ export default async function handler(
     return;
   }
 
-  // If the state cookie was dropped (host redirect / www vs apex), recover from
-  // pending cookies or accept the round-tripped state when resuming.
-  if (!expected && pendingState && state === pendingState) {
-    expected = pendingState;
-  }
-  if (!expected && resume && state) {
-    expected = state;
-  }
-
-  if (!code || !state || !expected || state !== expected) {
+  if (!code || !state) {
     failRedirect(
       res,
-      "Invalid OAuth state. Sign in on www.talaash.org, then try Install again."
+      "Missing OAuth code. Start again from https://www.talaash.org/install"
     );
     return;
   }
 
   try {
+    const ok = await consumeOAuthState(state, user.id);
+    if (!ok) {
+      failRedirect(
+        res,
+        "Invalid or expired OAuth state. Start again from Install (do not reuse an old authorize tab)."
+      );
+      return;
+    }
+
     const accessToken = await exchangeCode(code);
     await finishInstall(res, user.id, accessToken);
   } catch (err) {

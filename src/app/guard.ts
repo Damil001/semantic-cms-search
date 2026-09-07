@@ -13,7 +13,7 @@ export async function requireAuthInstall(
     return null;
   }
   const install = await getInstallForUser(req, user.id);
-  if (!install) {
+  if (!install || !String(install.access_token ?? "").trim()) {
     res.status(401).json({ error: "Connect a Webflow site first" });
     return null;
   }

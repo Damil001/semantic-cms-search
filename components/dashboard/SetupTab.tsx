@@ -485,6 +485,14 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         <p className="insights-callout">
           Optional: add an empty element with <code>data-search-answer</code> above your results list for AI intro text. Autocomplete runs automatically while typing.
         </p>
+        <div className="insights-callout mt-md" style={{ marginTop: 12 }}>
+          <strong>Uninstall / disconnect cleanup:</strong> Talaash does not inject
+          scripts via Webflow Custom Code API. If you disconnect or uninstall, remove
+          the footer <code>&lt;script src=&quot;…/search.js&quot;&gt;</code> under Site
+          Settings → Custom Code, remove <code>data-search-*</code> attributes from the
+          search page, then <strong>Publish</strong> the site so search stops on the live
+          site.
+        </div>
       </div>
 
       <div className="insights-panel mb-lg">
@@ -515,7 +523,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             onClick={async () => {
               if (
                 !window.confirm(
-                  "Disconnect Webflow? This revokes and deletes the stored OAuth token. Search will stop working until you reconnect."
+                  "Disconnect Webflow? This revokes and deletes the stored OAuth token.\n\nAfter disconnect, also remove the search.js footer script and data-search-* attributes in Webflow, then Publish — Talaash cannot remove those for you."
                 )
               ) {
                 return;
