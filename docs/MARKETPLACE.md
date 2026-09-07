@@ -36,7 +36,7 @@ SUPABASE_SERVICE_KEY=
 4. Deploy the latest code to production and smoke-test `/install` → login → OAuth → Setup.
 5. Publish a **demo Webflow site** (`.webflow.io`) with the search widget working.
 6. Record a **2–5 minute demo video** (OAuth approve + deny, connect, index, search on the live site).
-7. Replace `support@example.com` on `/support` with your real support email (edit `app/support/page.tsx` or host a real support page).
+7. Support email is set to `damiljamil63@gmail.com` on `/support` (update if you change inboxes).
 8. Prepare Marketplace listing assets: logo, screenshots, short description, category.
 9. Submit at [https://developers.webflow.com/submit](https://developers.webflow.com/submit).
 10. Optional pre-launch testing: email `developers@webflow.com` with up to 5 tester emails.

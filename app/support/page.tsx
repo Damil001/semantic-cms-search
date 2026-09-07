@@ -44,9 +44,8 @@ export default function SupportPage() {
       <h2 className="title-sm">Contact</h2>
       <p>
         Email{" "}
-        <a href="mailto:support@example.com">support@example.com</a> with your account email and
-        Webflow site name. Replace this address with your real support inbox before Marketplace
-        submission.
+        <a href="mailto:damiljamil63@gmail.com">damiljamil63@gmail.com</a> with your account email
+        and Webflow site name.
       </p>
 
       <p>
