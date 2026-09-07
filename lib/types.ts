@@ -115,3 +115,46 @@ export interface ContentInsightsResponse {
     targetQueries?: string[];
   }[];
 }
+
+export interface AeoPageScore {
+  id: string;
+  title: string;
+  url: string;
+  contentType: string;
+  score: number;
+  readiness: "ready" | "partial" | "weak";
+  strengths: string[];
+  fixes: string[];
+  wordCount: number;
+  publishedAt: string | null;
+}
+
+export interface AeoBrief {
+  question: string;
+  searchDemand: number;
+  opportunity: string;
+  suggestedTitle: string;
+  format: string;
+  outline: string[];
+  factsToInclude: string[];
+  schemaHint: string;
+  rationale: string;
+}
+
+export interface AeoReport {
+  analyzedAt: string;
+  days: number;
+  summary: string;
+  stats: {
+    pagesScored: number;
+    readyCount: number;
+    partialCount: number;
+    weakCount: number;
+    avgScore: number;
+    gapCount: number;
+    briefCount: number;
+  };
+  pages: AeoPageScore[];
+  briefs: AeoBrief[];
+  tips: string[];
+}

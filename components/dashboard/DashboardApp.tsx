@@ -4,10 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { MeResponse, PromptAnalytics } from "@/lib/types";
 import { InsightsTab } from "./InsightsTab";
 import { IntelligenceTab } from "./IntelligenceTab";
+import { AeoTab } from "./AeoTab";
 import { SetupTab } from "./SetupTab";
 
 const STALE_MS = 2 * 60 * 1000;
-type Tab = "insights" | "intelligence" | "setup";
+type Tab = "insights" | "intelligence" | "aeo" | "setup";
 
 async function fetchJson<T>(url: string, timeoutMs = 15_000): Promise<T | null> {
   const controller = new AbortController();
@@ -220,6 +221,7 @@ export function DashboardApp() {
           [
             ["insights", "Insights"],
             ["intelligence", "Content intelligence"],
+            ["aeo", "AEO"],
             ["setup", "Setup & index"],
           ] as const
         ).map(([id, label]) => (
@@ -276,6 +278,8 @@ export function DashboardApp() {
       )}
 
       {tab === "intelligence" && me && <IntelligenceTab />}
+
+      {tab === "aeo" && me && <AeoTab />}
 
       {tab === "setup" && me && <SetupTab me={me} onSiteMetaChange={() => {}} />}
     </div>
