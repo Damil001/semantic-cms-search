@@ -758,7 +758,26 @@
     });
   }
 
+  function ensureDefaultStyles() {
+    if (document.getElementById("talaash-search-css")) return;
+    var cssHref = "";
+    if (BOOT_SCRIPT && BOOT_SCRIPT.src) {
+      try {
+        cssHref = new URL("search.css", BOOT_SCRIPT.src).href;
+      } catch (e) {
+        cssHref = "";
+      }
+    }
+    if (!cssHref) cssHref = "https://www.talaash.org/search.css";
+    var link = document.createElement("link");
+    link.id = "talaash-search-css";
+    link.rel = "stylesheet";
+    link.href = cssHref;
+    document.head.appendChild(link);
+  }
+
   function boot() {
+    ensureDefaultStyles();
     all(document, ['[data-search]', '[fs-cmssearch-element="root"]']).forEach(
       initRoot
     );

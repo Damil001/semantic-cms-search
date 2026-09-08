@@ -409,25 +409,29 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   const siteId = me.siteId || "";
   const searchToken = me.searchToken || "";
 
-  const designerEmbedHtml = `<!-- Paste into a Webflow Embed (or rebuild with these attributes).
-     Replace any OLD data-search-site / data-search-token / data-search-endpoint
-     from another project — mismatched values send searches to the wrong dashboard. -->
-<div
+  const designerEmbedHtml = `<div
   data-search
   data-search-site="${siteId}"
   data-search-token="${searchToken}"
   data-search-endpoint="${searchEndpoint}"
 >
   <input data-search-input type="search" placeholder="Search…" autocomplete="off" />
+  <div class="talaash-filters">
+    <a href="#" data-search-filter="blog">Blog</a>
+    <a href="#" data-search-filter="webinars">Webinars</a>
+    <a href="#" data-search-filter="releases">Releases</a>
+  </div>
   <div data-search-answer></div>
-  <div data-search-loading>Searching…</div>
-  <div data-search-empty>No results found.</div>
+  <div data-search-loading hidden>Searching…</div>
+  <div data-search-empty hidden>No results found.</div>
   <div data-search-results>
     <a data-search-result href="#">
-      <img data-search-result-image alt="" />
-      <div data-search-result-type></div>
-      <div data-search-result-title></div>
-      <div data-search-result-snippet></div>
+      <img data-search-result-image alt="" width="88" height="88" />
+      <div>
+        <div data-search-result-type></div>
+        <div data-search-result-title></div>
+        <div data-search-result-snippet></div>
+      </div>
     </a>
   </div>
 </div>`;
@@ -545,6 +549,11 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                   data.message ||
                     "Search script installed. Publish your Webflow site for it to go live."
                 );
+                if (data.version) {
+                  setScriptNotice(
+                    `Search script v${data.version} registered. Publish the site in Webflow so the new integrity hash goes live — otherwise the browser blocks search.js.`
+                  );
+                }
               } catch {
                 setScriptNotice("Network error installing search script.");
               } finally {
@@ -582,8 +591,9 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                 1. Designer search layout
               </h4>
               <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
-                Copy into a Webflow Embed element (or rebuild Divs with the same attributes). Already
-                filled with this site’s credentials.
+                Copy into a Webflow Embed. Credentials are filled for this site. Default look comes
+                from <code>search.css</code> (loaded by the script). Override in Designer, or add{" "}
+                <code>data-search-unstyled</code> on the root to opt out.
               </p>
             </div>
             <button
