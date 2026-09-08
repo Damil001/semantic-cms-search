@@ -17,7 +17,7 @@ import { getServiceClient } from "../../lib/supabase.js";
 
 function failRedirect(res: VercelResponse, message: string): void {
   const q = new URLSearchParams({ oauth: "error", message });
-  res.redirect(302, `/install?${q.toString()}`);
+  res.redirect(302, `https://www.talaash.org/install?${q.toString()}`);
 }
 
 async function finishInstall(
@@ -65,7 +65,7 @@ async function finishInstall(
   clearCookie(res, OAUTH_PENDING_CODE_COOKIE);
   clearCookie(res, OAUTH_PENDING_STATE_COOKIE);
   setCookie(res, SESSION_COOKIE, sessionToken);
-  res.redirect(302, "/app?connected=1");
+  res.redirect(302, "https://www.talaash.org/app?connected=1");
 }
 
 export default async function handler(
@@ -78,7 +78,7 @@ export default async function handler(
     clearCookie(res, OAUTH_STATE_COOKIE);
     clearCookie(res, OAUTH_PENDING_CODE_COOKIE);
     clearCookie(res, OAUTH_PENDING_STATE_COOKIE);
-    res.redirect(302, "/install?oauth=denied");
+    res.redirect(302, "https://www.talaash.org/install?oauth=denied");
     return;
   }
 
@@ -100,11 +100,12 @@ export default async function handler(
       setCookie(res, OAUTH_STATE_COOKIE, state);
       res.redirect(
         302,
-        "/login?next=" + encodeURIComponent("/api/oauth/callback?resume=1")
+        "https://www.talaash.org/login?next=" +
+          encodeURIComponent("/api/oauth/callback?resume=1")
       );
       return;
     }
-    res.redirect(302, "/install");
+    res.redirect(302, "https://www.talaash.org/install");
     return;
   }
 
