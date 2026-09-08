@@ -1497,7 +1497,7 @@ select.text-input:focus {
 
 .setup-code-row {
   display: grid;
-  grid-template-columns: minmax(120px, 160px) 1fr;
+  grid-template-columns: minmax(120px, 160px) 1fr auto;
   gap: var(--space-md);
   align-items: start;
   padding: var(--space-sm) var(--space-md);
@@ -1511,6 +1511,36 @@ select.text-input:focus {
     grid-template-columns: 1fr;
     gap: 4px;
   }
+}
+
+.setup-embed-block {
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+  overflow: hidden;
+}
+
+.setup-embed-block__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.setup-embed-pre {
+  margin: 0;
+  padding: var(--space-md);
+  max-height: 280px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-ink);
+  background: #fff;
 }
 
 .setup-code-label {

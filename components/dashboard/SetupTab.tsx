@@ -128,6 +128,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   const [disconnecting, setDisconnecting] = useState(false);
   const [installingScript, setInstallingScript] = useState(false);
   const [scriptNotice, setScriptNotice] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activeAction, setActiveAction] = useState<"save" | "index" | "reindex" | null>(null);
   const [indexProgress, setIndexProgress] = useState<IndexProgress | null>(null);
 
@@ -403,6 +404,52 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
     ? `${me.siteName || me.siteId} · Last indexed ${new Date(me.lastIndexedAt).toLocaleString()}`
     : `${me.siteName || me.siteId} · Not indexed yet`;
 
+  const searchEndpoint = me.searchEndpoint || "https://www.talaash.org/search";
+  const scriptUrl = me.scriptUrl || "https://www.talaash.org/search.js";
+  const siteId = me.siteId || "";
+  const searchToken = me.searchToken || "";
+
+  const designerEmbedHtml = `<!-- Paste into a Webflow Embed (or rebuild with these attributes).
+     Replace any OLD data-search-site / data-search-token / data-search-endpoint
+     from another project — mismatched values send searches to the wrong dashboard. -->
+<div
+  data-search
+  data-search-site="${siteId}"
+  data-search-token="${searchToken}"
+  data-search-endpoint="${searchEndpoint}"
+>
+  <input data-search-input type="search" placeholder="Search…" autocomplete="off" />
+  <div data-search-answer></div>
+  <div data-search-loading>Searching…</div>
+  <div data-search-empty>No results found.</div>
+  <div data-search-results>
+    <a data-search-result href="#">
+      <img data-search-result-image alt="" />
+      <div data-search-result-type></div>
+      <div data-search-result-title></div>
+      <div data-search-result-snippet></div>
+    </a>
+  </div>
+</div>`;
+
+  const scriptTagHtml = `<script
+  src="${scriptUrl}"
+  data-search-site="${siteId}"
+  data-search-token="${searchToken}"
+  data-search-endpoint="${searchEndpoint}"
+></script>`;
+
+  async function copyText(key: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      trackEvent("setup_copy_embed", { which: key });
+      window.setTimeout(() => setCopiedKey((cur) => (cur === key ? null : cur)), 2000);
+    } catch {
+      setScriptNotice("Could not copy — select the snippet and copy manually.");
+    }
+  }
+
   const isIndexing = busy && (activeAction === "index" || activeAction === "reindex");
   const showIndexDetails =
     indexProgress &&
@@ -520,27 +567,79 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             {scriptNotice}
           </p>
         )}
-        <p className="body-md text-muted" style={{ marginTop: 12 }}>
-          After installing the script, add a search layout in the Designer (input + results) using
-          these attributes so the widget knows which elements to use:
-        </p>
-        <div className="setup-code-grid">
+
+        <div className="insights-callout mt-md" style={{ marginTop: 16 }}>
+          <strong>Do not reuse credentials from another site.</strong> If you copied a search block
+          from an older project, delete its old <code>data-search-site</code>,{" "}
+          <code>data-search-token</code>, and <code>data-search-endpoint</code> — those values send
+          searches to a different dashboard.
+        </div>
+
+        <div className="setup-embed-block mt-lg">
+          <div className="setup-embed-block__head">
+            <div>
+              <h4 className="title-sm" style={{ margin: 0 }}>
+                1. Designer search layout
+              </h4>
+              <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
+                Copy into a Webflow Embed element (or rebuild Divs with the same attributes). Already
+                filled with this site’s credentials.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => copyText("designer", designerEmbedHtml)}
+            >
+              {copiedKey === "designer" ? "Copied" : "Copy HTML"}
+            </button>
+          </div>
+          <pre className="setup-embed-pre">{designerEmbedHtml}</pre>
+        </div>
+
+        <div className="setup-embed-block mt-md">
+          <div className="setup-embed-block__head">
+            <div>
+              <h4 className="title-sm" style={{ margin: 0 }}>
+                2. Script tag (optional fallback)
+              </h4>
+              <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
+                Prefer <strong>Install search script</strong> above (Custom Code API). Use this only
+                if you need a manual footer script — then publish.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => copyText("script", scriptTagHtml)}
+            >
+              {copiedKey === "script" ? "Copied" : "Copy script"}
+            </button>
+          </div>
+          <pre className="setup-embed-pre">{scriptTagHtml}</pre>
+        </div>
+
+        <div className="setup-code-grid mt-md">
           {[
-            ["Root wrapper", "data-search"],
-            ["Input", "data-search-input"],
-            ["Results list", "data-search-results"],
-            ["Result item template", "data-search-result"],
+            ["Site ID", siteId],
+            ["Search token", searchToken],
+            ["Search API", searchEndpoint],
+            ["Script URL", scriptUrl],
           ].map(([label, value]) => (
             <div key={String(label)} className="setup-code-row">
               <span className="setup-code-label">{label}</span>
               <code className="setup-code-value">{value}</code>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => copyText(String(label), String(value))}
+              >
+                {copiedKey === label ? "Copied" : "Copy"}
+              </button>
             </div>
           ))}
         </div>
-        <p className="insights-callout mt-md">
-          Optional: add an empty element with <code>data-search-answer</code> above your results
-          list for AI intro text. Site ID and token are applied on the script automatically.
-        </p>
+
         <div className="insights-callout mt-md" style={{ marginTop: 12 }}>
           <strong>Disconnect cleanup:</strong> Disconnect Webflow removes the Custom Code script
           Talaash applied. Publish the site afterward so removal goes live. You can delete any

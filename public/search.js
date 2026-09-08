@@ -222,18 +222,23 @@
   }
 
   function initRoot(root) {
+    var fromScript = {
+      endpoint: scriptDefaultEndpoint(),
+      siteId: scriptBootAttr("data-search-site"),
+      searchToken: scriptBootAttr("data-search-token"),
+    };
     var endpoint =
+      fromScript.endpoint ||
       root.getAttribute("data-search-endpoint") ||
-      root.getAttribute("fs-cmssearch-endpoint") ||
-      scriptDefaultEndpoint();
+      root.getAttribute("fs-cmssearch-endpoint");
     var siteId =
+      fromScript.siteId ||
       root.getAttribute("data-search-site") ||
-      root.getAttribute("fs-cmssearch-site") ||
-      scriptBootAttr("data-search-site");
+      root.getAttribute("fs-cmssearch-site");
     var searchToken =
+      fromScript.searchToken ||
       root.getAttribute("data-search-token") ||
-      root.getAttribute("fs-cmssearch-token") ||
-      scriptBootAttr("data-search-token");
+      root.getAttribute("fs-cmssearch-token");
     if (!endpoint) {
       console.warn("[cms-search] Add data-search-endpoint on the wrapper (your /search URL).");
       return;
@@ -243,6 +248,16 @@
         "[cms-search] Missing data-search-site / data-search-token. Install the search script from Talaash Setup (Custom Code API)."
       );
       return;
+    }
+    var rootSite = root.getAttribute("data-search-site");
+    if (
+      fromScript.siteId &&
+      rootSite &&
+      rootSite !== fromScript.siteId
+    ) {
+      console.warn(
+        "[cms-search] Root data-search-site does not match the installed script. Using script credentials from Talaash Setup."
+      );
     }
 
     var suggestEndpoint = deriveSuggestEndpoint(endpoint, root);
