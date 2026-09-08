@@ -6,7 +6,7 @@ import { getUserFromAccessTokenFast } from "@/src/app/goauth";
 
 export const metadata = {
   title: "Install · Talaash",
-  description: "Connect Webflow and set up semantic CMS search",
+  description: "Create a Talaash account and connect Webflow CMS search",
 };
 
 export const dynamic = "force-dynamic";
@@ -39,8 +39,9 @@ export default async function InstallPage({
       <main className="container section--tight" style={{ maxWidth: 640, paddingBottom: 96 }}>
         <h1 className="title-lg">Install Talaash</h1>
         <p className="body-md text-muted mt-md">
-          Connect your Webflow site, index CMS collections, and embed semantic search — the same
-          flow as Finsweet-style attributes, powered by your hosted Talaash app.
+          Create a free Talaash account, connect your Webflow site, index CMS collections, and
+          install semantic search — the search script is applied through Webflow’s Custom Code
+          API.
         </p>
 
         {oauthStatus === "denied" && (
@@ -52,23 +53,34 @@ export default async function InstallPage({
         {oauthStatus === "error" && (
           <p className="insights-callout mt-md" role="alert">
             {params.message ||
-              "Webflow authorization failed. Use https://www.talaash.org (with www), then try again."}
+              "Webflow authorization failed. Open https://www.talaash.org/install (with www), then try again."}
           </p>
         )}
 
         <ol className="body-md mt-lg" style={{ paddingLeft: 20, lineHeight: 1.7 }}>
-          <li>Create or sign in to your Talaash account</li>
-          <li>Approve Webflow access (<code>sites:read</code>, <code>cms:read</code>)</li>
-          <li>Map collections, index content, copy embed values into Webflow Designer</li>
+          <li>Create a Talaash account (or sign in)</li>
+          <li>Approve Webflow access when prompted</li>
+          <li>Map collections, index content, install the search script, then publish</li>
         </ol>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 28 }}>
-          <Link
-            className="btn btn-primary"
-            href={user ? "/api/oauth/start" : "/login?next=/api/oauth/start"}
-          >
-            {user ? "Connect Webflow" : "Sign in to continue"}
-          </Link>
+          {user ? (
+            <Link className="btn btn-primary" href="/api/oauth/start">
+              Connect Webflow
+            </Link>
+          ) : (
+            <>
+              <Link
+                className="btn btn-primary"
+                href="/login?next=/install&mode=signup"
+              >
+                Create account
+              </Link>
+              <Link className="btn btn-secondary" href="/login?next=/install">
+                Sign in
+              </Link>
+            </>
+          )}
           <Link className="btn btn-ghost" href="/support">
             Setup help
           </Link>
@@ -76,7 +88,7 @@ export default async function InstallPage({
 
         <p className="caption text-muted mt-lg">
           Always install from <strong>https://www.talaash.org</strong> (include{" "}
-          <code>www</code>) so OAuth cookies stay on the same host.
+          <code>www</code>).
         </p>
 
         <p className="caption text-muted mt-lg">

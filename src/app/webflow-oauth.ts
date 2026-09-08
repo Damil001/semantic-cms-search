@@ -1,7 +1,13 @@
 const AUTH = "https://webflow.com/oauth/authorize";
 const TOKEN = "https://api.webflow.com/oauth/access_token";
 
-export const WEBFLOW_SCOPES = ["sites:read", "cms:read"].join(" ");
+export const WEBFLOW_SCOPES = [
+  "sites:read",
+  "sites:write",
+  "cms:read",
+  "custom_code:read",
+  "custom_code:write",
+].join(" ");
 
 export function oauthAuthorizeUrl(state: string): string {
   const clientId = process.env.WEBFLOW_CLIENT_ID;

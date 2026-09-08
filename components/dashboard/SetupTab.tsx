@@ -126,6 +126,8 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   const [refreshNotice, setRefreshNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [installingScript, setInstallingScript] = useState(false);
+  const [scriptNotice, setScriptNotice] = useState<string | null>(null);
   const [activeAction, setActiveAction] = useState<"save" | "index" | "reindex" | null>(null);
   const [indexProgress, setIndexProgress] = useState<IndexProgress | null>(null);
 
@@ -463,22 +465,71 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         </div>
         <div className="setup-step-card setup-step-card--mustard">
           <span className="setup-step-card__num">3</span>
-          <span className="setup-step-card__label">Embed widget</span>
-          <span className="setup-step-card__hint">Add script to Webflow</span>
+          <span className="setup-step-card__label">Install script</span>
+          <span className="setup-step-card__hint">Via Custom Code API</span>
         </div>
       </div>
 
       <div className="insights-panel mb-lg">
         <div className="insights-panel__head">
-          <h3 className="title-sm">Embed on your site</h3>
-          <p className="caption text-muted">Add the search script to your Webflow project</p>
+          <h3 className="title-sm">Search on your Webflow site</h3>
+          <p className="caption text-muted">
+            Talaash registers the search script through Webflow’s Custom Code API. You design the
+            on-page search UI in the Designer, then publish.
+          </p>
         </div>
+        <div className="btn-row" style={{ marginBottom: 16 }}>
+          <button
+            type="button"
+            className={`btn btn-primary${installingScript ? " is-loading" : ""}`}
+            disabled={busy || installingScript}
+            onClick={async () => {
+              setInstallingScript(true);
+              setScriptNotice(null);
+              trackEvent("setup_install_script");
+              try {
+                const res = await fetch("/api/app/embed-script", { method: "POST" });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                  setScriptNotice(data.error || "Could not install search script.");
+                  return;
+                }
+                setScriptNotice(
+                  data.message ||
+                    "Search script installed. Publish your Webflow site for it to go live."
+                );
+              } catch {
+                setScriptNotice("Network error installing search script.");
+              } finally {
+                setInstallingScript(false);
+              }
+            }}
+          >
+            {installingScript ? (
+              <>
+                <span className="index-spinner" aria-hidden style={{ marginRight: 8 }} />
+                <span className="btn-label">Installing…</span>
+              </>
+            ) : (
+              "Install search script"
+            )}
+          </button>
+        </div>
+        {scriptNotice && (
+          <p className="insights-callout" role="status">
+            {scriptNotice}
+          </p>
+        )}
+        <p className="body-md text-muted" style={{ marginTop: 12 }}>
+          After installing the script, add a search layout in the Designer (input + results) using
+          these attributes so the widget knows which elements to use:
+        </p>
         <div className="setup-code-grid">
           {[
-            ["Search URL", me.searchEndpoint],
-            ["Script", me.scriptUrl],
-            ["data-search-site", me.siteId],
-            ["data-search-token", me.searchToken],
+            ["Root wrapper", "data-search"],
+            ["Input", "data-search-input"],
+            ["Results list", "data-search-results"],
+            ["Result item template", "data-search-result"],
           ].map(([label, value]) => (
             <div key={String(label)} className="setup-code-row">
               <span className="setup-code-label">{label}</span>
@@ -486,16 +537,14 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             </div>
           ))}
         </div>
-        <p className="insights-callout">
-          Optional: add an empty element with <code>data-search-answer</code> above your results list for AI intro text. Autocomplete runs automatically while typing.
+        <p className="insights-callout mt-md">
+          Optional: add an empty element with <code>data-search-answer</code> above your results
+          list for AI intro text. Site ID and token are applied on the script automatically.
         </p>
         <div className="insights-callout mt-md" style={{ marginTop: 12 }}>
-          <strong>Uninstall / disconnect cleanup:</strong> Talaash does not inject
-          scripts via Webflow Custom Code API. If you disconnect or uninstall, remove
-          the footer <code>&lt;script src=&quot;…/search.js&quot;&gt;</code> under Site
-          Settings → Custom Code, remove <code>data-search-*</code> attributes from the
-          search page, then <strong>Publish</strong> the site so search stops on the live
-          site.
+          <strong>Disconnect cleanup:</strong> Disconnect Webflow removes the Custom Code script
+          Talaash applied. Publish the site afterward so removal goes live. You can delete any
+          leftover Designer attributes yourself if you no longer want the search layout.
         </div>
       </div>
 
@@ -527,7 +576,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             onClick={async () => {
               if (
                 !window.confirm(
-                  "Disconnect Webflow? This revokes and deletes the stored OAuth token.\n\nAfter disconnect, also remove the search.js footer script and data-search-* attributes in Webflow, then Publish — Talaash cannot remove those for you."
+                  "Disconnect Webflow? This removes the Custom Code search script Talaash applied, revokes access, and clears the stored token.\n\nPublish your Webflow site afterward so removal goes live. Designer layout attributes are not deleted automatically."
                 )
               ) {
                 return;

@@ -1,8 +1,8 @@
 /**
  * Webflow CMS semantic search — Finsweet-style attributes, no build step.
  *
- * Site Settings → Custom Code → Footer:
- *   <script src="https://YOUR_VERCEL_APP/search.js"></script>
+ * Preferred: install from Talaash Setup (Webflow Custom Code API registers this
+ * script site-wide with data-search-site / data-search-token / data-search-endpoint).
  *
  * Build the page in Designer (Divs, Form Search, Collection List, Buttons).
  * Add custom attributes. This script clones your designed Collection Item.
@@ -27,6 +27,26 @@
   var SUGGEST_DEBOUNCE_MS = 200;
   var SUGGEST_MIN_CHARS = 2;
   var DEFAULT_MODE = "submit";
+  /** Captured while the script executes (Custom Code / footer inject). */
+  var BOOT_SCRIPT = document.currentScript;
+
+  function scriptBootAttr(name) {
+    return BOOT_SCRIPT && BOOT_SCRIPT.getAttribute
+      ? BOOT_SCRIPT.getAttribute(name)
+      : null;
+  }
+
+  function scriptDefaultEndpoint() {
+    var fromAttr = scriptBootAttr("data-search-endpoint");
+    if (fromAttr) return fromAttr;
+    if (!BOOT_SCRIPT) return "";
+    var src = BOOT_SCRIPT.getAttribute("src") || "";
+    try {
+      return new URL(src, location.href).origin + "/search";
+    } catch (e) {
+      return "";
+    }
+  }
 
   function qs(root, sel) {
     return root.querySelector(sel);
@@ -204,20 +224,23 @@
   function initRoot(root) {
     var endpoint =
       root.getAttribute("data-search-endpoint") ||
-      root.getAttribute("fs-cmssearch-endpoint");
+      root.getAttribute("fs-cmssearch-endpoint") ||
+      scriptDefaultEndpoint();
     var siteId =
       root.getAttribute("data-search-site") ||
-      root.getAttribute("fs-cmssearch-site");
+      root.getAttribute("fs-cmssearch-site") ||
+      scriptBootAttr("data-search-site");
     var searchToken =
       root.getAttribute("data-search-token") ||
-      root.getAttribute("fs-cmssearch-token");
+      root.getAttribute("fs-cmssearch-token") ||
+      scriptBootAttr("data-search-token");
     if (!endpoint) {
-      console.warn("[cms-search] Add data-search-endpoint on the wrapper (your Vercel /search URL).");
+      console.warn("[cms-search] Add data-search-endpoint on the wrapper (your /search URL).");
       return;
     }
     if (!siteId || !searchToken) {
       console.warn(
-        "[cms-search] Add data-search-site and data-search-token from /app so results stay scoped to your site."
+        "[cms-search] Missing data-search-site / data-search-token. Install the search script from Talaash Setup (Custom Code API)."
       );
       return;
     }

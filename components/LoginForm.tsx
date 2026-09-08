@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 
-export function LoginForm() {
+export function LoginForm({ preferSignup = false }: { preferSignup?: boolean }) {
   const params = useSearchParams();
   const next = params.get("next") || "/app";
   const [email, setEmail] = useState("");
@@ -93,28 +93,57 @@ export function LoginForm() {
       </div>
       <div className="form-error">{error}</div>
       <div className="btn-row" style={{ flexDirection: "column", marginTop: 24 }}>
-        <button
-          type="submit"
-          className={`btn btn-primary btn-block${submitting ? " is-loading" : ""}`}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <>
-              <span className="index-spinner" aria-hidden style={{ marginRight: 8 }} />
-              <span className="btn-label">Signing in…</span>
-            </>
-          ) : (
-            "Sign in"
-          )}
-        </button>
-        <button
-          type="button"
-          className={`btn btn-secondary btn-block${submitting ? " is-loading" : ""}`}
-          disabled={submitting}
-          onClick={() => auth("signup")}
-        >
-          {submitting ? "Please wait…" : "Create account"}
-        </button>
+        {preferSignup ? (
+          <>
+            <button
+              type="button"
+              className={`btn btn-primary btn-block${submitting ? " is-loading" : ""}`}
+              disabled={submitting}
+              onClick={() => auth("signup")}
+            >
+              {submitting ? "Please wait…" : "Create account"}
+            </button>
+            <button
+              type="submit"
+              className={`btn btn-secondary btn-block${submitting ? " is-loading" : ""}`}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <span className="index-spinner" aria-hidden style={{ marginRight: 8 }} />
+                  <span className="btn-label">Signing in…</span>
+                </>
+              ) : (
+                "Already have an account? Sign in"
+              )}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="submit"
+              className={`btn btn-primary btn-block${submitting ? " is-loading" : ""}`}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <span className="index-spinner" aria-hidden style={{ marginRight: 8 }} />
+                  <span className="btn-label">Signing in…</span>
+                </>
+              ) : (
+                "Sign in"
+              )}
+            </button>
+            <button
+              type="button"
+              className={`btn btn-secondary btn-block${submitting ? " is-loading" : ""}`}
+              disabled={submitting}
+              onClick={() => auth("signup")}
+            >
+              {submitting ? "Please wait…" : "Create account"}
+            </button>
+          </>
+        )}
       </div>
     </form>
   );

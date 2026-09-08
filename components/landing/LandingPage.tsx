@@ -51,17 +51,17 @@ export function LandingPage() {
 
       <section className="landing-band" id="how">
         <div className="container" style={{ padding: 0 }}>
-          <h2 className="title-lg">Connect. Index. Embed.</h2>
+          <h2 className="title-lg">Connect. Index. Go live.</h2>
           <p className="body-md text-muted mt-md" style={{ maxWidth: "52ch" }}>
-            The same setup flow as the dashboard — authorize Webflow, map fields, and drop a
-            Designer-native search onto your site.
+            Authorize Webflow, map fields, install the search script through Custom Code, then design
+            your search UI in the Designer and publish.
           </p>
 
           <div className="setup-steps-grid landing-steps mt-lg">
             <div className="setup-step-card setup-step-card--mint">
               <span className="setup-step-card__num">1</span>
               <span className="setup-step-card__label">Connect Webflow</span>
-              <span className="setup-step-card__hint">Authorize CMS read access</span>
+              <span className="setup-step-card__hint">Authorize CMS and Custom Code access</span>
             </div>
             <div className="setup-step-card setup-step-card--peach">
               <span className="setup-step-card__num">2</span>
@@ -70,8 +70,8 @@ export function LandingPage() {
             </div>
             <div className="setup-step-card setup-step-card--mustard">
               <span className="setup-step-card__num">3</span>
-              <span className="setup-step-card__label">Embed widget</span>
-              <span className="setup-step-card__hint">Add script in Webflow Designer</span>
+              <span className="setup-step-card__label">Install &amp; publish</span>
+              <span className="setup-step-card__hint">Script via Custom Code API</span>
             </div>
           </div>
         </div>

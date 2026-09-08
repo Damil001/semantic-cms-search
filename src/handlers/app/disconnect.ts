@@ -6,11 +6,11 @@ import {
   getInstallForUser,
 } from "../../app/session.js";
 import { revokeAccessToken } from "../../app/webflow-oauth.js";
+import { uninstallSearchScript } from "../../app/webflow-custom-code.js";
 import { getServiceClient } from "../../lib/supabase.js";
 
 /**
- * Disconnect Webflow: revoke token when possible and delete the stored OAuth
- * access token from our database (Marketplace attestation requirement).
+ * Disconnect Webflow: remove Custom Code we applied, revoke token, clear DB.
  */
 export default async function handler(
   req: VercelRequest,
@@ -31,6 +31,17 @@ export default async function handler(
   if (!install) {
     res.status(200).json({ ok: true, disconnected: false });
     return;
+  }
+
+  if (install.access_token && install.site_id) {
+    try {
+      await uninstallSearchScript({
+        accessToken: install.access_token,
+        siteId: install.site_id,
+      });
+    } catch (err) {
+      console.error("custom code uninstall failed", err);
+    }
   }
 
   if (install.access_token) {
