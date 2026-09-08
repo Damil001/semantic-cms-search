@@ -120,9 +120,20 @@
   }
 
   function fillImage(node, selectors, url) {
-    if (!url) return;
     selectors.forEach(function (sel) {
       qsa(node, sel).forEach(function (el) {
+        if (!url) {
+          if (el.tagName === "IMG") {
+            el.removeAttribute("src");
+            el.setAttribute("hidden", "true");
+            el.style.display = "none";
+          } else {
+            el.style.display = "none";
+          }
+          return;
+        }
+        el.removeAttribute("hidden");
+        el.style.removeProperty("display");
         if (el.tagName === "IMG") {
           el.setAttribute("src", url);
           el.removeAttribute("srcset");
@@ -277,25 +288,60 @@
       return;
     }
 
-    var template = first(resultsEl, [
-      "[data-search-result]",
-      '[fs-cmssearch-element="item"]',
-      ".w-dyn-item",
+    var templateEl = null;
+    var listMount = resultsEl;
+    var tplTag = first(root, [
+      "template[data-search-result]",
+      "template[data-search-result-template]",
     ]);
-    if (!template) {
-      console.warn("[cms-search] Put data-search-result on your Collection Item (the card you designed).");
+    if (tplTag && tplTag.content) {
+      var fromTpl =
+        tplTag.content.querySelector("[data-search-result]") ||
+        tplTag.content.firstElementChild;
+      if (fromTpl) templateEl = fromTpl.cloneNode(true);
+    }
+    if (!templateEl) {
+      var source = first(root, ["[data-search-result-source]"]);
+      if (source) {
+        var fromSource = first(source, [
+          "[data-search-result]",
+          '[fs-cmssearch-element="item"]',
+        ]);
+        if (fromSource) templateEl = fromSource.cloneNode(true);
+        source.setAttribute("hidden", "true");
+        source.style.display = "none";
+      }
+    }
+    if (!templateEl) {
+      var legacy = first(resultsEl, [
+        "[data-search-result]",
+        '[fs-cmssearch-element="item"]',
+        ".w-dyn-item",
+      ]);
+      if (legacy) {
+        templateEl = legacy.cloneNode(true);
+        var dynItems = resultsEl.querySelector(".w-dyn-items");
+        if (dynItems) listMount = dynItems;
+        else listMount = legacy.parentNode || resultsEl;
+        if (legacy.parentNode) legacy.parentNode.removeChild(legacy);
+      }
+    }
+    if (!templateEl) {
+      console.warn(
+        "[cms-search] Add a hidden [data-search-result-source] block with your result card markup."
+      );
       return;
     }
 
-    var listMount = template.parentNode;
-    var dynItems = resultsEl.querySelector(".w-dyn-items");
-    if (dynItems) listMount = dynItems;
-
-    template.parentNode.removeChild(template);
+    templateEl.removeAttribute("hidden");
+    templateEl.style.display = "";
     while (listMount.firstChild) {
       listMount.removeChild(listMount.firstChild);
     }
     hideWebflowEmpty(resultsEl);
+    resultsEl.setAttribute("data-search-results-ready", "true");
+
+    var template = templateEl;
 
     var filters = all(root, [
       "[data-search-filter]",

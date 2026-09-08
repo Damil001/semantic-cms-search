@@ -7,7 +7,7 @@ export const TALAASH_SCRIPT_DISPLAY_NAME = "TalaashSearch";
 
 /** Bump when public/search.js behavior changes (Webflow script versions are immutable). */
 export const TALAASH_SCRIPT_VERSION =
-  process.env.SEARCH_SCRIPT_VERSION?.trim() || "1.0.2";
+  process.env.SEARCH_SCRIPT_VERSION?.trim() || "1.0.3";
 
 type AppliedScript = {
   id: string;

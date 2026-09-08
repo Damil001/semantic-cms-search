@@ -416,18 +416,14 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   data-search-endpoint="${searchEndpoint}"
 >
   <input data-search-input type="search" placeholder="Search…" autocomplete="off" />
-  <div class="talaash-filters">
-    <a href="#" data-search-filter="blog">Blog</a>
-    <a href="#" data-search-filter="webinars">Webinars</a>
-    <a href="#" data-search-filter="releases">Releases</a>
-  </div>
-  <div data-search-answer></div>
+  <div data-search-answer hidden></div>
   <div data-search-loading hidden>Searching…</div>
   <div data-search-empty hidden>No results found.</div>
-  <div data-search-results>
+  <div data-search-results></div>
+  <div data-search-result-source hidden style="display:none!important" aria-hidden="true">
     <a data-search-result href="#">
       <img data-search-result-image alt="" width="88" height="88" />
-      <div>
+      <div data-search-result-body>
         <div data-search-result-type></div>
         <div data-search-result-title></div>
         <div data-search-result-snippet></div>
@@ -591,9 +587,10 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                 1. Designer search layout
               </h4>
               <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
-                Copy into a Webflow Embed. Credentials are filled for this site. Default look comes
-                from <code>search.css</code> (loaded by the script). Override in Designer, or add{" "}
-                <code>data-search-unstyled</code> on the root to opt out.
+                Paste into a Webflow Embed. Result cards live in a hidden{" "}
+                <code>data-search-result-source</code> block (never flash empty). Styles load from{" "}
+                <code>search.css</code>. No filter tabs by default — add{" "}
+                <code>data-search-filter</code> links only if you need them.
               </p>
             </div>
             <button
