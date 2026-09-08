@@ -11,47 +11,61 @@ function readinessBadge(r: AeoPageScore["readiness"]) {
   return <span className="trend-badge trend-badge--down">Needs work</span>;
 }
 
-function BriefCard({ brief }: { brief: AeoBrief }) {
+function BriefRow({
+  brief,
+  open,
+  onToggle,
+}: {
+  brief: AeoBrief;
+  open: boolean;
+  onToggle: () => void;
+}) {
   return (
-    <div className="insights-panel mb-md">
-      <div className="insights-panel__head insights-panel__head--split">
-        <div>
-          <h3 className="title-sm" style={{ margin: 0 }}>
-            {brief.suggestedTitle}
-          </h3>
-          <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
-            Target: “{brief.question}” · {brief.searchDemand} on-site searches ·{" "}
-            {brief.opportunity} opportunity
-          </p>
-        </div>
+    <div className={`aeo-brief${open ? " aeo-brief--open" : ""}`}>
+      <button type="button" className="aeo-brief__toggle" onClick={onToggle}>
+        <span className="aeo-brief__main">
+          <span className="label-md">{brief.suggestedTitle}</span>
+          <span className="caption text-muted">
+            “{brief.question}” · {brief.searchDemand} searches · {brief.opportunity}
+          </span>
+        </span>
         <span className="gap-summary-pill">{brief.format}</span>
-      </div>
-      <p className="body-md text-muted">{brief.rationale}</p>
-      <div className="row-2 mt-md">
-        <div>
-          <p className="caption" style={{ marginBottom: 8 }}>
-            Outline
+        <span className="aeo-brief__chevron" aria-hidden>
+          {open ? "−" : "+"}
+        </span>
+      </button>
+      {open && (
+        <div className="aeo-brief__body">
+          <p className="body-md text-muted" style={{ marginTop: 0 }}>
+            {brief.rationale}
           </p>
-          <ol className="body-md" style={{ margin: 0, paddingLeft: 18, lineHeight: 1.55 }}>
-            {brief.outline.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ol>
+          <div className="aeo-brief__grid">
+            <div>
+              <p className="caption" style={{ marginBottom: 6 }}>
+                Outline
+              </p>
+              <ol className="body-md aeo-compact-list">
+                {brief.outline.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ol>
+            </div>
+            <div>
+              <p className="caption" style={{ marginBottom: 6 }}>
+                Facts · schema
+              </p>
+              <ul className="body-md aeo-compact-list">
+                {brief.factsToInclude.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+              <p className="caption" style={{ margin: "8px 0 0" }}>
+                <code>{brief.schemaHint}</code>
+              </p>
+            </div>
+          </div>
         </div>
-        <div>
-          <p className="caption" style={{ marginBottom: 8 }}>
-            Facts to include
-          </p>
-          <ul className="body-md" style={{ margin: 0, paddingLeft: 18, lineHeight: 1.55 }}>
-            {brief.factsToInclude.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-          <p className="caption mt-md" style={{ marginBottom: 0 }}>
-            Schema hint: <code>{brief.schemaHint}</code>
-          </p>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -62,6 +76,8 @@ export function AeoTab() {
   const [booting, setBooting] = useState(true);
   const [error, setError] = useState("");
   const [data, setData] = useState<AeoReport | null>(null);
+  const [openBrief, setOpenBrief] = useState<string | null>(null);
+  const [showAllPages, setShowAllPages] = useState(false);
 
   const loadCached = useCallback(async () => {
     try {
@@ -105,12 +121,17 @@ export function AeoTab() {
       if (!res.ok) throw new Error(json.error || "AEO analysis failed");
       setData(json as AeoReport);
       setDays(d);
+      setOpenBrief(null);
+      setShowAllPages(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "AEO analysis failed");
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const pages = data?.pages ?? [];
+  const visiblePages = showAllPages ? pages : pages.slice(0, 8);
 
   return (
     <>
@@ -122,12 +143,6 @@ export function AeoTab() {
           <p className="caption text-muted" style={{ margin: 0 }}>
             Score indexed pages for AI citability and turn search gaps into answer-page briefs
           </p>
-          {data && (
-            <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
-              Saved report from {fmtDate(data.analyzedAt)} · last {data.days} days of search gaps.
-              Re-run anytime for new findings.
-            </p>
-          )}
         </div>
         <div className="insights-toolbar__actions">
           <div className="timeframe-rail">
@@ -149,17 +164,28 @@ export function AeoTab() {
             disabled={loading || booting}
             onClick={() => run(days, true)}
           >
-            {loading
-              ? "Analyzing…"
-              : data
-                ? "Re-run AEO"
-                : "Run AEO analysis"}
+            {loading ? "Analyzing…" : data ? "Re-run AEO" : "Run AEO analysis"}
           </button>
         </div>
       </div>
 
+      {data && (
+        <div className="aeo-status-bar mb-md" role="status">
+          <div className="aeo-status-bar__date">
+            <span className="aeo-status-bar__label">Last ran</span>
+            <time dateTime={data.analyzedAt} className="aeo-status-bar__value">
+              {fmtDate(data.analyzedAt)}
+            </time>
+          </div>
+          <span className="aeo-status-bar__sep" aria-hidden>
+            ·
+          </span>
+          <span className="body-md">{data.summary}</span>
+        </div>
+      )}
+
       {error && (
-        <p className="insights-callout mb-lg" role="alert">
+        <p className="insights-callout mb-md" role="alert">
           {error}
         </p>
       )}
@@ -178,8 +204,8 @@ export function AeoTab() {
       )}
 
       {loading && data && (
-        <p className="insights-callout mb-lg">
-          Refreshing AEO report… previous results stay visible until the new run finishes.
+        <p className="insights-callout mb-md">
+          Refreshing… previous results stay visible until the new run finishes.
         </p>
       )}
 
@@ -189,8 +215,7 @@ export function AeoTab() {
             <h2 className="title-lg">Draft AEO helper</h2>
             <p className="body-md text-muted">
               Runs answer-readiness scores on your indexed CMS pages and builds briefs from
-              on-site questions that currently get weak or zero results. Reports are saved so they
-              stay after you switch tabs.
+              on-site questions with weak or zero results. Reports are saved across tab switches.
             </p>
             <button
               type="button"
@@ -205,132 +230,127 @@ export function AeoTab() {
 
       {data && (
         <>
-          <p className="body-md mb-lg" style={{ maxWidth: "62ch" }}>
-            {data.summary}
-          </p>
-
-          <div className="prompt-stat-grid mb-lg">
-            <div className="insights-stat-card insights-stat-card--mint">
-              <div className="insights-stat-card__top">
-                <span className="insights-stat-card__label">Avg readiness</span>
-              </div>
+          <div className="prompt-stat-grid mb-md">
+            <div className="insights-stat-card insights-stat-card--mint insights-stat-card--static">
+              <div className="insights-stat-card__label">Avg readiness</div>
               <div className="insights-stat-card__value">{data.stats.avgScore}</div>
-              <div className="insights-stat-card__foot">
-                <span className="caption text-muted">
-                  {data.stats.pagesScored} pages scored
-                </span>
-              </div>
+              <div className="caption text-muted">{data.stats.pagesScored} pages</div>
             </div>
-            <div className="insights-stat-card insights-stat-card--peach">
-              <div className="insights-stat-card__top">
-                <span className="insights-stat-card__label">Answer-ready</span>
-              </div>
+            <div className="insights-stat-card insights-stat-card--peach insights-stat-card--static">
+              <div className="insights-stat-card__label">Answer-ready</div>
               <div className="insights-stat-card__value">{data.stats.readyCount}</div>
-              <div className="insights-stat-card__foot">
-                <span className="caption text-muted">
-                  {data.stats.partialCount} partial · {data.stats.weakCount} weak
-                </span>
+              <div className="caption text-muted">
+                {data.stats.partialCount} partial · {data.stats.weakCount} weak
               </div>
             </div>
-            <div className="insights-stat-card insights-stat-card--mustard">
-              <div className="insights-stat-card__top">
-                <span className="insights-stat-card__label">Gap questions</span>
-              </div>
+            <div className="insights-stat-card insights-stat-card--mustard insights-stat-card--static">
+              <div className="insights-stat-card__label">Gap questions</div>
               <div className="insights-stat-card__value">{data.stats.gapCount}</div>
-              <div className="insights-stat-card__foot">
-                <span className="caption text-muted">
-                  {data.stats.briefCount} briefs generated
-                </span>
-              </div>
+              <div className="caption text-muted">{data.stats.briefCount} briefs</div>
             </div>
-            <div className="insights-stat-card insights-stat-card--cream">
-              <div className="insights-stat-card__top">
-                <span className="insights-stat-card__label">Window</span>
-              </div>
+            <div className="insights-stat-card insights-stat-card--cream insights-stat-card--static">
+              <div className="insights-stat-card__label">Window</div>
               <div className="insights-stat-card__value">{data.days}d</div>
-              <div className="insights-stat-card__foot">
-                <span className="caption text-muted">Search gap lookback</span>
-              </div>
+              <div className="caption text-muted">Search lookback</div>
             </div>
           </div>
 
-          <div className="insights-panel mb-lg">
-            <div className="insights-panel__head">
-              <h3 className="title-sm">How to use this</h3>
-              <p className="caption text-muted">Practical AEO tips for this draft</p>
-            </div>
-            <ul className="body-md" style={{ margin: 0, paddingLeft: 18, lineHeight: 1.55 }}>
+          <details className="aeo-tips mb-md">
+            <summary className="aeo-tips__summary">How to use this report</summary>
+            <ul className="body-md aeo-compact-list" style={{ marginTop: 10 }}>
               {data.tips.map((t) => (
                 <li key={t}>{t}</li>
               ))}
             </ul>
-          </div>
+          </details>
 
-          <div className="mb-lg">
-            <div className="insights-panel__head" style={{ marginBottom: 12 }}>
-              <h3 className="title-sm">AEO content briefs</h3>
-              <p className="caption text-muted">
-                From on-site questions with weak or zero results — publish then re-index
-              </p>
-            </div>
-            {data.briefs.length === 0 ? (
-              <div className="insights-panel insights-panel--empty">
+          <div className="aeo-split mb-md">
+            <section className="insights-panel aeo-panel">
+              <div className="insights-panel__head">
+                <h3 className="title-sm">Content briefs</h3>
+                <p className="caption text-muted">
+                  Expand a brief · publish → re-index
+                </p>
+              </div>
+              {data.briefs.length === 0 ? (
                 <p className="body-md text-muted" style={{ margin: 0 }}>
                   No gap-driven briefs yet. Collect more search traffic or widen the timeframe.
                 </p>
-              </div>
-            ) : (
-              data.briefs.map((b) => <BriefCard key={b.question} brief={b} />)
-            )}
-          </div>
+              ) : (
+                <div className="aeo-brief-list">
+                  {data.briefs.map((b) => (
+                    <BriefRow
+                      key={b.question}
+                      brief={b}
+                      open={openBrief === b.question}
+                      onToggle={() =>
+                        setOpenBrief((cur) =>
+                          cur === b.question ? null : b.question
+                        )
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
 
-          <div className="insights-panel mb-lg">
-            <div className="insights-panel__head">
-              <h3 className="title-sm">Page answer-readiness</h3>
-              <p className="caption text-muted">
-                Lowest scores first — fix these before chasing new topics
-              </p>
-            </div>
-            {data.pages.length === 0 ? (
-              <p className="body-md text-muted">No indexed pages to score.</p>
-            ) : (
-              <div className="insights-table-wrap">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Page</th>
-                      <th>Score</th>
-                      <th>Status</th>
-                      <th>Top fix</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.pages.map((p) => (
-                      <tr key={p.id}>
-                        <td>
-                          <div className="label-md" style={{ marginBottom: 2 }}>
-                            {p.title}
-                          </div>
-                          <a
-                            className="caption"
-                            href={p.url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {p.contentType}
-                          </a>
-                        </td>
-                        <td>{p.score}</td>
-                        <td>{readinessBadge(p.readiness)}</td>
-                        <td className="body-md text-muted">
-                          {p.fixes[0] ?? p.strengths[0] ?? "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <section className="insights-panel aeo-panel">
+              <div className="insights-panel__head insights-panel__head--split">
+                <div>
+                  <h3 className="title-sm">Page readiness</h3>
+                  <p className="caption text-muted">Lowest scores first</p>
+                </div>
+                {pages.length > 8 && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setShowAllPages((v) => !v)}
+                  >
+                    {showAllPages ? "Show top 8" : `Show all ${pages.length}`}
+                  </button>
+                )}
               </div>
-            )}
+              {pages.length === 0 ? (
+                <p className="body-md text-muted">No indexed pages to score.</p>
+              ) : (
+                <div className="insights-table-wrap aeo-table-scroll">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Page</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                        <th>Top fix</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visiblePages.map((p) => (
+                        <tr key={p.id}>
+                          <td>
+                            <div className="label-md" style={{ marginBottom: 2 }}>
+                              {p.title}
+                            </div>
+                            <a
+                              className="caption"
+                              href={p.url}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {p.contentType}
+                            </a>
+                          </td>
+                          <td>{p.score}</td>
+                          <td>{readinessBadge(p.readiness)}</td>
+                          <td className="body-md text-muted">
+                            {p.fixes[0] ?? p.strengths[0] ?? "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           </div>
         </>
       )}
