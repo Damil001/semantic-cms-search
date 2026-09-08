@@ -65,9 +65,9 @@ export default async function InstallPage({
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 28 }}>
           {user ? (
-            <Link className="btn btn-primary" href="/api/oauth/start">
+            <a className="btn btn-primary" href="/api/oauth/start">
               Connect Webflow
-            </Link>
+            </a>
           ) : (
             <>
               <Link
