@@ -406,6 +406,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
 
   const searchEndpoint = me.searchEndpoint || "https://www.talaash.org/search";
   const scriptUrl = me.scriptUrl || "https://www.talaash.org/search.js";
+  const loaderUrl = scriptUrl.replace(/\/search\.js$/i, "/search-loader.js");
   const siteId = me.siteId || "";
   const searchToken = me.searchToken || "";
 
@@ -433,7 +434,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
 </div>`;
 
   const scriptTagHtml = `<script
-  src="${scriptUrl}"
+  src="${loaderUrl}"
   data-search-site="${siteId}"
   data-search-token="${searchToken}"
   data-search-endpoint="${searchEndpoint}"
@@ -542,7 +543,8 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                   return;
                 }
                 setScriptNotice(
-                  `Search script v${data.version || "?"} installed (${data.integrityHash || "new hash"}). Publish the Webflow site now — until you publish, the browser keeps blocking the old integrity hash and Enter will do nothing.`
+                  data.message ||
+                    "Loader installed. Publish Webflow once — later widget updates are automatic."
                 );
               } catch {
                 setScriptNotice("Network error installing search script.");
@@ -557,7 +559,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                 <span className="btn-label">Installing…</span>
               </>
             ) : (
-              "Reinstall search script"
+              "Install search on site"
             )}
           </button>
         </div>
@@ -605,8 +607,9 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                 2. Script tag (optional fallback)
               </h4>
               <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
-                Prefer <strong>Install search script</strong> above (Custom Code API). Use this only
-                if you need a manual footer script — then publish.
+                Prefer <strong>Install search on site</strong> (Custom Code). That installs a{" "}
+                <em>stable loader</em> — widget updates no longer require reinstalling. This paste
+                is only a manual fallback (no integrity attribute).
               </p>
             </div>
             <button
@@ -625,7 +628,8 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             ["Site ID", siteId],
             ["Search token", searchToken],
             ["Search API", searchEndpoint],
-            ["Script URL", scriptUrl],
+            ["Loader URL", loaderUrl],
+            ["Widget URL", scriptUrl],
           ].map(([label, value]) => (
             <div key={String(label)} className="setup-code-row">
               <span className="setup-code-label">{label}</span>

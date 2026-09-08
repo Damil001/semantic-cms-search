@@ -2,8 +2,10 @@ import { createHash } from "node:crypto";
 
 const API = "https://api.webflow.com/v2";
 
-/** Immutable display name for registered hosted search.js (alphanumeric, ≤50). */
-export const TALAASH_SCRIPT_DISPLAY_NAME = "TalaashSearch";
+/** Stable loader registered once; search.js updates via /api/widget/manifest. */
+export const TALAASH_LOADER_DISPLAY_NAME = "TalaashLoader";
+/** Legacy name — remove from site custom code on install/uninstall. */
+export const TALAASH_LEGACY_DISPLAY_NAME = "TalaashSearch";
 
 type AppliedScript = {
   id: string;
@@ -15,15 +17,14 @@ type AppliedScript = {
 async function sriForUrl(url: string): Promise<{ integrityHash: string; version: string }> {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
-    throw new Error(`Could not fetch search script for integrity hash (${res.status})`);
+    throw new Error(`Could not fetch script for integrity hash (${res.status}): ${url}`);
   }
   const buf = Buffer.from(await res.arrayBuffer());
   const digest = createHash("sha256").update(buf).digest("base64");
   const integrityHash = `sha256-${digest}`;
-  // Unique semver patch per file bytes so reinstall always registers a new SRI.
   const patch = createHash("sha256").update(buf).digest("hex").slice(0, 8);
   const version =
-    process.env.SEARCH_SCRIPT_VERSION?.trim() ||
+    process.env.SEARCH_LOADER_VERSION?.trim() ||
     `1.0.${Number.parseInt(patch, 16) % 1_000_000_000}`;
   return { integrityHash, version };
 }
@@ -66,6 +67,16 @@ async function listRegisteredScripts(
   return result.data.scripts ?? [];
 }
 
+function isOurScript(s: { id: string; displayName?: string }): boolean {
+  const name = (s.displayName || "").toLowerCase();
+  const id = s.id.toLowerCase();
+  return (
+    name === TALAASH_LOADER_DISPLAY_NAME.toLowerCase() ||
+    name === TALAASH_LEGACY_DISPLAY_NAME.toLowerCase() ||
+    id.includes("talaash")
+  );
+}
+
 async function registerHostedScript(
   token: string,
   siteId: string,
@@ -98,7 +109,6 @@ async function registerHostedScript(
     };
   }
 
-  // Already registered (same displayName + version) — resolve from list
   const existing = (await listRegisteredScripts(token, siteId)).find(
     (s) =>
       (s.displayName === opts.displayName || s.id === opts.displayName) &&
@@ -145,39 +155,32 @@ async function putSiteCustomCode(
 }
 
 /**
- * Register hosted search.js and apply it site-wide in the footer via Custom Code API.
- * Does not publish — customer must publish in Webflow for changes to go live.
+ * Register the stable search-loader.js once via Custom Code.
+ * Loader pulls current search.js + SRI from /api/widget/manifest — no reinstall on widget updates.
  */
 export async function installSearchScript(opts: {
   accessToken: string;
   siteId: string;
+  /** Origin root, e.g. https://www.talaash.org — loader path is appended */
   scriptUrl: string;
   searchEndpoint: string;
   searchToken: string;
 }): Promise<{ scriptId: string; version: string; integrityHash: string }> {
-  const baseUrl = opts.scriptUrl.split("?")[0];
-  // Probe current bytes first (no query) so version tracks real file content.
-  const { integrityHash, version } = await sriForUrl(baseUrl);
-  const hostedLocation = `${baseUrl}?v=${version}`;
+  const origin = opts.scriptUrl.replace(/\/search\.js.*$/i, "").replace(/\/$/, "");
+  const loaderUrl = `${origin}/search-loader.js`;
+  const { integrityHash, version } = await sriForUrl(loaderUrl);
+  const hostedLocation = `${loaderUrl}?v=${version}`;
 
   const registered = await registerHostedScript(opts.accessToken, opts.siteId, {
     hostedLocation,
     integrityHash,
     version,
-    displayName: TALAASH_SCRIPT_DISPLAY_NAME,
+    displayName: TALAASH_LOADER_DISPLAY_NAME,
   });
 
   const existing = await getSiteCustomCode(opts.accessToken, opts.siteId);
-  const ours = new Set(
-    (await listRegisteredScripts(opts.accessToken, opts.siteId))
-      .filter(
-        (s) =>
-          s.displayName === TALAASH_SCRIPT_DISPLAY_NAME ||
-          s.id === registered.id ||
-          s.id.toLowerCase().includes("talaash")
-      )
-      .map((s) => s.id)
-  );
+  const registeredAll = await listRegisteredScripts(opts.accessToken, opts.siteId);
+  const ours = new Set(registeredAll.filter(isOurScript).map((s) => s.id));
   ours.add(registered.id);
 
   const kept = existing.filter((s) => !ours.has(s.id));
@@ -206,16 +209,7 @@ export async function uninstallSearchScript(opts: {
   siteId: string;
 }): Promise<void> {
   const registered = await listRegisteredScripts(opts.accessToken, opts.siteId);
-  const ours = new Set(
-    registered
-      .filter(
-        (s) =>
-          s.displayName === TALAASH_SCRIPT_DISPLAY_NAME ||
-          s.id.toLowerCase().includes("talaash")
-      )
-      .map((s) => s.id)
-  );
-
+  const ours = new Set(registered.filter(isOurScript).map((s) => s.id));
   if (ours.size === 0) return;
 
   const existing = await getSiteCustomCode(opts.accessToken, opts.siteId);

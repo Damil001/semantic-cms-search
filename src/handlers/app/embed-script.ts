@@ -46,7 +46,7 @@ export default async function handler(
       ok: true,
       ...result,
       message:
-        "Search script registered on your Webflow site. Publish the site in Webflow for it to go live.",
+        "Stable search loader installed. Publish once in Webflow. Future search.js updates apply automatically — no reinstall needed.",
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to install script";
