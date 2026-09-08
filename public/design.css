@@ -1684,6 +1684,11 @@ select.text-input:focus {
   padding: var(--space-sm) 0;
 }
 
+.prompt-chart-wrap--empty {
+  height: 120px;
+  padding: 0;
+}
+
 .prompt-chart-empty {
   position: absolute;
   inset: 0;

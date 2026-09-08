@@ -30,7 +30,9 @@ export function VolumeChart({ points }: { points: Point[] }) {
   const hasData = points.some((p) => p.count > 0);
   if (!hasData) {
     return (
-      <p className="prompt-chart-empty">No volume data yet for this period.</p>
+      <div className="prompt-chart-wrap prompt-chart-wrap--empty">
+        <p className="prompt-chart-empty">No volume data yet for this period.</p>
+      </div>
     );
   }
 
