@@ -5,16 +5,28 @@ const API = "https://api.webflow.com/v2";
 /** Immutable display name for registered hosted search.js (alphanumeric, ≤50). */
 export const TALAASH_SCRIPT_DISPLAY_NAME = "TalaashSearch";
 
-/** Bump when public/search.js behavior changes (Webflow script versions are immutable). */
-export const TALAASH_SCRIPT_VERSION =
-  process.env.SEARCH_SCRIPT_VERSION?.trim() || "1.0.3";
-
 type AppliedScript = {
   id: string;
   location: "header" | "footer";
   version: string;
   attributes?: Record<string, string>;
 };
+
+async function sriForUrl(url: string): Promise<{ integrityHash: string; version: string }> {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Could not fetch search script for integrity hash (${res.status})`);
+  }
+  const buf = Buffer.from(await res.arrayBuffer());
+  const digest = createHash("sha256").update(buf).digest("base64");
+  const integrityHash = `sha256-${digest}`;
+  // Unique semver patch per file bytes so reinstall always registers a new SRI.
+  const patch = createHash("sha256").update(buf).digest("hex").slice(0, 8);
+  const version =
+    process.env.SEARCH_SCRIPT_VERSION?.trim() ||
+    `1.0.${Number.parseInt(patch, 16) % 1_000_000_000}`;
+  return { integrityHash, version };
+}
 
 async function wfJson<T>(
   token: string,
@@ -38,16 +50,6 @@ async function wfJson<T>(
     ok: true,
     data: (body ? JSON.parse(body) : {}) as T,
   };
-}
-
-async function sriSha256(url: string): Promise<string> {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error(`Could not fetch search script for integrity hash (${res.status})`);
-  }
-  const buf = Buffer.from(await res.arrayBuffer());
-  const digest = createHash("sha256").update(buf).digest("base64");
-  return `sha256-${digest}`;
 }
 
 async function listRegisteredScripts(
@@ -152,12 +154,16 @@ export async function installSearchScript(opts: {
   scriptUrl: string;
   searchEndpoint: string;
   searchToken: string;
-}): Promise<{ scriptId: string; version: string }> {
-  const integrityHash = await sriSha256(opts.scriptUrl);
+}): Promise<{ scriptId: string; version: string; integrityHash: string }> {
+  const baseUrl = opts.scriptUrl.split("?")[0];
+  // Probe current bytes first (no query) so version tracks real file content.
+  const { integrityHash, version } = await sriForUrl(baseUrl);
+  const hostedLocation = `${baseUrl}?v=${version}`;
+
   const registered = await registerHostedScript(opts.accessToken, opts.siteId, {
-    hostedLocation: opts.scriptUrl,
+    hostedLocation,
     integrityHash,
-    version: TALAASH_SCRIPT_VERSION,
+    version,
     displayName: TALAASH_SCRIPT_DISPLAY_NAME,
   });
 
@@ -168,7 +174,7 @@ export async function installSearchScript(opts: {
         (s) =>
           s.displayName === TALAASH_SCRIPT_DISPLAY_NAME ||
           s.id === registered.id ||
-          s.id.startsWith("talaash")
+          s.id.toLowerCase().includes("talaash")
       )
       .map((s) => s.id)
   );
@@ -187,7 +193,11 @@ export async function installSearchScript(opts: {
   });
 
   await putSiteCustomCode(opts.accessToken, opts.siteId, kept);
-  return { scriptId: registered.id, version: registered.version };
+  return {
+    scriptId: registered.id,
+    version: registered.version,
+    integrityHash,
+  };
 }
 
 /** Remove Talaash applied scripts from site-level custom code (before token revoke). */

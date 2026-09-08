@@ -542,14 +542,8 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                   return;
                 }
                 setScriptNotice(
-                  data.message ||
-                    "Search script installed. Publish your Webflow site for it to go live."
+                  `Search script v${data.version || "?"} installed (${data.integrityHash || "new hash"}). Publish the Webflow site now — until you publish, the browser keeps blocking the old integrity hash and Enter will do nothing.`
                 );
-                if (data.version) {
-                  setScriptNotice(
-                    `Search script v${data.version} registered. Publish the site in Webflow so the new integrity hash goes live — otherwise the browser blocks search.js.`
-                  );
-                }
               } catch {
                 setScriptNotice("Network error installing search script.");
               } finally {
@@ -563,7 +557,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                 <span className="btn-label">Installing…</span>
               </>
             ) : (
-              "Install search script"
+              "Reinstall search script"
             )}
           </button>
         </div>
