@@ -74,11 +74,19 @@ export default async function handler(
 ): Promise<void> {
   const oauthError =
     typeof req.query.error === "string" ? req.query.error : "";
-  if (oauthError === "access_denied") {
+  if (oauthError) {
     clearCookie(res, OAUTH_STATE_COOKIE);
     clearCookie(res, OAUTH_PENDING_CODE_COOKIE);
     clearCookie(res, OAUTH_PENDING_STATE_COOKIE);
-    res.redirect(302, "https://www.talaash.org/install?oauth=denied");
+    if (oauthError === "access_denied") {
+      res.redirect(302, "https://www.talaash.org/install?oauth=denied");
+      return;
+    }
+    const desc =
+      typeof req.query.error_description === "string"
+        ? req.query.error_description
+        : oauthError;
+    failRedirect(res, `Webflow authorization error: ${desc}`.slice(0, 180));
     return;
   }
 

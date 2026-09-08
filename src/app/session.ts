@@ -27,9 +27,17 @@ export function newToken(): string {
   return randomBytes(32).toString("hex");
 }
 
+function cookieDomain(): string {
+  // Share auth + OAuth cookies across apex and www (host-only cookies break the callback).
+  if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+    return "; Domain=.talaash.org";
+  }
+  return "";
+}
+
 function cookieSuffix(): string {
   const secure = process.env.VERCEL ? "; Secure" : "";
-  return `; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${secure}`;
+  return `; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${secure}${cookieDomain()}`;
 }
 
 export function setCookie(res: VercelResponse, name: string, value: string): void {
@@ -41,7 +49,7 @@ export function clearCookie(res: VercelResponse, name: string): void {
   const secure = process.env.VERCEL ? "; Secure" : "";
   res.setHeader(
     "Set-Cookie",
-    `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`
+    `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}${cookieDomain()}`
   );
 }
 

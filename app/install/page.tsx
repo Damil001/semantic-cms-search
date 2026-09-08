@@ -11,6 +11,8 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
+const WWW = "https://www.talaash.org";
+
 /**
  * Marketplace Install URL should point here:
  *   https://www.talaash.org/install
@@ -29,8 +31,9 @@ export default async function InstallPage({
   const blockedAuto =
     oauthStatus === "denied" || oauthStatus === "error";
 
+  // Fresh install (no error): send logged-in users straight into OAuth document flow
   if (user && !blockedAuto) {
-    redirect("/api/oauth/start");
+    redirect(`${WWW}/api/oauth/start`);
   }
 
   return (
@@ -65,7 +68,7 @@ export default async function InstallPage({
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 28 }}>
           {user ? (
-            <a className="btn btn-primary" href="/api/oauth/start">
+            <a className="btn btn-primary" href={`${WWW}/api/oauth/start`}>
               Connect Webflow
             </a>
           ) : (
@@ -87,8 +90,8 @@ export default async function InstallPage({
         </div>
 
         <p className="caption text-muted mt-lg">
-          Always install from <strong>https://www.talaash.org</strong> (include{" "}
-          <code>www</code>).
+          Always use <strong>https://www.talaash.org</strong> (include <code>www</code>).
+          Bookmark that URL — not the apex domain.
         </p>
 
         <p className="caption text-muted mt-lg">
