@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Collection, CollectionMapping, MeResponse } from "@/lib/types";
+import { trackEvent } from "@/lib/analytics";
 import { EmbedFieldPicker, isEmbeddableFieldType } from "./EmbedFieldPicker";
 
 interface Props {
@@ -157,6 +158,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   }, []);
 
   const refreshFromWebflow = useCallback(async () => {
+    trackEvent("setup_refresh_fields");
     setRefreshing(true);
     setRefreshNotice(null);
     try {
@@ -256,6 +258,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
 
   async function indexAll(reindex = false) {
     const mode = reindex ? "reindex" : "index";
+    trackEvent("setup_index", { mode });
     setBusy(true);
     setActiveAction(mode);
     const enabled = readMaps().filter((m) => m.enabled);
@@ -385,6 +388,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   }
 
   async function changeSite(siteId: string) {
+    trackEvent("setup_change_site");
     await fetch("/api/app/select-site", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -528,6 +532,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
               ) {
                 return;
               }
+              trackEvent("setup_disconnect");
               setDisconnecting(true);
               try {
                 const res = await fetch("/api/app/disconnect", { method: "POST" });
@@ -694,6 +699,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             className={`btn btn-primary${activeAction === "save" ? " is-loading" : ""}`}
             disabled={busy}
             onClick={async () => {
+              trackEvent("setup_save_mappings");
               setBusy(true);
               setActiveAction("save");
               setIndexProgress({

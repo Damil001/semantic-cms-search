@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
+import { trackEvent } from "@/lib/analytics";
 
 export function LandingPage() {
   return (
@@ -28,10 +31,18 @@ export function LandingPage() {
             meaning — then shows you what they looked for.
           </p>
           <div className="landing-hero__actions">
-            <Link className="btn btn-primary" href="/install">
+            <Link
+              className="btn btn-primary"
+              href="/install"
+              onClick={() => trackEvent("cta_click", { location: "hero", target: "install" })}
+            >
               Get started
             </Link>
-            <a className="btn btn-secondary" href="#how">
+            <a
+              className="btn btn-secondary"
+              href="#how"
+              onClick={() => trackEvent("cta_click", { location: "hero", target: "how" })}
+            >
               How it works
             </a>
           </div>
@@ -133,10 +144,18 @@ export function LandingPage() {
               </div>
             </div>
             <div className="landing-hero__actions mt-lg">
-              <Link className="btn btn-primary" href="/install">
+              <Link
+                className="btn btn-primary"
+                href="/install"
+                onClick={() => trackEvent("cta_click", { location: "footer", target: "install" })}
+              >
                 Install Talaash
               </Link>
-              <Link className="btn btn-secondary" href="/login">
+              <Link
+                className="btn btn-secondary"
+                href="/login"
+                onClick={() => trackEvent("cta_click", { location: "footer", target: "login" })}
+              >
                 Sign in
               </Link>
             </div>

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { trackEvent } from "@/lib/analytics";
 
 export function TopNav({
   email,
@@ -14,6 +15,7 @@ export function TopNav({
   const router = useRouter();
 
   async function logout() {
+    trackEvent("logout");
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } catch {
@@ -24,7 +26,11 @@ export function TopNav({
 
   return (
     <nav className="top-nav">
-      <Link className="top-nav__brand" href="/">
+      <Link
+        className="top-nav__brand"
+        href="/"
+        onClick={() => trackEvent("nav_click", { target: "home" })}
+      >
         <Image
           src="/brand/talaash-logo.png"
           alt=""
@@ -44,10 +50,18 @@ export function TopNav({
           </>
         ) : (
           <>
-            <Link className="body-md" href="/pricing">
+            <Link
+              className="body-md"
+              href="/pricing"
+              onClick={() => trackEvent("nav_click", { target: "pricing" })}
+            >
               Pricing
             </Link>
-            <Link className="btn btn-primary btn-sm" href="/install">
+            <Link
+              className="btn btn-primary btn-sm"
+              href="/install"
+              onClick={() => trackEvent("nav_click", { target: "install" })}
+            >
               Install
             </Link>
           </>

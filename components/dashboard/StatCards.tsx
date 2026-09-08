@@ -2,6 +2,7 @@
 
 import type { PromptAnalytics } from "@/lib/types";
 import { fmtChange } from "@/lib/format";
+import { trackEvent } from "@/lib/analytics";
 import { SparklineChart } from "@/components/charts/AnalyticsCharts";
 
 const STAT_META = [
@@ -88,7 +89,8 @@ export function StatCards({ data }: { data: PromptAnalytics }) {
     data.searchesPerSession,
   ];
 
-  const scrollTo = (sel: string) => {
+  const scrollTo = (sel: string, metric: string) => {
+    trackEvent("stat_card_click", { metric });
     const el = document.querySelector(sel);
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -109,7 +111,7 @@ export function StatCards({ data }: { data: PromptAnalytics }) {
             type="button"
             className={`insights-stat-card insights-stat-card--${meta.surface}`}
             style={{ ["--stat-i" as string]: i }}
-            onClick={() => scrollTo(meta.scroll)}
+            onClick={() => scrollTo(meta.scroll, meta.key)}
           >
             <div className="insights-stat-card__shine" aria-hidden="true" />
             <div className="insights-stat-card__top">

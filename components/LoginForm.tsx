@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { trackEvent } from "@/lib/analytics";
 
 export function LoginForm() {
   const params = useSearchParams();
@@ -15,6 +16,7 @@ export function LoginForm() {
   async function auth(action: "login" | "signup") {
     setError("");
     setSubmitting(true);
+    trackEvent("auth_attempt", { action });
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 15_000);
     try {
@@ -28,14 +30,18 @@ export function LoginForm() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Failed");
+        trackEvent("auth_failed", { action, reason: "api_error" });
         return;
       }
+      trackEvent("auth_success", { action });
       window.location.href = next;
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         setError("Sign-in timed out. If this keeps happening, check Vercel env vars for Supabase.");
+        trackEvent("auth_failed", { action, reason: "timeout" });
       } else {
         setError("Network error — check your connection and try again.");
+        trackEvent("auth_failed", { action, reason: "network" });
       }
     } finally {
       window.clearTimeout(timeout);

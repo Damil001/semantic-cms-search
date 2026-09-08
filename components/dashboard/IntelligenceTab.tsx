@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ContentInsightsResponse } from "@/lib/types";
 import { fmtDate } from "@/lib/format";
+import { trackEvent } from "@/lib/analytics";
 
 const SURFACES = ["peach", "mint", "mustard", "cream"];
 
@@ -48,6 +49,7 @@ export function IntelligenceTab() {
   }, [loadCached]);
 
   async function runAnalysis() {
+    trackEvent("content_intelligence_run", { had_report: Boolean(data) });
     setLoading(true);
     setStatus("Analyzing up to 15,000 past searches… this may take 30–60 seconds.");
     try {
@@ -56,8 +58,10 @@ export function IntelligenceTab() {
       if (!res.ok) throw new Error(json.error || "Analysis failed");
       setData(json);
       setStatus("Report saved. You can leave this tab and come back anytime.");
+      trackEvent("content_intelligence_success");
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Analysis failed");
+      trackEvent("content_intelligence_failed");
     } finally {
       setLoading(false);
     }

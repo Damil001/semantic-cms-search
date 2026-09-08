@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MeResponse, PromptAnalytics } from "@/lib/types";
+import { trackEvent } from "@/lib/analytics";
 import { InsightsTab } from "./InsightsTab";
 import { IntelligenceTab } from "./IntelligenceTab";
 import { AeoTab } from "./AeoTab";
@@ -203,7 +204,11 @@ export function DashboardApp() {
             <p className="body-md text-muted">
               Authorize CMS read access, map your collections, index content, and embed search on your site.
             </p>
-            <a className="btn btn-primary mt-md" href="/install">
+            <a
+              className="btn btn-primary mt-md"
+              href="/install"
+              onClick={() => trackEvent("connect_webflow_click", { source: "dashboard_empty" })}
+            >
               Connect Webflow
             </a>
           </div>
@@ -229,7 +234,10 @@ export function DashboardApp() {
             key={id}
             type="button"
             className={tab === id ? "active" : ""}
-            onClick={() => setTab(id)}
+            onClick={() => {
+              setTab(id);
+              trackEvent("dashboard_tab", { tab: id });
+            }}
           >
             {label}
           </button>
@@ -254,10 +262,14 @@ export function DashboardApp() {
                 syncing={syncing}
                 days={analyticsDays}
                 onDaysChange={(d) => {
+                  trackEvent("insights_days_change", { days: d });
                   analyticsRef.current = null;
                   loadAnalytics({ days: d, force: true });
                 }}
-                onRefresh={() => loadAnalytics({ force: true, background: true })}
+                onRefresh={() => {
+                  trackEvent("insights_refresh");
+                  loadAnalytics({ force: true, background: true });
+                }}
               />
             </div>
           ) : (

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AeoBrief, AeoPageScore, AeoReport } from "@/lib/types";
 import { fmtDate } from "@/lib/format";
+import { trackEvent } from "@/lib/analytics";
 
 function readinessBadge(r: AeoPageScore["readiness"]) {
   if (r === "ready") return <span className="trend-badge trend-badge--up">Answer-ready</span>;
@@ -108,6 +109,7 @@ export function AeoTab() {
   }, [loadCached]);
 
   const run = useCallback(async (d: number, refresh: boolean) => {
+    trackEvent("aeo_run", { days: d, refresh });
     setLoading(true);
     setError("");
     try {
@@ -123,8 +125,10 @@ export function AeoTab() {
       setDays(d);
       setOpenBrief(null);
       setShowAllPages(false);
+      trackEvent("aeo_success", { days: d });
     } catch (err) {
       setError(err instanceof Error ? err.message : "AEO analysis failed");
+      trackEvent("aeo_failed", { days: d });
     } finally {
       setLoading(false);
     }
