@@ -113,8 +113,17 @@
   }
 }
 
+.landing-fade-up {
+  animation: landing-fade-up 0.7s ease both;
+}
+
+.landing-panel-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 @media (max-width: 900px) {
-  .landing-panel-grid {
+  .landing-panel-grid,
+  .landing-panel-grid--2 {
     grid-template-columns: 1fr;
   }
 }

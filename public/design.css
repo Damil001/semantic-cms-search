@@ -1868,6 +1868,31 @@ select.text-input:focus {
 
 .pricing-tier-card--featured {
   background: var(--color-surface-soft);
+  position: relative;
+}
+
+.pricing-badge {
+  display: inline-block;
+  align-self: flex-start;
+  margin-bottom: var(--space-sm);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-cream, #f5e9d4);
+  color: var(--color-pricing-ink);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.pricing-faq-grid {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 768px) {
+  .pricing-faq-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .pricing-tier-card ul {

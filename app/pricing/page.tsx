@@ -1,22 +1,19 @@
-import Link from "next/link";
-import { TopNav } from "@/components/TopNav";
+import type { Metadata } from "next";
+import { PricingPage } from "@/components/pricing/PricingPage";
 
-export default function PricingPage() {
-  return (
-    <>
-      <TopNav showAuth={false} />
-      <section className="hero-band">
-        <div className="container" style={{ padding: 0 }}>
-          <h1 className="pricing-display">Pricing</h1>
-          <p className="body-md text-muted mt-md" style={{ maxWidth: "56ch" }}>
-            Talaash — semantic CMS search for Webflow. Setup, hosting, and search intelligence
-            included.
-          </p>
-          <Link className="btn btn-primary mt-lg" href="/login">
-            Get started
-          </Link>
-        </div>
-      </section>
-    </>
-  );
+export const metadata: Metadata = {
+  title: "Pricing — Talaash",
+  description:
+    "Talaash plans for Webflow: natural-language CMS search, hosting, and search intelligence for SEO and AEO.",
+  openGraph: {
+    title: "Pricing — Talaash",
+    description:
+      "Setup + monthly plans for semantic search, analytics, and content insights on Webflow.",
+    url: "https://www.talaash.org/pricing",
+    siteName: "Talaash",
+  },
+};
+
+export default function PricingRoute() {
+  return <PricingPage />;
 }
