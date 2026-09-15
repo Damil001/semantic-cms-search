@@ -18,6 +18,14 @@ type AppliedScript = {
   attributes?: Record<string, string>;
 };
 
+type RegisteredScript = {
+  id: string;
+  version?: string;
+  displayName?: string;
+  hostedLocation?: string;
+  integrityHash?: string;
+};
+
 async function sriForUrl(url: string): Promise<{ integrityHash: string; version: string }> {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
@@ -63,23 +71,43 @@ async function wfJson<T>(
   };
 }
 
+/** Webflow returns `registeredScripts` (not `scripts`). */
 async function listRegisteredScripts(
   token: string,
   siteId: string
-): Promise<{ id: string; version?: string; displayName?: string }[]> {
-  const result = await wfJson<{ scripts?: { id: string; version?: string; displayName?: string }[] }>(
-    token,
-    `/sites/${siteId}/registered_scripts`
-  );
-  if (!result.ok) {
-    throw new Error(`List scripts failed (${result.status}): ${result.body}`);
+): Promise<RegisteredScript[]> {
+  const all: RegisteredScript[] = [];
+  let offset = 0;
+  const limit = 100;
+
+  for (;;) {
+    const result = await wfJson<{
+      registeredScripts?: RegisteredScript[];
+      scripts?: RegisteredScript[];
+      pagination?: { total?: number; offset?: number; limit?: number };
+    }>(token, `/sites/${siteId}/registered_scripts?limit=${limit}&offset=${offset}`);
+
+    if (!result.ok) {
+      throw new Error(`List scripts failed (${result.status}): ${result.body}`);
+    }
+
+    const page = result.data.registeredScripts ?? result.data.scripts ?? [];
+    all.push(...page);
+
+    const total = result.data.pagination?.total;
+    offset += page.length;
+    if (page.length < limit || (typeof total === "number" && offset >= total)) {
+      break;
+    }
+    if (page.length === 0) break;
   }
-  return result.data.scripts ?? [];
+
+  return all;
 }
 
 function isOurScript(s: { id: string; displayName?: string }): boolean {
   const name = (s.displayName || "").toLowerCase();
-  const id = s.id.toLowerCase();
+  const id = (s.id || "").toLowerCase();
   return (
     name === TALAASH_SEARCH_DISPLAY_NAME.toLowerCase() ||
     name === TALAASH_LOADER_DISPLAY_NAME.toLowerCase() ||
@@ -87,13 +115,10 @@ function isOurScript(s: { id: string; displayName?: string }): boolean {
   );
 }
 
-function scriptNameMatches(
-  s: { id: string; displayName?: string },
-  displayName: string
-): boolean {
-  const want = displayName.toLowerCase();
-  const name = (s.displayName || "").toLowerCase();
-  const id = (s.id || "").toLowerCase();
+function scriptNameMatches(s: RegisteredScript, displayName: string): boolean {
+  const want = displayName.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const name = (s.displayName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const id = (s.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   return name === want || id === want || id.includes("talaash");
 }
 
@@ -109,10 +134,14 @@ async function findRegisteredScript(
       (s) =>
         scriptNameMatches(s, opts.displayName) &&
         (s.version || "").toLowerCase() === wantVersion
-    ) ||
-    list.find((s) => scriptNameMatches(s, opts.displayName));
-  if (!match) return null;
+    ) || list.find((s) => scriptNameMatches(s, opts.displayName));
+  if (!match?.id) return null;
   return { id: match.id, version: match.version ?? opts.version };
+}
+
+/** Derive Webflow script id from display name (e.g. TalaashSearch → talaashsearch). */
+function scriptIdFromDisplayName(displayName: string): string {
+  return displayName.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
 async function registerHostedScript(
@@ -156,6 +185,7 @@ async function registerHostedScript(
     };
   }
 
+  // Register returns 201; treat other 2xx with id the same.
   const duplicate =
     !result.ok &&
     (result.status === 400 || result.status === 409) &&
@@ -167,6 +197,12 @@ async function registerHostedScript(
       version: opts.version,
     });
     if (existing) return existing;
+
+    // Last resort: error names the script id (talaashsearch) + version we sent.
+    return {
+      id: scriptIdFromDisplayName(opts.displayName),
+      version: opts.version,
+    };
   }
 
   throw new Error(
@@ -260,7 +296,15 @@ export async function uninstallSearchScript(opts: {
 }): Promise<void> {
   const registered = await listRegisteredScripts(opts.accessToken, opts.siteId);
   const ours = new Set(registered.filter(isOurScript).map((s) => s.id));
-  if (ours.size === 0) return;
+  if (ours.size === 0) {
+    // Still strip any applied rows that look like ours (id slug).
+    const existing = await getSiteCustomCode(opts.accessToken, opts.siteId);
+    const kept = existing.filter((s) => !String(s.id).toLowerCase().includes("talaash"));
+    if (kept.length !== existing.length) {
+      await putSiteCustomCode(opts.accessToken, opts.siteId, kept);
+    }
+    return;
+  }
 
   const existing = await getSiteCustomCode(opts.accessToken, opts.siteId);
   const kept = existing.filter((s) => !ours.has(s.id));
