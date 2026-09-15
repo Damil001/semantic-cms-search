@@ -51,10 +51,10 @@ export function TopNav({
         ) : (
           <Link
             className="btn btn-primary btn-sm"
-            href="/install"
-            onClick={() => trackEvent("nav_click", { target: "install" })}
+            href="/login"
+            onClick={() => trackEvent("nav_click", { target: "signup" })}
           >
-            Install
+            Sign up
           </Link>
         )}
       </div>
