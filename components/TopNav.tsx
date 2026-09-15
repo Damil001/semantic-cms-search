@@ -49,22 +49,13 @@ export function TopNav({
             </button>
           </>
         ) : (
-          <>
-            <Link
-              className="body-md"
-              href="/pricing"
-              onClick={() => trackEvent("nav_click", { target: "pricing" })}
-            >
-              Pricing
-            </Link>
-            <Link
-              className="btn btn-primary btn-sm"
-              href="/install"
-              onClick={() => trackEvent("nav_click", { target: "install" })}
-            >
-              Install
-            </Link>
-          </>
+          <Link
+            className="btn btn-primary btn-sm"
+            href="/install"
+            onClick={() => trackEvent("nav_click", { target: "install" })}
+          >
+            Install
+          </Link>
         )}
       </div>
     </nav>

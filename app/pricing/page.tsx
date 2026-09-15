@@ -1,19 +1,6 @@
-import type { Metadata } from "next";
-import { PricingPage } from "@/components/pricing/PricingPage";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Pricing — Talaash",
-  description:
-    "Talaash plans for Webflow: natural-language CMS search, hosting, and search intelligence for SEO and AEO.",
-  openGraph: {
-    title: "Pricing — Talaash",
-    description:
-      "Setup + monthly plans for semantic search, analytics, and content insights on Webflow.",
-    url: "https://www.talaash.org/pricing",
-    siteName: "Talaash",
-  },
-};
-
+/** Pricing is hidden for now (Webflow review). Restore PricingPage when ready. */
 export default function PricingRoute() {
-  return <PricingPage />;
+  redirect("/");
 }
