@@ -406,7 +406,6 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
 
   const searchEndpoint = me.searchEndpoint || "https://www.talaash.org/search";
   const scriptUrl = me.scriptUrl || "https://www.talaash.org/search.js";
-  const loaderUrl = scriptUrl.replace(/\/search\.js$/i, "/search-loader.js");
   const siteId = me.siteId || "";
   const searchToken = me.searchToken || "";
 
@@ -432,13 +431,6 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
     </a>
   </div>
 </div>`;
-
-  const scriptTagHtml = `<script
-  src="${loaderUrl}"
-  data-search-site="${siteId}"
-  data-search-token="${searchToken}"
-  data-search-endpoint="${searchEndpoint}"
-></script>`;
 
   async function copyText(key: string, text: string) {
     try {
@@ -522,8 +514,9 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         <div className="insights-panel__head">
           <h3 className="title-sm">Search on your Webflow site</h3>
           <p className="caption text-muted">
-            Talaash registers the search script through Webflow’s Custom Code API. You design the
-            on-page search UI in the Designer, then publish.
+            Talaash registers a pinned <code>search.js</code> through Webflow’s Custom Code API
+            (integrity hash). Design the on-page search UI in the Designer, then publish. After
+            widget updates, click Install again to register a new script version.
           </p>
         </div>
         <div className="btn-row" style={{ marginBottom: 16 }}>
@@ -544,7 +537,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                 }
                 setScriptNotice(
                   data.message ||
-                    "Loader installed. Publish Webflow once — later widget updates are automatic."
+                    "Search script installed. Publish your Webflow site. After widget updates, click Install again to pin a new version."
                 );
               } catch {
                 setScriptNotice("Network error installing search script.");
@@ -580,7 +573,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
           <div className="setup-embed-block__head">
             <div>
               <h4 className="title-sm" style={{ margin: 0 }}>
-                1. Designer search layout
+                Designer search layout
               </h4>
               <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
                 Paste into a Webflow Embed. Result cards live in a hidden{" "}
@@ -600,36 +593,12 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
           <pre className="setup-embed-pre">{designerEmbedHtml}</pre>
         </div>
 
-        <div className="setup-embed-block mt-md">
-          <div className="setup-embed-block__head">
-            <div>
-              <h4 className="title-sm" style={{ margin: 0 }}>
-                2. Script tag (optional fallback)
-              </h4>
-              <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
-                Prefer <strong>Install search on site</strong> (Custom Code). That installs a{" "}
-                <em>stable loader</em> — widget updates no longer require reinstalling. This paste
-                is only a manual fallback (no integrity attribute).
-              </p>
-            </div>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => copyText("script", scriptTagHtml)}
-            >
-              {copiedKey === "script" ? "Copied" : "Copy script"}
-            </button>
-          </div>
-          <pre className="setup-embed-pre">{scriptTagHtml}</pre>
-        </div>
-
         <div className="setup-code-grid mt-md">
           {[
             ["Site ID", siteId],
             ["Search token", searchToken],
             ["Search API", searchEndpoint],
-            ["Loader URL", loaderUrl],
-            ["Widget URL", scriptUrl],
+            ["Script URL", scriptUrl],
           ].map(([label, value]) => (
             <div key={String(label)} className="setup-code-row">
               <span className="setup-code-label">{label}</span>

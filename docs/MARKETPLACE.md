@@ -28,7 +28,8 @@ Reviewers could **not find** the Client ID you submitted.
 
 ### 3. No manual footer-script install
 
-Code now installs via **Custom Code API** (`Install search script` in Setup; removed on disconnect).
+Code installs via **Custom Code API** (`Install search on site` in Setup; removed on disconnect).
+Registers pinned **`search.js`** with SRI (`hostedLocation` + `integrityHash`). Widget updates require Install again (new immutable version) — no runtime loader.
 
 - Update Marketplace **description** so it never tells users to paste a footer script.
 - Distinguish: **App installs the script**; **customer designs** search UI attributes + publishes.

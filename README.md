@@ -140,16 +140,11 @@ You do **not** paste a results layout. You design the page in Webflow the same w
 
 Semantic ranking cannot run inside Webflow (no embeddings, and you must not put API keys in the browser). Ingest still reads your Webflow CMS; the published page only calls your public `/search` URL.
 
-### Footer script (once per site)
+### Search script (Custom Code API)
 
-**Site Settings → Custom Code → Footer**, like a Finsweet Attributes snippet:
+In the Talaash dashboard, use **Install search on site**. That registers a pinned `search.js` (with SRI) on the connected Webflow site via the Custom Code API. Do **not** paste a footer script manually for Marketplace installs — paste only the Designer layout attributes from Setup.
 
-```html
-<script src="https://YOUR_VERCEL_APP/search.js"></script>
-```
-
-(`public/search.js` is served from that path after Vercel deploy.)
-
+After you change the widget code in production, click **Install search on site** again so Webflow gets a new immutable script version, then publish the site.
 ### Designer structure
 
 On a static page (e.g. `/search`):

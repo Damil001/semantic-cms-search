@@ -1,6 +1,10 @@
+import {
+  clearInstallAccessTokenByToken,
+  WebflowAuthRevokedError,
+} from "../app/webflow-admin.js";
+
 const WEBFLOW_API = "https://api.webflow.com/v2";
 const PAGE_SIZE = 100;
-
 export interface WebflowItem {
   id: string;
   lastUpdated?: string;
@@ -25,6 +29,12 @@ export async function fetchCollectionPage(
       Accept: "application/json",
     },
   });
+  if (res.status === 401) {
+    await clearInstallAccessTokenByToken(token);
+    throw new WebflowAuthRevokedError(
+      `Webflow authorization revoked (401 collection ${collectionId}). Reconnect Webflow in Setup.`
+    );
+  }
   if (!res.ok) {
     const body = await res.text();
     throw new Error(

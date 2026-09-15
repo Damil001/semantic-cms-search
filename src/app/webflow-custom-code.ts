@@ -1,11 +1,15 @@
 import { createHash } from "node:crypto";
+import {
+  clearInstallAccessTokenByToken,
+  WebflowAuthRevokedError,
+} from "./webflow-admin.js";
 
 const API = "https://api.webflow.com/v2";
 
-/** Stable loader registered once; search.js updates via /api/widget/manifest. */
+/** Registered Custom Code display name for the pinned search.js widget. */
+export const TALAASH_SEARCH_DISPLAY_NAME = "TalaashSearch";
+/** Legacy loader name — remove from site custom code on install/uninstall. */
 export const TALAASH_LOADER_DISPLAY_NAME = "TalaashLoader";
-/** Legacy name — remove from site custom code on install/uninstall. */
-export const TALAASH_LEGACY_DISPLAY_NAME = "TalaashSearch";
 
 type AppliedScript = {
   id: string;
@@ -24,7 +28,7 @@ async function sriForUrl(url: string): Promise<{ integrityHash: string; version:
   const integrityHash = `sha256-${digest}`;
   const patch = createHash("sha256").update(buf).digest("hex").slice(0, 8);
   const version =
-    process.env.SEARCH_LOADER_VERSION?.trim() ||
+    process.env.SEARCH_SCRIPT_VERSION?.trim() ||
     `1.0.${Number.parseInt(patch, 16) % 1_000_000_000}`;
   return { integrityHash, version };
 }
@@ -44,6 +48,12 @@ async function wfJson<T>(
     },
   });
   const body = await res.text();
+  if (res.status === 401) {
+    await clearInstallAccessTokenByToken(token);
+    throw new WebflowAuthRevokedError(
+      `Webflow authorization revoked (401 ${path}). Reconnect Webflow in Setup.`
+    );
+  }
   if (!res.ok) {
     return { ok: false, status: res.status, body };
   }
@@ -71,8 +81,8 @@ function isOurScript(s: { id: string; displayName?: string }): boolean {
   const name = (s.displayName || "").toLowerCase();
   const id = s.id.toLowerCase();
   return (
+    name === TALAASH_SEARCH_DISPLAY_NAME.toLowerCase() ||
     name === TALAASH_LOADER_DISPLAY_NAME.toLowerCase() ||
-    name === TALAASH_LEGACY_DISPLAY_NAME.toLowerCase() ||
     id.includes("talaash")
   );
 }
@@ -155,27 +165,26 @@ async function putSiteCustomCode(
 }
 
 /**
- * Register the stable search-loader.js once via Custom Code.
- * Loader pulls current search.js + SRI from /api/widget/manifest — no reinstall on widget updates.
+ * Register pinned search.js via Custom Code (hostedLocation + SRI).
+ * Widget updates require Install again (new immutable script version) — no runtime loader.
  */
 export async function installSearchScript(opts: {
   accessToken: string;
   siteId: string;
-  /** Origin root, e.g. https://www.talaash.org — loader path is appended */
+  /** Full URL to search.js, e.g. https://www.talaash.org/search.js */
   scriptUrl: string;
   searchEndpoint: string;
   searchToken: string;
 }): Promise<{ scriptId: string; version: string; integrityHash: string }> {
-  const origin = opts.scriptUrl.replace(/\/search\.js.*$/i, "").replace(/\/$/, "");
-  const loaderUrl = `${origin}/search-loader.js`;
-  const { integrityHash, version } = await sriForUrl(loaderUrl);
-  const hostedLocation = `${loaderUrl}?v=${version}`;
+  const baseUrl = opts.scriptUrl.replace(/[?#].*$/, "");
+  const { integrityHash, version } = await sriForUrl(baseUrl);
+  const hostedLocation = `${baseUrl}?v=${encodeURIComponent(version)}`;
 
   const registered = await registerHostedScript(opts.accessToken, opts.siteId, {
     hostedLocation,
     integrityHash,
     version,
-    displayName: TALAASH_LOADER_DISPLAY_NAME,
+    displayName: TALAASH_SEARCH_DISPLAY_NAME,
   });
 
   const existing = await getSiteCustomCode(opts.accessToken, opts.siteId);
