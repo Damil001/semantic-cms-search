@@ -1,9 +1,10 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { getUserFromAccessTokenFast } from "@/src/app/goauth";
+import { getUserFromAccessTokenFast, refreshSessionFast } from "@/src/app/goauth";
 import { createOAuthState } from "@/src/app/oauth-state";
 import { oauthAuthorizeUrl } from "@/src/app/webflow-oauth";
 import { newToken } from "@/src/app/session";
+import { setAuthCookiesOnResponse } from "@/src/app/auth-cookies";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -34,8 +35,24 @@ function cookieDomain(): string {
  * avoids Next.js RSC client fetches that trip CORS on webflow.com.
  */
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get("sb_access")?.value;
-  const user = token ? await getUserFromAccessTokenFast(token) : null;
+  const access = request.cookies.get("sb_access")?.value;
+  let user = access ? await getUserFromAccessTokenFast(access) : null;
+  let renewedTokens: { accessToken: string; refreshToken: string } | null = null;
+
+  if (!user) {
+    const refresh = request.cookies.get("sb_refresh")?.value;
+    if (refresh) {
+      const renewed = await refreshSessionFast(refresh);
+      if (renewed) {
+        user = renewed.user;
+        renewedTokens = {
+          accessToken: renewed.accessToken,
+          refreshToken: renewed.refreshToken,
+        };
+      }
+    }
+  }
+
   if (!user) {
     return NextResponse.redirect(
       new URL("/login?next=/api/oauth/start", "https://www.talaash.org"),
@@ -48,8 +65,12 @@ export async function GET(request: NextRequest) {
     await createOAuthState(user.id, state);
     const authorizeUrl = oauthAuthorizeUrl(state);
     const secure = process.env.VERCEL ? "; Secure" : "";
-    const setCookie = `wf_oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${secure}${cookieDomain()}`;
-    return htmlRedirect(authorizeUrl, setCookie);
+    const oauthCookie = `wf_oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${secure}${cookieDomain()}`;
+    const res = htmlRedirect(authorizeUrl, oauthCookie);
+    if (renewedTokens) {
+      setAuthCookiesOnResponse(res, renewedTokens.accessToken, renewedTokens.refreshToken);
+    }
+    return res;
   } catch (err) {
     const message = err instanceof Error ? err.message : "OAuth start failed";
     console.error(message);

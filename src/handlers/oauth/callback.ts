@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getAuthUser } from "../../app/auth.js";
+import { getAuthUserRefreshing } from "../../app/auth.js";
 import {
   OAUTH_PENDING_CODE_COOKIE,
   OAUTH_PENDING_STATE_COOKIE,
@@ -65,6 +65,7 @@ async function finishInstall(
   clearCookie(res, OAUTH_PENDING_CODE_COOKIE);
   clearCookie(res, OAUTH_PENDING_STATE_COOKIE);
   setCookie(res, SESSION_COOKIE, sessionToken);
+  // Stay on www — never clear sb_access / sb_refresh here.
   res.redirect(302, "https://www.talaash.org/app?connected=1");
 }
 
@@ -90,7 +91,8 @@ export default async function handler(
     return;
   }
 
-  const user = await getAuthUser(req);
+  // Refresh expired access tokens so OAuth return doesn't look like a logout.
+  const user = await getAuthUserRefreshing(req, res);
   const codeFromQuery = typeof req.query.code === "string" ? req.query.code : "";
   const stateFromQuery =
     typeof req.query.state === "string" ? req.query.state : "";
@@ -113,7 +115,7 @@ export default async function handler(
       );
       return;
     }
-    res.redirect(302, "https://www.talaash.org/install");
+    res.redirect(302, "https://www.talaash.org/login?next=/install");
     return;
   }
 
@@ -130,7 +132,7 @@ export default async function handler(
     if (!ok) {
       failRedirect(
         res,
-        "Invalid or expired OAuth state. Start again from Install (do not reuse an old authorize tab)."
+        "Invalid or expired OAuth state. Sign in again, then open Install (do not reuse an old authorize tab)."
       );
       return;
     }

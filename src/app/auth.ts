@@ -3,7 +3,11 @@ import type { User } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
 import { getServiceClient } from "../lib/supabase.js";
 import { requireSupabaseAuthEnv } from "../lib/supabase-url.js";
-import { getUserFromAccessTokenFast, signInWithPasswordFast } from "./goauth.js";
+import {
+  getUserFromAccessTokenFast,
+  refreshSessionFast,
+  signInWithPasswordFast,
+} from "./goauth.js";
 import {
   AUTH_ACCESS_COOKIE,
   AUTH_REFRESH_COOKIE,
@@ -39,6 +43,31 @@ export function clearAuthCookies(res: VercelResponse): void {
 export async function getAuthUser(req: VercelRequest): Promise<User | null> {
   const token = readCookie(req, AUTH_ACCESS_COOKIE);
   return getAuthUserFromAccessToken(token);
+}
+
+/**
+ * Resolve the logged-in user; if access token is dead, refresh via sb_refresh
+ * and optionally write new cookies onto `res` (OAuth callback / long redirects).
+ */
+export async function getAuthUserRefreshing(
+  req: VercelRequest,
+  res?: VercelResponse
+): Promise<User | null> {
+  const access = readCookie(req, AUTH_ACCESS_COOKIE);
+  const fromAccess = await getAuthUserFromAccessToken(access);
+  if (fromAccess) return fromAccess;
+
+  const refresh = readCookie(req, AUTH_REFRESH_COOKIE);
+  if (!refresh) return null;
+
+  const renewed = await refreshSessionFast(refresh);
+  if (!renewed) return null;
+
+  if (res) {
+    setAuthCookies(res, renewed.accessToken, renewed.refreshToken);
+  }
+
+  return { id: renewed.user.id, email: renewed.user.email } as User;
 }
 
 export async function getAuthUserFromAccessToken(

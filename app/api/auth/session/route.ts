@@ -3,6 +3,7 @@ import { setAuthCookiesOnResponse } from "@/src/app/auth-cookies";
 import {
   AuthTimeoutError,
   getUserFromAccessTokenFast,
+  refreshSessionFast,
   signInWithPasswordFast,
   signUpFast,
 } from "@/src/app/goauth";
@@ -11,24 +12,41 @@ export const dynamic = "force-dynamic";
 export const runtime = "edge";
 
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get("sb_access")?.value;
-  if (!token) {
-    return NextResponse.json({ authenticated: false });
+  const access = request.cookies.get("sb_access")?.value;
+  if (access) {
+    try {
+      const user = await getUserFromAccessTokenFast(access);
+      if (user) {
+        return NextResponse.json({
+          authenticated: true,
+          email: user.email,
+          userId: user.id,
+        });
+      }
+    } catch {
+      /* try refresh below */
+    }
   }
 
-  try {
-    const user = await getUserFromAccessTokenFast(token);
-    if (!user) {
-      return NextResponse.json({ authenticated: false });
+  const refresh = request.cookies.get("sb_refresh")?.value;
+  if (refresh) {
+    const renewed = await refreshSessionFast(refresh);
+    if (renewed) {
+      const response = NextResponse.json({
+        authenticated: true,
+        email: renewed.user.email,
+        userId: renewed.user.id,
+      });
+      setAuthCookiesOnResponse(
+        response,
+        renewed.accessToken,
+        renewed.refreshToken
+      );
+      return response;
     }
-    return NextResponse.json({
-      authenticated: true,
-      email: user.email,
-      userId: user.id,
-    });
-  } catch {
-    return NextResponse.json({ authenticated: false });
   }
+
+  return NextResponse.json({ authenticated: false });
 }
 
 export async function POST(request: NextRequest) {

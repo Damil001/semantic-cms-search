@@ -149,3 +149,38 @@ export async function getUserFromAccessTokenFast(
   if (!payload?.id) return null;
   return { id: payload.id, email: payload.email };
 }
+
+/** Exchange refresh token for a new session (keeps login alive across long OAuth). */
+export async function refreshSessionFast(
+  refreshToken: string
+): Promise<{
+  user: { id: string; email?: string };
+  accessToken: string;
+  refreshToken: string;
+} | null> {
+  if (!refreshToken) return null;
+  const { url, anonKey } = requireSupabaseAuthEnv();
+
+  let res: Response;
+  try {
+    res = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+      method: "POST",
+      headers: authHeaders(anonKey),
+      body: JSON.stringify({ refresh_token: refreshToken }),
+      signal: AbortSignal.timeout(AUTH_TIMEOUT_MS),
+    });
+  } catch {
+    return null;
+  }
+
+  const parsed = await readAuthResponse(res);
+  if (!parsed.ok || !parsed.accessToken || !parsed.refreshToken || !parsed.user) {
+    return null;
+  }
+
+  return {
+    user: parsed.user,
+    accessToken: parsed.accessToken,
+    refreshToken: parsed.refreshToken,
+  };
+}
