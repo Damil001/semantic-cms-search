@@ -203,32 +203,48 @@
     }
   }
 
+  function placeSuggestPanel(panel, input, root) {
+    if (!panel || !input || !root) return;
+    var rs = window.getComputedStyle(root);
+    if (rs.position === "static") root.style.position = "relative";
+
+    var rootRect = root.getBoundingClientRect();
+    var inputRect = input.getBoundingClientRect();
+    var left = inputRect.left - rootRect.left + root.scrollLeft;
+    var top = inputRect.bottom - rootRect.top + root.scrollTop + 4;
+    var width = Math.max(inputRect.width, 160);
+
+    panel.style.position = "absolute";
+    panel.style.left = left + "px";
+    panel.style.top = top + "px";
+    panel.style.width = width + "px";
+    panel.style.right = "auto";
+    panel.style.marginTop = "0";
+    panel.style.zIndex = "50";
+    panel.style.boxSizing = "border-box";
+  }
+
   function ensureSuggestPanel(root, input) {
     var panel = first(root, [
       "[data-search-suggest]",
       '[fs-cmssearch-element="suggest"]',
     ]);
-    if (panel) return panel;
-
-    var wrap = input.parentNode;
-    if (wrap && wrap !== root) {
-      var style = window.getComputedStyle(wrap);
-      if (style.position === "static") wrap.style.position = "relative";
-    } else if (root) {
+    if (!panel) {
       var rs = window.getComputedStyle(root);
       if (rs.position === "static") root.style.position = "relative";
-    }
 
-    panel = document.createElement("div");
-    panel.setAttribute("data-search-suggest", "true");
-    panel.setAttribute("role", "listbox");
-    panel.setAttribute("hidden", "true");
-    panel.style.cssText =
-      "position:absolute;left:0;right:0;top:100%;z-index:50;margin-top:4px;" +
-      "background:#fff;border:1px solid #ddd;border-radius:8px;" +
-      "box-shadow:0 8px 24px rgba(0,0,0,0.08);max-height:320px;overflow:auto;" +
-      "display:none;text-align:left;";
-    (wrap && wrap !== root ? wrap : root).appendChild(panel);
+      panel = document.createElement("div");
+      panel.setAttribute("data-search-suggest", "true");
+      panel.setAttribute("role", "listbox");
+      panel.setAttribute("hidden", "true");
+      panel.style.cssText =
+        "position:absolute;z-index:50;" +
+        "background:#fff;border:1px solid #ddd;border-radius:8px;" +
+        "box-shadow:0 8px 24px rgba(0,0,0,0.08);max-height:320px;overflow:auto;" +
+        "display:none;text-align:left;box-sizing:border-box;";
+      root.appendChild(panel);
+    }
+    placeSuggestPanel(panel, input, root);
     return panel;
   }
 
@@ -540,6 +556,7 @@
 
       setHidden(suggestPanel, false);
       suggestPanel.style.setProperty("display", "block", "important");
+      placeSuggestPanel(suggestPanel, input, root);
       input.setAttribute("aria-expanded", "true");
     }
 
@@ -764,6 +781,13 @@
       var q = (input.value || "").trim();
       if (q.length >= SUGGEST_MIN_CHARS) debouncedSuggest();
     });
+
+    function onViewportChange() {
+      if (suggestPanel.hidden) return;
+      placeSuggestPanel(suggestPanel, input, root);
+    }
+    window.addEventListener("resize", onViewportChange);
+    window.addEventListener("scroll", onViewportChange, true);
 
     input.setAttribute("enterkeyhint", "search");
     input.addEventListener("search", function () {

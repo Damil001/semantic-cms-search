@@ -176,6 +176,9 @@
 
 [data-search] [data-search-suggest] {
   font-family: var(--talaash-font);
+  /* Position/size are set in search.js to match the input box */
+  right: auto;
+  margin-top: 0;
 }
 
 [data-search] [data-search-suggest] [role="option"],
