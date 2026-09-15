@@ -87,6 +87,34 @@ function isOurScript(s: { id: string; displayName?: string }): boolean {
   );
 }
 
+function scriptNameMatches(
+  s: { id: string; displayName?: string },
+  displayName: string
+): boolean {
+  const want = displayName.toLowerCase();
+  const name = (s.displayName || "").toLowerCase();
+  const id = (s.id || "").toLowerCase();
+  return name === want || id === want || id.includes("talaash");
+}
+
+async function findRegisteredScript(
+  token: string,
+  siteId: string,
+  opts: { displayName: string; version: string }
+): Promise<{ id: string; version: string } | null> {
+  const list = await listRegisteredScripts(token, siteId);
+  const wantVersion = opts.version.toLowerCase();
+  const match =
+    list.find(
+      (s) =>
+        scriptNameMatches(s, opts.displayName) &&
+        (s.version || "").toLowerCase() === wantVersion
+    ) ||
+    list.find((s) => scriptNameMatches(s, opts.displayName));
+  if (!match) return null;
+  return { id: match.id, version: match.version ?? opts.version };
+}
+
 async function registerHostedScript(
   token: string,
   siteId: string,
@@ -97,6 +125,15 @@ async function registerHostedScript(
     displayName: string;
   }
 ): Promise<{ id: string; version: string }> {
+  // Reuse if Webflow already has this version (survives Talaash account delete).
+  const preexisting = await findRegisteredScript(token, siteId, {
+    displayName: opts.displayName,
+    version: opts.version,
+  });
+  if (preexisting && preexisting.version === opts.version) {
+    return preexisting;
+  }
+
   const result = await wfJson<{ id?: string; version?: string }>(
     token,
     `/sites/${siteId}/registered_scripts/hosted`,
@@ -119,13 +156,17 @@ async function registerHostedScript(
     };
   }
 
-  const existing = (await listRegisteredScripts(token, siteId)).find(
-    (s) =>
-      (s.displayName === opts.displayName || s.id === opts.displayName) &&
-      (!s.version || s.version === opts.version)
-  );
-  if (existing) {
-    return { id: existing.id, version: existing.version ?? opts.version };
+  const duplicate =
+    !result.ok &&
+    (result.status === 400 || result.status === 409) &&
+    /duplicate_registered_script|already exists/i.test(result.body);
+
+  if (duplicate) {
+    const existing = await findRegisteredScript(token, siteId, {
+      displayName: opts.displayName,
+      version: opts.version,
+    });
+    if (existing) return existing;
   }
 
   throw new Error(
