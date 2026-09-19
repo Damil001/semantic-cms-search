@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "bundle": "npm run build && npx --yes @webflow/webflow-cli@latest extension bundle"
+    "bundle": "npm run build && npx --yes @webflow/webflow-cli@latest extension bundle --skip-update-check"
   },
   "devDependencies": {
     "@webflow/designer-extension-typings": "^2.2.2",

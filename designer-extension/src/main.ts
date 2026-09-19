@@ -25,9 +25,28 @@ function requireContainer(el: AnyEl, label: string): ContainerEl {
 
 async function setAttr(el: AnyEl, name: string, value = "true"): Promise<void> {
   if (!el) return;
+  // DOM / Custom Element uses setAttribute; native elements use setCustomAttribute
+  if ("setAttribute" in el && typeof el.setAttribute === "function" && el.type === "DOM") {
+    await el.setAttribute(name, value);
+    return;
+  }
   if ("customAttributes" in el && el.customAttributes) {
     await el.setCustomAttribute(name, value);
   }
+}
+
+async function appendDomInput(parent: ContainerEl): Promise<NonNullable<AnyEl>> {
+  const input = await parent.append(webflow.elementPresets.DOM);
+  if (!input || input.type !== "DOM") {
+    throw new Error("Could not create search input Custom Element.");
+  }
+  await input.setTag("input");
+  await input.setAttribute("type", "search");
+  await input.setAttribute("name", "talaash-query");
+  await input.setAttribute("placeholder", "Search…");
+  await input.setAttribute("autocomplete", "off");
+  await input.setAttribute("data-search-input", "true");
+  return input;
 }
 
 async function setText(el: AnyEl, text: string): Promise<void> {
@@ -71,21 +90,8 @@ async function insertSearchLayout(): Promise<void> {
   );
   await setAttr(root, "data-search");
 
-  // Form + text input (search.js listens for submit / Enter)
-  const form = requireContainer(
-    await root.append(webflow.elementPresets.FormForm),
-    "Search form",
-  );
-  const input = await form.append(webflow.elementPresets.FormTextInput);
-  await setAttr(input, "data-search-input");
-  await setAttr(input, "placeholder", "Search…");
-  if (input && "setName" in input && typeof input.setName === "function") {
-    try {
-      await input.setName("talaash-query");
-    } catch {
-      /* optional */
-    }
-  }
+  // Custom Element <input> — not a Webflow Form (search.js binds Enter on the input)
+  await appendDomInput(root);
 
   const answer = await root.append(webflow.elementPresets.Paragraph);
   await setAttr(answer, "data-search-answer");
