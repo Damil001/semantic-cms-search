@@ -548,11 +548,13 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
           <div className="setup-embed-block__head">
             <div>
               <h4 className="title-sm" style={{ margin: 0 }}>
-                Designer attributes (minimum setup)
+                Designer layout
               </h4>
               <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
-                In Webflow Designer, add native elements and these custom attributes. Full guide
-                with optional attributes:{" "}
+                Preferred: open the <strong>Talaash</strong> Designer Extension and click{" "}
+                <strong>Insert search layout</strong> — it adds native elements and{" "}
+                <code>data-search-*</code> attributes via Designer APIs (no Embed HTML paste). Or
+                add attributes manually:{" "}
                 <a href="/docs/attributes" target="_blank" rel="noreferrer">
                   Search attributes
                 </a>
@@ -578,8 +580,9 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             ))}
           </div>
           <p className="caption text-muted mt-md" style={{ marginBottom: 0 }}>
-            Recommended: wrap the result card in a hidden Div with{" "}
-            <code>data-search-result-source</code>, then <strong>Publish</strong> after Install.
+            Keep the result template in a Div with <code>data-search-result-source</code> and{" "}
+            <code>display: none</code> (not Designer Visibility Hidden — that removes it from
+            published HTML). Then <strong>Publish</strong> after Install.
           </p>
         </div>
 

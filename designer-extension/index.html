@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Talaash</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <h1>Talaash</h1>
+        <p>Insert a minimum search layout onto the canvas with the required custom attributes.</p>
+      </header>
+
+      <section class="app__card">
+        <h2>Search layout</h2>
+        <p>
+          Select a parent element on the canvas (or the Body), then insert the layout. Credentials
+          come from <strong>Install search on site</strong> in the Talaash dashboard (Custom Code
+          API) — this panel only adds Designer elements and attributes.
+        </p>
+        <button id="insert-layout" type="button" class="btn btn-primary">
+          Insert search layout
+        </button>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="app__card app__card--muted">
+        <h2>After insert</h2>
+        <ol>
+          <li>Style the input and result card in the Designer.</li>
+          <li>
+            In Talaash Setup, run <strong>Install search on site</strong> (if you have not already).
+          </li>
+          <li>Publish the site.</li>
+        </ol>
+        <p class="hint">
+          Docs:
+          <a href="https://www.talaash.org/docs/attributes" target="_blank" rel="noreferrer"
+            >Search attributes</a
+          >
+        </p>
+      </section>
+    </main>
+    <script src="./bundle.js"></script>
+  </body>
+</html>

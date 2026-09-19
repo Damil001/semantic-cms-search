@@ -10,7 +10,9 @@
     "start": "next start",
     "ingest": "tsx src/ingest/index.ts",
     "demo": "tsx scripts/demo.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "designer:build": "npm --prefix designer-extension run build",
+    "designer:bundle": "npm --prefix designer-extension run bundle"
   },
   "engines": {
     "node": ">=22"

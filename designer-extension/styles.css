@@ -1,0 +1,111 @@
+:root {
+  --ink: #181d26;
+  --muted: #41454d;
+  --hairline: #dddddd;
+  --soft: #f8fafc;
+  --primary: #181d26;
+  --on-primary: #ffffff;
+  --radius: 10px;
+  --font: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background: #fff;
+}
+
+.app {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app__header h1 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.app__header p,
+.app__card p,
+.app__card li,
+.hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.app__card {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app__card--muted {
+  background: var(--soft);
+}
+
+.app__card h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.app__card ol {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.btn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.status {
+  min-height: 1.2em;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.status.is-error {
+  color: #aa2d00;
+}
+
+.status.is-ok {
+  color: #0f6b4c;
+}
+
+a {
+  color: #1b61c9;
+}

@@ -31,10 +31,12 @@ Reviewers could **not find** the Client ID you submitted.
 Code installs via **Custom Code API** (`Install search on site` in Setup; removed on disconnect).
 Registers pinned **`search.js`** with SRI (`hostedLocation` + `integrityHash`). Widget updates require Install again (new immutable version) — no runtime loader.
 
-Designer UI uses **custom attributes** (Finsweet-style) — documented at `/docs/attributes`. Do **not** require pasting HTML into an Embed.
+Designer UI is inserted by the **Designer Extension** (`designer-extension/` → *Insert search layout* via Designer APIs) or by hand with **custom attributes** (Finsweet-style) — documented at `/docs/attributes`. Do **not** require pasting HTML into an Embed.
 
+- Upload the Designer Extension **bundle.zip** (+ source maps under `designer-extension/dist`) in the App version manager for this Hybrid app.
+- Build: `npm --prefix designer-extension run bundle`
 - Update Marketplace **description** so it never tells users to paste a footer script or Embed HTML.
-- Distinguish: **App installs the script**; **customer adds Designer attributes** + publishes.
+- Distinguish: **App installs the script**; **Designer Extension inserts layout** (or customer adds attributes) + publish.
 
 ### 4. Carousel images — `1280×846` PNG/JPG, ≤2MB each, 3–5 images
 
@@ -66,11 +68,11 @@ Talaash adds meaning-based search across your Webflow CMS and shows what visitor
 1. Install Talaash and create an account
 2. Connect your Webflow site and approve access
 3. Map collections, index content, and install the search script (applied through Webflow Custom Code)
-4. Add a search layout in the Designer with Talaash attributes, then publish
+4. Open the Talaash Designer Extension and insert the search layout (or add attributes), then publish
 
 **What you configure in Webflow**
 - Which collections/fields to index
-- On-page search UI (input and results elements)
+- On-page search UI (Designer Extension insert, or attributes by hand)
 - Publishing the site after script install or disconnect
 
 Do **not** put Client secrets, redirect URIs, raw scope lists, or server architecture in the Marketplace listing. Put deep troubleshooting on `/support`.
@@ -85,7 +87,7 @@ Deployed pages must match product name **Talaash**, describe AI/OpenAI data use,
 - Published **`.webflow.io`** test site with app installed + search working
 - Demo video 2–5 min: create account, OAuth approve **and** deny, index, install script, search live
 - App Review Preflight receipt `wfpre_…` when applicable
-- Source maps only if you submit a Designer Extension bundle
+- Designer Extension: upload `designer-extension/bundle.zip`; include `dist/*.map` for the source-map field
 
 ## Values in Webflow App settings
 

@@ -38,7 +38,7 @@ const RESULT_FIELDS = [
 const OPTIONAL = [
   {
     name: "data-search-result-source",
-    note: "Put on a Div that wraps your result card template. Keep it hidden in Designer so empty cards never flash.",
+    note: "Put on a Div that wraps your result card template. Hide with display:none (not Designer Visibility Hidden) so the template stays in published HTML.",
   },
   {
     name: "data-search-answer",
@@ -79,8 +79,10 @@ export function AttributesGuidePage() {
           </h1>
           <p className="body-md text-muted mt-md" style={{ maxWidth: "56ch" }}>
             Build search UI in the Webflow Designer with custom attributes — the same pattern as
-            Finsweet Attributes. The search script is installed from Talaash Setup via the Custom
-            Code API (no footer paste, no Embed HTML paste).
+            Finsweet Attributes. Prefer the <strong>Talaash Designer Extension</strong> (
+            <em>Insert search layout</em>) to place elements and attributes via Designer APIs. The
+            search script is installed from Talaash Setup via the Custom Code API (no footer paste,
+            no Embed HTML paste).
           </p>
           <div className="landing-hero__actions mt-lg">
             <Link className="btn btn-primary" href="/app">
@@ -106,8 +108,9 @@ export function AttributesGuidePage() {
               integrity). Site credentials are applied on that script.
             </li>
             <li>
-              In the Designer, add native elements and the attributes below. Style them like any
-              other Webflow UI.
+              In the Designer, open the <strong>Talaash</strong> app panel and click{" "}
+              <strong>Insert search layout</strong> (or add the attributes below by hand). Style
+              the elements like any other Webflow UI.
             </li>
             <li>
               <strong>Publish</strong> so the script and layout go live.
@@ -115,8 +118,8 @@ export function AttributesGuidePage() {
           </ol>
           <p className="body-md text-muted mt-md" style={{ maxWidth: "56ch" }}>
             You do <strong>not</strong> paste a full HTML snippet into an Embed for required setup.
-            Credentials come from the Custom Code install; you only add Designer attributes for
-            layout.
+            Credentials come from the Custom Code install; layout is inserted by the Designer
+            Extension (or manual attributes).
           </p>
         </div>
       </section>
@@ -164,9 +167,11 @@ export function AttributesGuidePage() {
 
           <div className="insights-callout mt-lg">
             <strong>Recommended structure:</strong> wrap your result card in a Div with{" "}
-            <code>data-search-result-source</code>, set that Div to Hidden in Designer, and keep{" "}
-            <code>data-search-results</code> as the empty list container. Talaash clones the hidden
-            card for each hit.
+            <code>data-search-result-source</code> and hide it with a class using{" "}
+            <code>display: none</code> (the Designer Extension does this automatically). Do not use
+            Designer Visibility Hidden — that strips the template from published HTML. Keep{" "}
+            <code>data-search-results</code> as the empty list container. Talaash clones the template
+            for each hit.
           </div>
         </div>
       </section>
@@ -204,8 +209,8 @@ export function AttributesGuidePage() {
               Div → <code>data-search-results</code> (results mount)
             </li>
             <li>
-              Hidden Div → <code>data-search-result-source</code> containing a Link/Div with{" "}
-              <code>data-search-result</code> and title/snippet/type/image children
+              Div with <code>display: none</code> → <code>data-search-result-source</code> containing
+              a Link/Div with <code>data-search-result</code> and title/snippet/type/image children
             </li>
             <li>
               Publish after <strong>Install search on site</strong> in Talaash Setup

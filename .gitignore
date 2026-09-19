@@ -6,6 +6,10 @@ dist/
 *.log
 .DS_Store
 
+# Designer Extension build artifact (regenerate with npm run designer:bundle)
+designer-extension/bundle.zip
+designer-extension/dist/
+
 # Webflow-provided local toolkit — do not publish to GitHub
 webflow-app-skills-*/
 webflow-app-skills-*/**

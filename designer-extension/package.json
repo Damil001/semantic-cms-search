@@ -1,0 +1,15 @@
+{
+  "name": "talaash-designer-extension",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "bundle": "npm run build && npx --yes @webflow/webflow-cli@latest extension bundle"
+  },
+  "devDependencies": {
+    "@webflow/designer-extension-typings": "^2.2.2",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.5.4"
+  }
+}
