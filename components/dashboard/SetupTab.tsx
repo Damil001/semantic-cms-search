@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { Collection, CollectionMapping, MeResponse } from "@/lib/types";
+import type { Collection, CollectionMapping, EmbedScriptResult, MeResponse } from "@/lib/types";
 import { trackEvent } from "@/lib/analytics";
 import { EmbedFieldPicker, isEmbeddableFieldType } from "./EmbedFieldPicker";
 
@@ -128,6 +128,11 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   const [disconnecting, setDisconnecting] = useState(false);
   const [installingScript, setInstallingScript] = useState(false);
   const [scriptNotice, setScriptNotice] = useState<string | null>(null);
+  const [installedScript, setInstalledScript] = useState<{
+    hostedLocation: string;
+    integrityHash: string;
+    version: string;
+  } | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activeAction, setActiveAction] = useState<"save" | "index" | "reindex" | null>(null);
   const [indexProgress, setIndexProgress] = useState<IndexProgress | null>(null);
@@ -406,6 +411,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
 
   const searchEndpoint = me.searchEndpoint || "https://www.talaash.org/search";
   const scriptUrl = me.scriptUrl || "https://www.talaash.org/search.js";
+  const displayedScriptUrl = installedScript?.hostedLocation || scriptUrl;
   const siteId = me.siteId || "";
   const searchToken = me.searchToken || "";
 
@@ -492,8 +498,9 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
           <h3 className="title-sm">Search on your Webflow site</h3>
           <p className="caption text-muted">
             Talaash registers a pinned <code>search.js</code> through Webflow’s Custom Code API
-            (integrity hash). Then add Designer custom attributes for the search UI — no Embed HTML
-            paste. After widget updates, click Install again to register a new script version.
+            (integrity hash). Default widget CSS is bundled inside that script (no separate CSS
+            fetch). Prefer the Designer Extension for layout — no Embed HTML paste. After widget
+            updates, click Install again to register a new script version.
           </p>
         </div>
         <div className="btn-row" style={{ marginBottom: 16 }}>
@@ -507,10 +514,17 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
               trackEvent("setup_install_script");
               try {
                 const res = await fetch("/api/app/embed-script", { method: "POST" });
-                const data = await res.json().catch(() => ({}));
+                const data = (await res.json().catch(() => ({}))) as EmbedScriptResult;
                 if (!res.ok) {
                   setScriptNotice(data.error || "Could not install search script.");
                   return;
+                }
+                if (data.hostedLocation && data.integrityHash && data.version) {
+                  setInstalledScript({
+                    hostedLocation: data.hostedLocation,
+                    integrityHash: data.integrityHash,
+                    version: data.version,
+                  });
                 }
                 setScriptNotice(
                   data.message ||
@@ -591,7 +605,13 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             ["Site ID", siteId],
             ["Search token", searchToken],
             ["Search API", searchEndpoint],
-            ["Script URL", scriptUrl],
+            ["Script URL", displayedScriptUrl],
+            ...(installedScript
+              ? ([
+                  ["Script version", installedScript.version],
+                  ["Integrity (SRI)", installedScript.integrityHash],
+                ] as [string, string][])
+              : []),
           ].map(([label, value]) => (
             <div key={String(label)} className="setup-code-row">
               <span className="setup-code-label">{label}</span>
@@ -606,6 +626,12 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             </div>
           ))}
         </div>
+        {!installedScript && (
+          <p className="caption text-muted mt-md" style={{ marginBottom: 0 }}>
+            After <strong>Install search on site</strong>, this panel shows the exact pinned{" "}
+            <code>?v=…</code> URL and integrity hash Webflow registered.
+          </p>
+        )}
 
         <div className="insights-callout mt-md" style={{ marginTop: 12 }}>
           <strong>Disconnect cleanup:</strong> Disconnect Webflow removes the Custom Code script

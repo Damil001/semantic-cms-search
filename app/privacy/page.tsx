@@ -30,9 +30,18 @@ export default function PrivacyPage() {
           stored as embeddings and search metadata to power search and related insights.
         </li>
         <li>
-          <strong>Visitor search data</strong> — queries visitors run through the search
-          widget (query text, result counts, optional visitor/session ids) so you can use
-          Insights, Content intelligence, and AEO features.
+          <strong>Visitor search data</strong> — by default, when a visitor uses the search
+          widget we collect: the search query text, result counts, and anonymous{" "}
+          <code>visitor</code> / <code>session</code> ids stored in the browser (local/session
+          storage) so Insights can estimate unique visitors and sessions. Site owners can
+          disable those ids by setting <code>data-search-analytics=&quot;off&quot;</code> on the
+          search root or the installed script (queries may still be logged without ids).
+        </li>
+        <li>
+          <strong>Suggest / autocomplete</strong> — while a visitor types (unless suggest is
+          disabled with <code>data-search-suggest=&quot;off&quot;</code>), the widget may send the
+          current typed text to our suggest API to return autocomplete options. Suggest does
+          not send visitor/session ids.
         </li>
       </ul>
 
@@ -84,10 +93,12 @@ export default function PrivacyPage() {
       <p>
         You can disconnect Webflow from the dashboard, which removes Custom Code we applied
         (when permissions allow), revokes the OAuth access token, and clears it from our
-        storage. Publish your Webflow site after disconnect so script removal goes live. You
-        may request account or indexed-data deletion by contacting support. We retain
-        analytics and index data while your account remains active unless you ask us to
-        delete it.
+        storage. Publish your Webflow site after disconnect so script removal goes live. If
+        Disconnect cannot call Webflow (token already revoked), remove the Talaash script
+        manually under Webflow Site settings → Custom Code, then publish — see{" "}
+        <a href="/support">Support</a>. You may request account or indexed-data deletion by
+        contacting support. We retain analytics and index data while your account remains
+        active unless you ask us to delete it.
       </p>
 
       <h2 className="title-sm">Contact</h2>

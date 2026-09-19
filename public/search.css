@@ -1,4 +1,7 @@
-/* Talaash search widget defaults — scoped to [data-search]. Safe to override in Webflow. */
+/* Talaash search widget defaults — source of truth for styles inlined into public/search.js.
+ * Do not rely on a separate <link> to this file for production installs (SRI applies to search.js only).
+ * After editing, run: node scripts/inline-search-css.mjs
+ */
 
 [data-search] {
   --talaash-ink: #181d26;

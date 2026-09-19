@@ -252,7 +252,12 @@ export async function installSearchScript(opts: {
   scriptUrl: string;
   searchEndpoint: string;
   searchToken: string;
-}): Promise<{ scriptId: string; version: string; integrityHash: string }> {
+}): Promise<{
+  scriptId: string;
+  version: string;
+  integrityHash: string;
+  hostedLocation: string;
+}> {
   const baseUrl = opts.scriptUrl.replace(/[?#].*$/, "");
   const { integrityHash, version } = await sriForUrl(baseUrl);
   const hostedLocation = `${baseUrl}?v=${encodeURIComponent(version)}`;
@@ -286,6 +291,7 @@ export async function installSearchScript(opts: {
     scriptId: registered.id,
     version: registered.version,
     integrityHash,
+    hostedLocation,
   };
 }
 

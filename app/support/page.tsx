@@ -18,19 +18,24 @@ export default function SupportPage() {
           Open <a href="/install">Install</a> (or Install from the Webflow Marketplace) and
           create a Talaash account, or sign in if you already have one.
         </li>
-        <li>Approve Webflow access when prompted so Talaash can read CMS content and manage the search script.</li>
+        <li>
+          Approve Webflow access when prompted so Talaash can read CMS content and manage the
+          search script (<code>sites</code>, <code>cms:read</code>,{" "}
+          <code>custom_code</code> scopes).
+        </li>
         <li>
           In the dashboard <strong>Setup</strong> tab: choose collections and fields, then
           run <strong>Index CMS</strong>.
         </li>
         <li>
-          Click <strong>Install search on site</strong> so Talaash registers the widget through
-          Webflow’s Custom Code API (no manual footer paste).
+          Click <strong>Install search on site</strong> so Talaash registers a pinned{" "}
+          <code>search.js</code> through Webflow’s Custom Code API (credentials on the script;
+          default styles are bundled in the script).
         </li>
         <li>
-          In the Webflow Designer, add a search layout with the custom attributes in the{" "}
-          <a href="/docs/attributes">Search attributes</a> guide (no Embed HTML paste), then{" "}
-          <strong>Publish</strong>.
+          In the Webflow Designer, open the <strong>Talaash</strong> app and click{" "}
+          <strong>Insert search layout</strong> (or add attributes from the{" "}
+          <a href="/docs/attributes">Search attributes</a> guide). Then <strong>Publish</strong>.
         </li>
       </ol>
 
@@ -38,7 +43,8 @@ export default function SupportPage() {
       <ul>
         <li>
           <strong>Insights</strong> — volume, popular prompts, and content gaps from live
-          visitor searches.
+          visitor searches (uses anonymous visitor/session ids unless you set{" "}
+          <code>data-search-analytics=&quot;off&quot;</code>).
         </li>
         <li>
           <strong>Content intelligence / AEO</strong> — optional AI reports based on indexed
@@ -47,18 +53,44 @@ export default function SupportPage() {
         <li>
           <strong>Re-index</strong> after major CMS or mapping changes so results stay fresh.
         </li>
+        <li>
+          <strong>Re-install script</strong> after Talaash ships a widget update so Webflow
+          picks up a new integrity-pinned version.
+        </li>
       </ul>
 
       <h2 className="title-sm">Disconnect &amp; remove</h2>
       <ol>
         <li>
-          In Setup, choose <strong>Disconnect Webflow</strong>. Talaash revokes access and
-          removes the Custom Code script it applied.
+          In Setup, choose <strong>Disconnect Webflow</strong>. Talaash tries to remove the
+          Custom Code script it applied, then revokes the OAuth token.
         </li>
         <li>
           <strong>Publish</strong> your Webflow site so removal goes live. You can also
-          remove any leftover <code>data-search-*</code> attributes from your Designer layout
-          if you no longer want the UI markup.
+          remove leftover <code>data-search-*</code> layout from the Designer if you no longer
+          want the UI markup.
+        </li>
+      </ol>
+
+      <h3 className="title-sm">If Disconnect cannot remove Custom Code</h3>
+      <p>
+        If Webflow access was already revoked (or the token expired) before Disconnect ran,
+        automatic script removal may fail. Recover manually:
+      </p>
+      <ol>
+        <li>
+          In Webflow: open the site → <strong>Site settings</strong> →{" "}
+          <strong>Custom Code</strong> (or Apps / registered scripts for Custom Code).
+        </li>
+        <li>
+          Remove any script named <strong>TalaashSearch</strong> (or legacy{" "}
+          <strong>TalaashLoader</strong>).
+        </li>
+        <li>
+          <strong>Publish</strong> the site.
+        </li>
+        <li>
+          Optionally delete the search layout elements / attributes in the Designer.
         </li>
       </ol>
 
@@ -75,9 +107,8 @@ export default function SupportPage() {
           an old authorize tab.
         </li>
         <li>
-          <strong>No search results</strong> — confirm Index CMS finished, the search script
-          was installed, your Designer layout includes the required attributes, and the site
-          was published after those steps.
+          <strong>No search results</strong> — confirm Index CMS finished, Install search on
+          site ran, the Designer layout is present, and the site was published afterward.
         </li>
         <li>
           <strong>Insights empty</strong> — analytics appear after visitors use search on the

@@ -3,6 +3,10 @@
  *
  * Preferred: install from Talaash Setup (Webflow Custom Code API registers this
  * script site-wide with data-search-site / data-search-token / data-search-endpoint).
+ * Default widget CSS is inlined (no separate search.css fetch / SRI gap).
+ *
+ * Opt-out analytics ids: data-search-analytics="off" on root or script.
+ * Opt-out suggest: data-search-suggest="off" on root (typed text not sent to /suggest).
  *
  * Build the page in Designer (Divs, Form Search, Collection List, Buttons).
  * Add custom attributes. This script clones your designed Collection Item.
@@ -288,8 +292,18 @@
     }
 
     var suggestEndpoint = deriveSuggestEndpoint(endpoint, root);
-    var visitorId = storedId(localStorage, "cms-search-visitor");
-    var sessionId = storedId(sessionStorage, "cms-search-session");
+    var analyticsOff =
+      scriptBootAttr("data-search-analytics") === "off" ||
+      root.getAttribute("data-search-analytics") === "off";
+    var suggestOff =
+      root.getAttribute("data-search-suggest") === "off" ||
+      scriptBootAttr("data-search-suggest") === "off";
+    var visitorId = analyticsOff
+      ? ""
+      : storedId(localStorage, "cms-search-visitor");
+    var sessionId = analyticsOff
+      ? ""
+      : storedId(sessionStorage, "cms-search-session");
 
     var input = first(root, [
       "[data-search-input]",
@@ -371,7 +385,7 @@
       "[data-search-answer]",
       '[fs-cmssearch-element="answer"]',
     ]);
-    var suggestPanel = ensureSuggestPanel(root, input);
+    var suggestPanel = suggestOff ? null : ensureSuggestPanel(root, input);
     var mode = (
       root.getAttribute("data-search-mode") ||
       root.getAttribute("fs-cmssearch-mode") ||
@@ -445,6 +459,7 @@
     function hideSuggest() {
       activeSuggestIndex = -1;
       suggestRows = [];
+      if (!suggestPanel) return;
       while (suggestPanel.firstChild) {
         suggestPanel.removeChild(suggestPanel.firstChild);
       }
@@ -695,8 +710,8 @@
       url.searchParams.set("limit", "20");
       url.searchParams.set("site", siteId);
       url.searchParams.set("token", searchToken);
-      url.searchParams.set("visitor", visitorId);
-      url.searchParams.set("session", sessionId);
+      if (visitorId) url.searchParams.set("visitor", visitorId);
+      if (sessionId) url.searchParams.set("session", sessionId);
       var types = activeTypes();
       if (types.length) url.searchParams.set("types", types.join(","));
 
@@ -736,10 +751,16 @@
       search("");
     }
 
-    input.addEventListener("input", debouncedSuggest);
+    if (!suggestOff) {
+      input.addEventListener("input", debouncedSuggest);
+    }
 
     input.addEventListener("keydown", function (e) {
-      var open = suggestRows.length > 0 && !suggestPanel.hidden;
+      var open =
+        !suggestOff &&
+        suggestPanel &&
+        suggestRows.length > 0 &&
+        !suggestPanel.hidden;
       if (e.key === "ArrowDown" && open) {
         e.preventDefault();
         setActiveSuggest(
@@ -774,20 +795,24 @@
     });
 
     input.addEventListener("blur", function () {
+      if (suggestOff) return;
       blurTimer = setTimeout(hideSuggest, 150);
     });
     input.addEventListener("focus", function () {
+      if (suggestOff) return;
       if (blurTimer) clearTimeout(blurTimer);
       var q = (input.value || "").trim();
       if (q.length >= SUGGEST_MIN_CHARS) debouncedSuggest();
     });
 
     function onViewportChange() {
-      if (suggestPanel.hidden) return;
+      if (suggestOff || !suggestPanel || suggestPanel.hidden) return;
       placeSuggestPanel(suggestPanel, input, root);
     }
-    window.addEventListener("resize", onViewportChange);
-    window.addEventListener("scroll", onViewportChange, true);
+    if (!suggestOff) {
+      window.addEventListener("resize", onViewportChange);
+      window.addEventListener("scroll", onViewportChange, true);
+    }
 
     input.setAttribute("enterkeyhint", "search");
     input.addEventListener("search", function () {
@@ -830,20 +855,10 @@
 
   function ensureDefaultStyles() {
     if (document.getElementById("talaash-search-css")) return;
-    var cssHref = "";
-    if (BOOT_SCRIPT && BOOT_SCRIPT.src) {
-      try {
-        cssHref = new URL("search.css", BOOT_SCRIPT.src).href;
-      } catch (e) {
-        cssHref = "";
-      }
-    }
-    if (!cssHref) cssHref = "https://www.talaash.org/search.css";
-    var link = document.createElement("link");
-    link.id = "talaash-search-css";
-    link.rel = "stylesheet";
-    link.href = cssHref;
-    document.head.appendChild(link);
+    var style = document.createElement("style");
+    style.id = "talaash-search-css";
+    style.textContent = "/* Talaash search widget defaults — source of truth for styles inlined into public/search.js.\r\n * Do not rely on a separate <link> to this file for production installs (SRI applies to search.js only).\r\n * After editing, run: node scripts/inline-search-css.mjs\r\n */\r\n\r\n[data-search] {\r\n  --talaash-ink: #181d26;\r\n  --talaash-muted: #41454d;\r\n  --talaash-border: #dddddd;\r\n  --talaash-soft: #f8fafc;\r\n  --talaash-accent: #181d26;\r\n  --talaash-link: #1b61c9;\r\n  --talaash-radius: 10px;\r\n  --talaash-font: \"Inter\", system-ui, -apple-system, \"Segoe UI\", sans-serif;\r\n\r\n  box-sizing: border-box;\r\n  font-family: var(--talaash-font);\r\n  color: var(--talaash-ink);\r\n  max-width: 820px;\r\n  width: 100%;\r\n}\r\n\r\n[data-search] *,\r\n[data-search] *::before,\r\n[data-search] *::after {\r\n  box-sizing: border-box;\r\n}\r\n\r\n[data-search] [data-search-input] {\r\n  display: block;\r\n  width: 100%;\r\n  margin: 0;\r\n  padding: 14px 16px;\r\n  font: inherit;\r\n  font-size: 16px;\r\n  line-height: 1.4;\r\n  color: var(--talaash-ink);\r\n  background: #fff;\r\n  border: 1px solid var(--talaash-border);\r\n  border-radius: var(--talaash-radius);\r\n  outline: none;\r\n  transition: border-color 0.15s ease, box-shadow 0.15s ease;\r\n}\r\n\r\n[data-search] [data-search-input]::placeholder {\r\n  color: #9297a0;\r\n}\r\n\r\n[data-search] [data-search-input]:focus {\r\n  border-color: var(--talaash-ink);\r\n  box-shadow: 0 0 0 3px rgba(24, 29, 38, 0.12);\r\n}\r\n\r\n[data-search] [data-search-filters],\r\n[data-search] .talaash-filters {\r\n  display: flex;\r\n  flex-wrap: wrap;\r\n  gap: 8px;\r\n  margin-top: 12px;\r\n}\r\n\r\n[data-search] [data-search-filter] {\r\n  display: inline-flex;\r\n  align-items: center;\r\n  padding: 8px 12px;\r\n  font-size: 13px;\r\n  font-weight: 600;\r\n  line-height: 1;\r\n  color: var(--talaash-muted);\r\n  text-decoration: none;\r\n  background: var(--talaash-soft);\r\n  border: 1px solid var(--talaash-border);\r\n  border-radius: 999px;\r\n  cursor: pointer;\r\n}\r\n\r\n[data-search] [data-search-filter]:hover,\r\n[data-search] [data-search-filter].is-active,\r\n[data-search] [data-search-filter][aria-pressed=\"true\"] {\r\n  color: #fff;\r\n  background: var(--talaash-accent);\r\n  border-color: var(--talaash-accent);\r\n}\r\n\r\n[data-search] [data-search-answer] {\r\n  margin: 16px 0 8px;\r\n  padding: 14px 16px;\r\n  font-size: 15px;\r\n  line-height: 1.55;\r\n  color: var(--talaash-ink);\r\n  background: var(--talaash-soft);\r\n  border: 1px solid var(--talaash-border);\r\n  border-radius: var(--talaash-radius);\r\n}\r\n\r\n[data-search] [data-search-loading],\r\n[data-search] [data-search-empty] {\r\n  margin-top: 20px;\r\n  font-size: 14px;\r\n  color: var(--talaash-muted);\r\n}\r\n\r\n[data-search] [data-search-result-source] {\r\n  display: none !important;\r\n}\r\n\r\n[data-search] [data-search-results]:empty {\r\n  display: none;\r\n}\r\n\r\n[data-search] [data-search-results] {\r\n  display: grid;\r\n  gap: 12px;\r\n  margin-top: 20px;\r\n}\r\n\r\n[data-search] a[data-search-result] {\r\n  display: grid;\r\n  grid-template-columns: 88px 1fr;\r\n  gap: 14px;\r\n  align-items: start;\r\n  padding: 14px;\r\n  text-decoration: none;\r\n  color: inherit;\r\n  background: #fff;\r\n  border: 1px solid var(--talaash-border);\r\n  border-radius: var(--talaash-radius);\r\n  transition: border-color 0.15s ease, box-shadow 0.15s ease;\r\n}\r\n\r\n[data-search] a[data-search-result]:not(:has([data-search-result-image]:not([hidden]))) {\r\n  grid-template-columns: 1fr;\r\n}\r\n\r\n[data-search] a[data-search-result]:hover {\r\n  border-color: #9297a0;\r\n  box-shadow: 0 8px 24px rgba(24, 29, 38, 0.06);\r\n}\r\n\r\n[data-search] [data-search-result-image] {\r\n  width: 88px;\r\n  height: 88px;\r\n  object-fit: cover;\r\n  border-radius: 8px;\r\n  background: var(--talaash-soft);\r\n}\r\n\r\n[data-search] [data-search-result-image][hidden] {\r\n  display: none !important;\r\n}\r\n\r\n[data-search] [data-search-result-body] {\r\n  min-width: 0;\r\n}\r\n\r\n[data-search] [data-search-result-type] {\r\n  margin: 0 0 4px;\r\n  font-size: 11px;\r\n  font-weight: 600;\r\n  letter-spacing: 0.06em;\r\n  text-transform: uppercase;\r\n  color: var(--talaash-muted);\r\n}\r\n\r\n[data-search] [data-search-result-title] {\r\n  margin: 0 0 6px;\r\n  font-size: 17px;\r\n  font-weight: 600;\r\n  line-height: 1.3;\r\n  color: var(--talaash-ink);\r\n}\r\n\r\n[data-search] [data-search-result-snippet] {\r\n  margin: 0;\r\n  font-size: 14px;\r\n  line-height: 1.5;\r\n  color: var(--talaash-muted);\r\n}\r\n\r\n[data-search] [data-search-suggest] {\r\n  font-family: var(--talaash-font);\r\n  /* Position/size are set in search.js to match the input box */\r\n  right: auto;\r\n  margin-top: 0;\r\n}\r\n\r\n[data-search] [data-search-suggest] [role=\"option\"],\r\n[data-search] [data-search-suggest] button {\r\n  font: inherit;\r\n}\r\n\r\n@media (max-width: 560px) {\r\n  [data-search] a[data-search-result] {\r\n    grid-template-columns: 64px 1fr;\r\n    gap: 12px;\r\n    padding: 12px;\r\n  }\r\n\r\n  [data-search] [data-search-result-image] {\r\n    width: 64px;\r\n    height: 64px;\r\n  }\r\n}\r\n\r\n/* Opt out: add data-search-unstyled on the root wrapper */\r\n[data-search][data-search-unstyled],\r\n[data-search][data-search-unstyled] * {\r\n  all: revert;\r\n}\r\n";
+    document.head.appendChild(style);
   }
 
   function boot() {

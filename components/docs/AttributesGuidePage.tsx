@@ -60,6 +60,14 @@ const OPTIONAL = [
     name: "data-search-mode",
     note: 'On the wrapper: submit (default) or live (suggest while typing; Enter still runs full search).',
   },
+  {
+    name: "data-search-analytics",
+    note: 'Set to "off" on the wrapper (or script) to skip anonymous visitor/session ids. Queries may still be logged.',
+  },
+  {
+    name: "data-search-suggest",
+    note: 'Set to "off" to disable autocomplete (typed text will not be sent to /suggest).',
+  },
 ] as const;
 
 export function AttributesGuidePage() {

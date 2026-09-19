@@ -29,14 +29,41 @@ Reviewers could **not find** the Client ID you submitted.
 ### 3. No manual footer-script install
 
 Code installs via **Custom Code API** (`Install search on site` in Setup; removed on disconnect).
-Registers pinned **`search.js`** with SRI (`hostedLocation` + `integrityHash`). Widget updates require Install again (new immutable version) — no runtime loader.
+Registers pinned **`search.js`** with SRI (`hostedLocation` + `integrityHash`). Default widget CSS is **inlined inside `search.js`** (no separate unpinned `search.css` fetch). Widget updates require Install again (new immutable version) — no runtime loader.
 
 Designer UI is inserted by the **Designer Extension** (`designer-extension/` → *Insert search layout* via Designer APIs) or by hand with **custom attributes** (Finsweet-style) — documented at `/docs/attributes`. Do **not** require pasting HTML into an Embed.
 
 - Upload the Designer Extension **bundle.zip** (+ source maps under `designer-extension/dist`) in the App version manager for this Hybrid app.
 - Build: `npm --prefix designer-extension run bundle`
+- After Install, Setup shows the exact `?v=…` URL + integrity hash.
 - Update Marketplace **description** so it never tells users to paste a footer script or Embed HTML.
 - Distinguish: **App installs the script**; **Designer Extension inserts layout** (or customer adds attributes) + publish.
+
+### 3b. Privacy / analytics / suggest (aligned)
+
+- Default: anonymous visitor/session ids for Insights; document on `/privacy`.
+- Opt-out: `data-search-analytics="off"`.
+- Suggest sends typed text while enabled; opt-out: `data-search-suggest="off"`.
+
+### 3c. Disconnect recovery
+
+- Prefer Disconnect in Setup (uninstall Custom Code → revoke token).
+- If token already revoked: Site settings → Custom Code → remove **TalaashSearch** → Publish (`/support`).
+
+### 3d. Scopes justification (submission notes)
+
+| Scope | Why |
+|-------|-----|
+| `sites:read` | List/select connected sites |
+| `sites:write` | Required with Custom Code apply/publish flows on site |
+| `cms:read` | Index CMS collections/items |
+| `custom_code:read` / `custom_code:write` | Register + apply/remove pinned `search.js` |
+| Do **not** enable `cms:write` unless you add write features |
+
+### 3e. Listing / publisher (you in Webflow UI)
+
+- Marketplace listing: Support / Privacy / Terms URLs, free vs paid, limits, prerequisites (Webflow CMS site; publish after install).
+- Publisher branding: rename workspace display from “Dev” + upload logo.
 
 ### 4. Carousel images — `1280×846` PNG/JPG, ≤2MB each, 3–5 images
 

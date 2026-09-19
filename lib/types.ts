@@ -70,6 +70,17 @@ export interface MeResponse {
   sites?: { id: string; name: string }[];
 }
 
+/** Returned by Install search on site (Custom Code). */
+export interface EmbedScriptResult {
+  ok?: boolean;
+  scriptId?: string;
+  version?: string;
+  integrityHash?: string;
+  hostedLocation?: string;
+  message?: string;
+  error?: string;
+}
+
 export interface CollectionField {
   slug: string;
   displayName?: string;
