@@ -31,8 +31,10 @@ Reviewers could **not find** the Client ID you submitted.
 Code installs via **Custom Code API** (`Install search on site` in Setup; removed on disconnect).
 Registers pinned **`search.js`** with SRI (`hostedLocation` + `integrityHash`). Widget updates require Install again (new immutable version) — no runtime loader.
 
-- Update Marketplace **description** so it never tells users to paste a footer script.
-- Distinguish: **App installs the script**; **customer designs** search UI attributes + publishes.
+Designer UI uses **custom attributes** (Finsweet-style) — documented at `/docs/attributes`. Do **not** require pasting HTML into an Embed.
+
+- Update Marketplace **description** so it never tells users to paste a footer script or Embed HTML.
+- Distinguish: **App installs the script**; **customer adds Designer attributes** + publishes.
 
 ### 4. Carousel images — `1280×846` PNG/JPG, ≤2MB each, 3–5 images
 

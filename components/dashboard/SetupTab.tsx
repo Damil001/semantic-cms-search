@@ -409,29 +409,6 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   const siteId = me.siteId || "";
   const searchToken = me.searchToken || "";
 
-  const designerEmbedHtml = `<div
-  data-search
-  data-search-site="${siteId}"
-  data-search-token="${searchToken}"
-  data-search-endpoint="${searchEndpoint}"
->
-  <input data-search-input type="search" placeholder="Search…" autocomplete="off" />
-  <div data-search-answer hidden></div>
-  <div data-search-loading hidden>Searching…</div>
-  <div data-search-empty hidden>No results found.</div>
-  <div data-search-results></div>
-  <div data-search-result-source hidden style="display:none!important" aria-hidden="true">
-    <a data-search-result href="#">
-      <img data-search-result-image alt="" width="88" height="88" />
-      <div data-search-result-body>
-        <div data-search-result-type></div>
-        <div data-search-result-title></div>
-        <div data-search-result-snippet></div>
-      </div>
-    </a>
-  </div>
-</div>`;
-
   async function copyText(key: string, text: string) {
     try {
       await navigator.clipboard.writeText(text);
@@ -439,7 +416,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
       trackEvent("setup_copy_embed", { which: key });
       window.setTimeout(() => setCopiedKey((cur) => (cur === key ? null : cur)), 2000);
     } catch {
-      setScriptNotice("Could not copy — select the snippet and copy manually.");
+      setScriptNotice("Could not copy — select the value and copy manually.");
     }
   }
 
@@ -515,8 +492,8 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
           <h3 className="title-sm">Search on your Webflow site</h3>
           <p className="caption text-muted">
             Talaash registers a pinned <code>search.js</code> through Webflow’s Custom Code API
-            (integrity hash). Design the on-page search UI in the Designer, then publish. After
-            widget updates, click Install again to register a new script version.
+            (integrity hash). Then add Designer custom attributes for the search UI — no Embed HTML
+            paste. After widget updates, click Install again to register a new script version.
           </p>
         </div>
         <div className="btn-row" style={{ marginBottom: 16 }}>
@@ -563,34 +540,47 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         )}
 
         <div className="insights-callout mt-md" style={{ marginTop: 16 }}>
-          <strong>Do not reuse credentials from another site.</strong> If you copied a search block
-          from an older project, delete its old <code>data-search-site</code>,{" "}
-          <code>data-search-token</code>, and <code>data-search-endpoint</code> — those values send
-          searches to a different dashboard.
+          <strong>Credentials:</strong> After Install, site ID, search token, and endpoint are set on
+          the Custom Code script. Do not reuse values copied from another site’s Designer layout.
         </div>
 
         <div className="setup-embed-block mt-lg">
           <div className="setup-embed-block__head">
             <div>
               <h4 className="title-sm" style={{ margin: 0 }}>
-                Designer search layout
+                Designer attributes (minimum setup)
               </h4>
               <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
-                Paste into a Webflow Embed. Result cards live in a hidden{" "}
-                <code>data-search-result-source</code> block (never flash empty). Styles load from{" "}
-                <code>search.css</code>. No filter tabs by default — add{" "}
-                <code>data-search-filter</code> links only if you need them.
+                In Webflow Designer, add native elements and these custom attributes. Full guide
+                with optional attributes:{" "}
+                <a href="/docs/attributes" target="_blank" rel="noreferrer">
+                  Search attributes
+                </a>
+                .
               </p>
             </div>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => copyText("designer", designerEmbedHtml)}
-            >
-              {copiedKey === "designer" ? "Copied" : "Copy HTML"}
-            </button>
+            <a className="btn btn-secondary btn-sm" href="/docs/attributes" target="_blank" rel="noreferrer">
+              Open guide
+            </a>
           </div>
-          <pre className="setup-embed-pre">{designerEmbedHtml}</pre>
+          <div className="setup-attr-min mt-md">
+            {[
+              ["Wrapper Div", "data-search"],
+              ["Search input", "data-search-input"],
+              ["Results container", "data-search-results"],
+              ["Result card (hidden source)", "data-search-result"],
+              ["Title / snippet / type / image", "data-search-result-title, …"],
+            ].map(([label, attr]) => (
+              <div key={String(label)} className="setup-attr-min__row">
+                <span className="setup-code-label">{label}</span>
+                <code className="setup-code-value">{attr}</code>
+              </div>
+            ))}
+          </div>
+          <p className="caption text-muted mt-md" style={{ marginBottom: 0 }}>
+            Recommended: wrap the result card in a hidden Div with{" "}
+            <code>data-search-result-source</code>, then <strong>Publish</strong> after Install.
+          </p>
         </div>
 
         <div className="setup-code-grid mt-md">

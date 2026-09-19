@@ -72,6 +72,7 @@ export default function RootLayout({
             <span>Talaash</span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
               <Link href="/install">Install</Link>
+              <Link href="/docs/attributes">Attributes</Link>
               <Link href="/support">Support</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>

@@ -24,12 +24,13 @@ export default function SupportPage() {
           run <strong>Index CMS</strong>.
         </li>
         <li>
-          Click <strong>Install search script</strong> so Talaash registers the widget on
-          your site through Webflow’s Custom Code API (no manual footer paste).
+          Click <strong>Install search on site</strong> so Talaash registers the widget through
+          Webflow’s Custom Code API (no manual footer paste).
         </li>
         <li>
-          In the Webflow Designer, add a search layout (input + results list) using the
-          attributes shown in Setup, then <strong>Publish</strong> your site.
+          In the Webflow Designer, add a search layout with the custom attributes in the{" "}
+          <a href="/docs/attributes">Search attributes</a> guide (no Embed HTML paste), then{" "}
+          <strong>Publish</strong>.
         </li>
       </ol>
 
