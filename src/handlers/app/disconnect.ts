@@ -29,9 +29,12 @@ export default async function handler(
 
   const install = await getInstallForUser(req, user.id);
   if (!install) {
-    res.status(200).json({ ok: true, disconnected: false });
+    res.status(200).json({ ok: true, disconnected: false, customCodeRemoved: false });
     return;
   }
+
+  let customCodeRemoved = false;
+  let customCodeError: string | null = null;
 
   if (install.access_token && install.site_id) {
     try {
@@ -39,9 +42,14 @@ export default async function handler(
         accessToken: install.access_token,
         siteId: install.site_id,
       });
+      customCodeRemoved = true;
     } catch (err) {
+      customCodeError = err instanceof Error ? err.message : "Custom Code uninstall failed";
       console.error("custom code uninstall failed", err);
     }
+  } else if (install.site_id) {
+    customCodeError =
+      "No Webflow access token left to remove Custom Code automatically. Remove TalaashSearch under Site settings → Custom Code, then publish.";
   }
 
   if (install.access_token) {
@@ -64,5 +72,13 @@ export default async function handler(
   }
 
   clearCookie(res, SESSION_COOKIE);
-  res.status(200).json({ ok: true, disconnected: true });
+  res.status(200).json({
+    ok: true,
+    disconnected: true,
+    customCodeRemoved,
+    customCodeError,
+    message: customCodeRemoved
+      ? "Disconnected. Publish your Webflow site so script removal goes live."
+      : "Disconnected. Custom Code may still be on the site — remove TalaashSearch under Site settings → Custom Code, then publish. See /support.",
+  });
 }

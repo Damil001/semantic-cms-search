@@ -38,16 +38,16 @@ This is the Finsweet-like product flow: **you** deploy one backend. **They** ins
 
 **Marketplace:** see [`docs/MARKETPLACE.md`](docs/MARKETPLACE.md) for Install URL, legal pages, and the submission checklist.
 
-1. Create a [Webflow Data Client App](https://developers.webflow.com/) with scopes `sites:read` and `cms:read`.
-2. Redirect URL: `https://YOUR_VERCEL_APP/api/oauth/callback`
-3. Application URL / App home: `https://YOUR_VERCEL_APP/app`
-4. **Install URL (Marketplace):** `https://YOUR_VERCEL_APP/install`
+1. Create a [Webflow Hybrid App](https://developers.webflow.com/) (Data Client + Designer Extension) with scopes `sites:read`, `sites:write`, `cms:read`, `custom_code:read`, `custom_code:write` (do **not** enable `cms:write`).
+2. Redirect URL: `https://www.talaash.org/api/oauth/callback` (or your production host)
+3. Application URL / App home: `https://www.talaash.org/app`
+4. **Install URL (Marketplace):** `https://www.talaash.org/install`
 5. Deploy this repo to Vercel with:
 
 ```
 WEBFLOW_CLIENT_ID=
 WEBFLOW_CLIENT_SECRET=
-WEBFLOW_REDIRECT_URI=https://YOUR_VERCEL_APP/api/oauth/callback
+WEBFLOW_REDIRECT_URI=https://www.talaash.org/api/oauth/callback
 OPENAI_API_KEY=
 SUPABASE_URL=
 SUPABASE_SERVICE_KEY=
@@ -134,37 +134,33 @@ Same `site` + `token` auth as `/search`. No OpenAI call — returns popular past
 
 The widget calls `/suggest` automatically (debounced). Full `/search` (with AI answer) runs only on Enter or when a query suggestion is chosen. Clicking a CMS title navigates to that URL.
 
-## 5. Build the search page in Webflow Designer (Finsweet-style)
+## 5. Build the search page in Webflow Designer
 
-You do **not** paste a results layout. You design the page in Webflow the same way you would for Finsweet CMS Filter: native elements + custom attributes. The script clones the Collection Item you styled.
+Preferred: open the **Talaash Designer Extension** and click **Insert search layout** (native elements + `data-search-*` attributes via Designer APIs — no Embed HTML paste).
+
+Alternatively, add attributes by hand using the same Finsweet-style pattern; see `/docs/attributes`. The script clones the result template you styled.
 
 Semantic ranking cannot run inside Webflow (no embeddings, and you must not put API keys in the browser). Ingest still reads your Webflow CMS; the published page only calls your public `/search` URL.
 
 ### Search script (Custom Code API)
 
-In the Talaash dashboard, use **Install search on site**. That registers a pinned `search.js` (with SRI) on the connected Webflow site via the Custom Code API. Do **not** paste a footer script manually for Marketplace installs — paste only the Designer layout attributes from Setup.
+In the Talaash dashboard, use **Install search on site**. That registers a pinned `search.js` (with SRI; default CSS inlined) on the connected Webflow site via the Custom Code API. Do **not** paste a footer script for Marketplace installs. Credentials are applied on the script tag — you do not need to put site id / token on the wrapper when Install was used.
 
 After you change the widget code in production, click **Install search on site** again so Webflow gets a new immutable script version, then publish the site.
+
 ### Designer structure
 
 On a static page (e.g. `/search`):
 
-1. **Wrapper** — Div Block. Custom attributes:
-   - `data-search` · `true`
-   - `data-search-endpoint` · the Search URL from `/app`
-   - `data-search-site` · the site id from `/app`
-   - `data-search-token` · the search token from `/app`
-2. **Input** — Form Search or Text Field inside the wrapper. Attribute `data-search-input` = `true`.
-3. **Answer (optional)** — Text or Paragraph with `data-search-answer` for the AI intro (shown for hits and zero results).
-4. **Suggest (optional)** — Div with `data-search-suggest` for a custom autocomplete panel. If omitted, the script creates a dropdown under the input automatically.
-5. **Filters (optional)** — Buttons. Attribute `data-search-filter` = `blog` / `webinar` / `ebook` (must match the content type you set in `/app`). Active state uses class `is-active` — style that combo class in Designer.
-6. **Loading / empty** — Text or Divs. Attributes `data-search-loading` and `data-search-empty`.
-7. **Results** — Add a **Collection List** bound to any collection (only used as a visual template; CMS rows are stripped on load).  
-   - Collection List: `data-search-results`  
-   - Collection Item: `data-search-result`  
-   Style that item as your result card (image, type label, heading, excerpt, Link Block).
+1. **Wrapper** — Div Block with `data-search` (credentials come from the installed script).
+2. **Input** — Custom Element or form input with `data-search-input`.
+3. **Answer (optional)** — Text or Paragraph with `data-search-answer`.
+4. **Suggest (optional)** — Div with `data-search-suggest`, or omit (auto-created). Disable with `data-search-suggest="off"`.
+5. **Filters (optional)** — Buttons with `data-search-filter`.
+6. **Loading / empty** — `data-search-loading` / `data-search-empty`.
+7. **Results** — Div with `data-search-results` plus a hidden source (`data-search-result-source` + `display:none`) containing the result card template.
 
-On elements **inside** the Collection Item:
+On elements **inside** the result card:
 
 | Attribute | Put on |
 |-----------|--------|
@@ -177,7 +173,7 @@ Use a **Link Block** wrapping the card (or any `a` inside). The script sets `hre
 
 Finsweet-shaped aliases also work (`fs-cmssearch-element="root|input|list|item|loader|empty|suggest|answer"`, `fs-cmssearch-field="title"`, `fs-cmssearch-filter="webinar"`).
 
-Publish the site after adding attributes. Style `[aria-pressed="true"]` or `.is-active` for filter pills.
+Publish the site after Install + layout. Style `[aria-pressed="true"]` or `.is-active` for filter pills.
 
 ## 6. Local ranking demo (no keys)
 
@@ -192,7 +188,7 @@ Uses a five-item mock corpus (blog / webinar / ebook plus off-topic fillers), fa
 1. Fetch native documents.
 2. Map to `content_items` (`source`, namespaced `id`, `content_type`, title, excerpt, url, image, dates).
 3. Chunk + embed the same way; write `content_chunks`.
-4. Leave `/search` and `frontend/search.js` unchanged.
+4. Leave `/search` and `public/search.js` unchanged.
 
 ## Out of scope
 

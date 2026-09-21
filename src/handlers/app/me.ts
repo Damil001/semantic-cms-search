@@ -14,11 +14,12 @@ export default async function handler(
   }
 
   const install = await getInstallForUser(req, user.id);
-  if (!install) {
+  if (!install || !install.access_token) {
     res.status(200).json({
       authenticated: true,
       email: user.email,
       connected: false,
+      needsReconnect: Boolean(install && !install.access_token),
     });
     return;
   }

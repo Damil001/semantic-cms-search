@@ -71,7 +71,7 @@ export async function analyzeSearchQueries(siteId: string): Promise<ContentInsig
       eventsAnalyzed: 0,
       uniqueQueries: 0,
       summary:
-        "No search data yet. Embed search on your site and collect queries before running analysis.",
+        "No search data yet. Install search on your site and collect queries before running analysis.",
       trends: [],
       contentGaps: [],
       marketingSuggestions: [],

@@ -635,8 +635,14 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
 
         <div className="insights-callout mt-md" style={{ marginTop: 12 }}>
           <strong>Disconnect cleanup:</strong> Disconnect Webflow removes the Custom Code script
-          Talaash applied. Publish the site afterward so removal goes live. You can delete any
-          leftover Designer attributes yourself if you no longer want the search layout.
+          Talaash applied when a valid token is available. Publish the site afterward so removal goes
+          live. If the token was already revoked, remove <strong>TalaashSearch</strong> under Webflow
+          Site settings → Custom Code, then publish — details on{" "}
+          <a href="/support" target="_blank" rel="noreferrer">
+            Support
+          </a>
+          . You can delete leftover Designer attributes yourself if you no longer want the search
+          layout.
         </div>
       </div>
 
@@ -677,10 +683,18 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
               setDisconnecting(true);
               try {
                 const res = await fetch("/api/app/disconnect", { method: "POST" });
+                const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
-                  const data = await res.json().catch(() => ({}));
                   window.alert(data.error || "Disconnect failed");
                   return;
+                }
+                if (data.customCodeRemoved === false) {
+                  window.alert(
+                    data.message ||
+                      "Disconnected, but Custom Code may still be on the site. In Webflow: Site settings → Custom Code → remove TalaashSearch → Publish. See /support."
+                  );
+                } else if (data.message) {
+                  window.alert(data.message);
                 }
                 window.location.href = "/app";
               } finally {

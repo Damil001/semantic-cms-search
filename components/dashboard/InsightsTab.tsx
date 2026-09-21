@@ -225,7 +225,7 @@ export function InsightsTab({
 
         {!(data.total > 0) && (
           <p className="insights-empty mb-lg">
-            No prompts logged yet. Embed search on your site and try a few queries.
+            No prompts logged yet. Install search on your site, publish, and try a few queries.
           </p>
         )}
 
