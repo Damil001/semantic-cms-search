@@ -5,7 +5,7 @@ export const metadata = {
 };
 
 /** Supabase project region, e.g. "the United States (AWS us-east-1)". Leave empty to omit. */
-const DATA_REGION = "";
+const DATA_REGION = "Singapore (AWS ap-southeast-1)";
 
 export default function PrivacyPage() {
   const where = DATA_REGION ? ` in ${DATA_REGION}` : "";

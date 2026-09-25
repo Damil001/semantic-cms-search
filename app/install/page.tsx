@@ -42,8 +42,9 @@ export default async function InstallPage({
       <main className="container section--tight" style={{ maxWidth: 640, paddingBottom: 96 }}>
         <h1 className="title-lg">Install Talaash</h1>
         <p className="body-md text-muted mt-md">
-          Create a free Talaash account, connect your Webflow site, choose the CMS collections to
-          search, and add an AI search box to your site. Requires a paid Webflow Site plan.
+          Create a Talaash account, connect your Webflow site, choose the CMS collections to
+          search, and add an AI search box to your site. Requires a paid Webflow Site plan. See{" "}
+          <Link href="/pricing">Talaash pricing</Link>.
         </p>
 
         {oauthStatus === "denied" && (

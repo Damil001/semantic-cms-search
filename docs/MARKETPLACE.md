@@ -71,7 +71,8 @@ deletion **within 24 hours** (daily cleanup job), and that deletion requests com
 
 **6. Carousel & description.** New 1280×846 screenshots of the current UI only (no Copy HTML, Embed,
 unversioned URL or stylesheet). Description names intended users, states the paid Webflow Site plan
-requirement, defines AEO, and replaces “fair-use” with concrete terms.
+requirement, defines AEO, and replaces “fair-use” with the exact plan limits (collections and
+re-indexes per month) and prices shown on https://www.talaash.org/pricing.
 
 **7. Setup: first error didn’t point to its fix.** Setup now loads collections from Webflow
 automatically on first visit. If none are loaded, Save/Index show “No CMS collections are loaded yet”
@@ -115,7 +116,7 @@ WHAT YOU GET
 • Content and AEO reports. AEO (answer engine optimization) means shaping your content so AI assistants and search engines can quote it as a direct answer.
 
 HOW IT WORKS
-1. Install Talaash and create a free account.
+1. Install Talaash and create an account.
 2. Choose your Webflow site and approve access.
 3. Pick the CMS collections to search and click Index.
 4. Click "Install search on site".
@@ -126,8 +127,12 @@ REQUIREMENTS
 • At least one CMS collection with published items
 • Permission to install apps and publish the site
 
-PRICING & USAGE
-Free to install and use. There are no search or indexing caps today. If a site sends automated or abusive traffic (for example, bots sending thousands of searches an hour), we may pause AI answers for that site and contact you. We will email you at least 30 days before introducing any paid plan or usage limit.
+PRICING
+Talaash is a paid app. Creating an account and connecting your site to try the product is free; running search on a live site requires a paid plan:
+• Starter: $499 one-time setup + $49/month (up to 10 collections, 1 search page, 2 re-indexes a month)
+• Growth: $749 one-time setup + $79/month (up to 25 collections, filters, AI answers, content and AEO reports, 4 re-indexes a month)
+• Scale: $999 one-time setup + $149/month (unlimited collections, SLA, agency options)
+Setup covers connecting your site, mapping your CMS fields, the first index and a working search experience. Add-ons such as extra collections or re-indexes are listed on our pricing page. To purchase, contact us through our Support page; plans are billed by Talaash, not through Webflow.
 
 YOUR VISITORS' DATA
 By default the search box stores a random, anonymous visitor ID and session ID in the visitor's browser so you can see unique-visitor counts, and it shows autocomplete suggestions while visitors type (the typed text is sent to Talaash to fetch suggestions). No names, emails or IP addresses are linked to searches. You can turn off the IDs, autocomplete, or both with one setting each; see our Support page.
@@ -138,9 +143,6 @@ Click Disconnect in Talaash to remove the search script, revoke access and delet
 LANGUAGE
 English.
 ```
-
-> ⚠️ `/pricing` on talaash.org lists paid plans with setup fees. Either align that page with “Free to
-> install and use” or change the PRICING section above before submitting — reviewers compare them.
 
 ---
 
