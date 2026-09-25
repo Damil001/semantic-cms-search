@@ -89,11 +89,57 @@ export async function signInWithPasswordFast(
   };
 }
 
-/** Create account via admin API, then sign in. Edge-safe (fetch only). */
-export async function signUpFast(
+/** Error shown to users; `code` lets the form offer the right next step. */
+export class AuthUserError extends Error {
+  constructor(
+    message: string,
+    readonly code: "invalid_credentials" | "account_exists" | "weak_password" | "invalid_email"
+  ) {
+    super(message);
+    this.name = "AuthUserError";
+  }
+}
+
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function isInvalidCredentials(message: string): boolean {
+  return /invalid login credentials|invalid email or password|invalid_grant/i.test(message);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Sign in with a user-facing error when the email/password pair is wrong. */
+export async function signInFriendly(
   email: string,
   password: string
 ): Promise<{ user: { id: string; email?: string }; accessToken: string; refreshToken: string }> {
+  try {
+    return await signInWithPasswordFast(normalizeEmail(email), password);
+  } catch (err) {
+    if (err instanceof Error && isInvalidCredentials(err.message)) {
+      throw new AuthUserError(
+        "That email and password don’t match an account. Check the password, create an account, or reset your password.",
+        "invalid_credentials"
+      );
+    }
+    throw err;
+  }
+}
+
+/** Create account via admin API, then sign in. Edge-safe (fetch only). */
+export async function signUpFast(
+  rawEmail: string,
+  password: string
+): Promise<{ user: { id: string; email?: string }; accessToken: string; refreshToken: string }> {
+  const email = normalizeEmail(rawEmail);
+  if (password.length < 6) {
+    throw new AuthUserError("Use a password with at least 6 characters.", "weak_password");
+  }
+
   const { url } = requireSupabaseAuthEnv();
   const serviceKey = process.env.SUPABASE_SERVICE_KEY;
   if (!serviceKey) {
@@ -119,14 +165,88 @@ export async function signUpFast(
     const payload = (await createRes.json().catch(() => ({}))) as {
       msg?: string;
       message?: string;
+      error_code?: string;
     };
-    const msg = (payload.msg || payload.message || "").toLowerCase();
-    if (!msg.includes("already") && !msg.includes("registered")) {
-      throw new Error(payload.msg || payload.message || `Sign up failed (${createRes.status})`);
+    const raw = payload.msg || payload.message || "";
+    const msg = raw.toLowerCase();
+    if (msg.includes("already") || msg.includes("registered") || payload.error_code === "email_exists") {
+      try {
+        return await signInWithPasswordFast(email, password);
+      } catch {
+        throw new AuthUserError(
+          "An account with this email already exists. Sign in, or reset your password if you’ve forgotten it.",
+          "account_exists"
+        );
+      }
     }
+    if (msg.includes("password")) {
+      throw new AuthUserError(raw || "Choose a stronger password.", "weak_password");
+    }
+    if (msg.includes("email")) {
+      throw new AuthUserError(raw || "Enter a valid email address.", "invalid_email");
+    }
+    throw new Error(raw || `Sign up failed (${createRes.status})`);
   }
 
-  return signInWithPasswordFast(email, password);
+  // A just-created user can briefly be unavailable to the password grant.
+  let lastError: unknown;
+  for (const delay of [0, 400, 900, 1600]) {
+    if (delay) await sleep(delay);
+    try {
+      return await signInWithPasswordFast(email, password);
+    } catch (err) {
+      lastError = err;
+      if (!(err instanceof Error) || !isInvalidCredentials(err.message)) throw err;
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Account created, but sign-in failed. Try signing in.");
+}
+
+/** Send a password-reset email. Always resolves so callers can't enumerate accounts. */
+export async function requestPasswordReset(rawEmail: string, redirectTo: string): Promise<void> {
+  const { url, anonKey } = requireSupabaseAuthEnv();
+  const res = await fetch(
+    `${url}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`,
+    {
+      method: "POST",
+      headers: authHeaders(anonKey),
+      body: JSON.stringify({ email: normalizeEmail(rawEmail), redirect_to: redirectTo }),
+      signal: AbortSignal.timeout(AUTH_TIMEOUT_MS),
+    }
+  );
+  if (!res.ok && res.status !== 429) {
+    console.error("password recover failed", res.status, await res.text().catch(() => ""));
+  }
+  if (res.status === 429) {
+    throw new Error("Too many reset requests. Wait a few minutes and try again.");
+  }
+}
+
+/** Set a new password using the access token from the recovery link. */
+export async function updatePasswordWithRecoveryToken(
+  accessToken: string,
+  password: string
+): Promise<void> {
+  if (password.length < 6) {
+    throw new AuthUserError("Use a password with at least 6 characters.", "weak_password");
+  }
+  const { url, anonKey } = requireSupabaseAuthEnv();
+  const res = await fetch(`${url}/auth/v1/user`, {
+    method: "PUT",
+    headers: authHeaders(anonKey, accessToken),
+    body: JSON.stringify({ password }),
+    signal: AbortSignal.timeout(AUTH_TIMEOUT_MS),
+  });
+  if (!res.ok) {
+    const payload = (await res.json().catch(() => ({}))) as { msg?: string; message?: string };
+    const msg = payload.msg || payload.message || "";
+    if (res.status === 401 || res.status === 403) {
+      throw new Error("This reset link has expired or was already used. Request a new one.");
+    }
+    throw new Error(msg || `Password update failed (${res.status})`);
+  }
 }
 
 export async function getUserFromAccessTokenFast(

@@ -92,9 +92,32 @@ body {
   cursor: not-allowed;
 }
 
+.target {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--soft);
+  border: 1px solid var(--hairline);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.rules {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
 .status {
   min-height: 1.2em;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.45;
   color: var(--muted);
 }
 

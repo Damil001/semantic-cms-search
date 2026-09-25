@@ -7,6 +7,7 @@ import {
   getUserFromAccessTokenFast,
   refreshSessionFast,
   signInWithPasswordFast,
+  signUpFast,
 } from "./goauth.js";
 import {
   AUTH_ACCESS_COOKIE,
@@ -94,22 +95,12 @@ export async function signUp(
   email: string,
   password: string
 ): Promise<{ user: User; accessToken: string; refreshToken: string }> {
-  const admin = getServiceClient();
-  const { error } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
-
-  if (error) {
-    const msg = error.message.toLowerCase();
-    if (msg.includes("already") || msg.includes("registered")) {
-      return signIn(email, password);
-    }
-    throw new Error(error.message);
-  }
-
-  return signIn(email, password);
+  const fast = await signUpFast(email, password);
+  return {
+    user: fast.user as User,
+    accessToken: fast.accessToken,
+    refreshToken: fast.refreshToken,
+  };
 }
 
 async function confirmUserEmail(email: string): Promise<void> {

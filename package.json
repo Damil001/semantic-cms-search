@@ -6,7 +6,9 @@
   "description": "Source-agnostic semantic search over CMS content (Webflow first), using Supabase pgvector and OpenAI embeddings.",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/snapshot-search.mjs",
     "build": "next build",
+    "snapshot:search": "node scripts/snapshot-search.mjs",
     "start": "next start",
     "ingest": "tsx src/ingest/index.ts",
     "demo": "tsx scripts/demo.ts",

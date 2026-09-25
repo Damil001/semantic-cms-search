@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getServiceClient } from "../lib/supabase.js";
+import { decryptToken } from "../lib/token-crypto.js";
 
 export const SESSION_COOKIE = "wf_session";
 export const OAUTH_STATE_COOKIE = "wf_oauth_state";
@@ -73,6 +74,17 @@ export function authCookieOptions(): {
   };
 }
 
+/** Returns the install with `access_token` decrypted for server-side use only. */
+async function withDecryptedToken(row: InstallRow | null): Promise<InstallRow | null> {
+  if (!row) return null;
+  try {
+    return { ...row, access_token: await decryptToken(row.access_token) };
+  } catch (err) {
+    console.error("could not decrypt Webflow token for install", row.id, err);
+    return { ...row, access_token: "" };
+  }
+}
+
 export async function getInstallForUser(
   req: VercelRequest,
   userId: string
@@ -87,7 +99,7 @@ export async function getInstallForUser(
       .eq("session_token", session)
       .eq("user_id", userId)
       .maybeSingle();
-    if (!error && data) return data as InstallRow;
+    if (!error && data) return withDecryptedToken(data as InstallRow);
   }
 
   const { data: latest } = await supabase
@@ -98,7 +110,7 @@ export async function getInstallForUser(
     .limit(1)
     .maybeSingle();
 
-  return (latest as InstallRow | null) ?? null;
+  return withDecryptedToken((latest as InstallRow | null) ?? null);
 }
 
 export async function userOwnsSite(

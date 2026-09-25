@@ -9,6 +9,8 @@ dist/
 # Designer Extension build artifact (regenerate with npm run designer:bundle)
 designer-extension/bundle.zip
 designer-extension/dist/
+designer-extension/review/
+designer-extension/review-package.zip
 
 # Webflow-provided local toolkit — do not publish to GitHub
 webflow-app-skills-*/

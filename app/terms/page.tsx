@@ -6,7 +6,7 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of Use">
+    <LegalPage title="Terms of Use" updated="September 7, 2026">
       <p>
         By creating a Talaash account or installing the Talaash Webflow App, you agree to
         these terms.

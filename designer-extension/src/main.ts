@@ -65,29 +65,74 @@ async function ensureHiddenStyle(): Promise<Style> {
   return style;
 }
 
-async function resolveParent(): Promise<ContainerEl> {
-  const selected = await webflow.getSelectedElement();
-  if (selected && "children" in selected && selected.children) {
-    return requireContainer(selected, "Selected element");
-  }
+type Placement = "inside-end" | "body-top" | "after";
 
-  const all = await webflow.getAllElements();
-  const body = all.find((el) => el.type === "Body");
-  if (body && "children" in body && body.children) {
-    return requireContainer(body, "Body");
-  }
-
-  throw new Error("Select a parent element on the canvas that can contain children.");
+function canHoldChildren(el: AnyEl): boolean {
+  return Boolean(el && "children" in el && el.children);
 }
 
-async function insertSearchLayout(): Promise<void> {
-  const parent = await resolveParent();
-  const hiddenStyle = await ensureHiddenStyle();
+function placementFor(el: AnyEl): Placement | null {
+  if (!el) return null;
+  if (el.type === "Body") return "body-top";
+  return canHoldChildren(el) ? "inside-end" : "after";
+}
 
-  const root = requireContainer(
-    await parent.append(webflow.elementPresets.DivBlock),
-    "Search root",
-  );
+async function elementLabel(el: NonNullable<AnyEl>): Promise<string> {
+  if ("displayName" in el && el.displayName) {
+    try {
+      const name = await el.getDisplayName();
+      if (name) return name;
+    } catch {
+      /* fall back to type */
+    }
+  }
+  return el.type;
+}
+
+function describePlacement(placement: Placement, label: string): string {
+  if (placement === "body-top") return "At the top of the page (first element in Body).";
+  if (placement === "inside-end") return `Inside “${label}”, after its existing content.`;
+  return `Directly below “${label}”.`;
+}
+
+async function createRoot(): Promise<{ root: ContainerEl; where: string }> {
+  const selected = await webflow.getSelectedElement();
+  const placement = placementFor(selected);
+  if (!selected || !placement) {
+    throw new Error("Select an element on the canvas first — the layout is added there.");
+  }
+  const label = await elementLabel(selected);
+  const preset = webflow.elementPresets.DivBlock;
+
+  let created: AnyEl;
+  if (placement === "after") {
+    created = await selected.after(preset);
+  } else {
+    const container = requireContainer(selected, label);
+    const target = container as unknown as {
+      prepend: (p: typeof preset) => Promise<AnyEl>;
+      append: (p: typeof preset) => Promise<AnyEl>;
+    };
+    created = placement === "body-top" ? await target.prepend(preset) : await target.append(preset);
+  }
+  return {
+    root: requireContainer(created, "Search layout"),
+    where: describePlacement(placement, label),
+  };
+}
+
+async function insertSearchLayout(): Promise<string> {
+  const hiddenStyle = await ensureHiddenStyle();
+  const { root, where } = await createRoot();
+  if ("displayName" in root && root.displayName) {
+    try {
+      await (root as unknown as { setDisplayName: (n: string) => Promise<null> }).setDisplayName(
+        "Talaash Search",
+      );
+    } catch {
+      /* optional */
+    }
+  }
   await setAttr(root, "data-search");
 
   // Custom Element <input> — not a Webflow Form (search.js binds Enter on the input)
@@ -156,6 +201,21 @@ async function insertSearchLayout(): Promise<void> {
   } catch {
     /* optional */
   }
+  return where;
+}
+
+async function updateTarget(el: AnyEl): Promise<void> {
+  const target = document.getElementById("target");
+  const btn = document.getElementById("insert-layout") as HTMLButtonElement | null;
+  const placement = placementFor(el);
+  if (!el || !placement) {
+    if (target) target.textContent = "Nothing selected. Click an element on the canvas.";
+    if (btn) btn.disabled = true;
+    return;
+  }
+  const label = await elementLabel(el);
+  if (target) target.textContent = describePlacement(placement, label);
+  if (btn) btn.disabled = false;
 }
 
 function setStatus(message: string, kind: "" | "ok" | "error" = ""): void {
@@ -173,12 +233,15 @@ async function onInsert(): Promise<void> {
   setStatus("Inserting search layout…");
 
   try {
-    await insertSearchLayout();
-    setStatus("Search layout inserted. Style it, install the script from Setup, then publish.", "ok");
+    const where = await insertSearchLayout();
+    setStatus(
+      `Added “Talaash Search” — ${where} It’s now selected on the canvas and in the Navigator.`,
+      "ok",
+    );
     try {
       await webflow.notify({
         type: "Success",
-        message: "Talaash search layout inserted on the canvas.",
+        message: "Talaash search layout added and selected.",
       });
     } catch {
       /* notify optional */
@@ -192,10 +255,19 @@ async function onInsert(): Promise<void> {
       /* ignore */
     }
   } finally {
-    if (btn) btn.disabled = false;
+    await updateTarget(await webflow.getSelectedElement().catch(() => null));
   }
 }
 
 document.getElementById("insert-layout")?.addEventListener("click", () => {
   void onInsert();
 });
+
+void webflow.setExtensionSize({ width: 420, height: 640 }).catch(() => undefined);
+webflow.subscribe("selectedelement", (el) => {
+  void updateTarget(el);
+});
+void webflow
+  .getSelectedElement()
+  .then(updateTarget)
+  .catch(() => undefined);

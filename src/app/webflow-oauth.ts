@@ -3,7 +3,6 @@ const TOKEN = "https://api.webflow.com/oauth/access_token";
 
 export const WEBFLOW_SCOPES = [
   "sites:read",
-  "sites:write",
   "cms:read",
   "custom_code:read",
   "custom_code:write",

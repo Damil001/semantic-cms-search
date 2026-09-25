@@ -4,107 +4,148 @@ export const metadata = {
   title: "Privacy Policy · Talaash",
 };
 
+/** Supabase project region, e.g. "the United States (AWS us-east-1)". Leave empty to omit. */
+const DATA_REGION = "";
+
 export default function PrivacyPage() {
+  const where = DATA_REGION ? ` in ${DATA_REGION}` : "";
   return (
-    <LegalPage title="Privacy Policy">
+    <LegalPage title="Privacy Policy" updated="September 26, 2026">
       <p>
-        Talaash (“we”, “our”) provides semantic search and analytics for Webflow CMS
-        sites. This policy explains what we collect and how we use it when you create a
-        Talaash account or install the Talaash Webflow App.
+        Talaash (“we”, “our”) provides AI-powered search and search analytics for Webflow CMS
+        sites. This policy explains what we collect, where it is stored, and when it is deleted
+        when you create a Talaash account or install the Talaash Webflow app.
       </p>
 
       <h2 className="title-sm">Information we collect</h2>
       <ul>
         <li>
-          <strong>Account data</strong> — email and authentication credentials for your
-          Talaash account (via Supabase Auth).
+          <strong>Account data</strong> — your email address and a hashed password for your
+          Talaash account.
         </li>
         <li>
-          <strong>Webflow authorization</strong> — an OAuth access token that lets us read
-          site metadata and CMS collections you authorize, and manage the search script we
-          register on your site through Webflow’s Custom Code API. Tokens are stored
-          server-side only.
+          <strong>Webflow authorization</strong> — an OAuth access token that lets us read your
+          site details and the CMS collections you choose, and add or remove the Talaash search
+          script on your site. The token is encrypted (AES-256-GCM) before it is stored, is only
+          ever used on our servers, and is never sent to browsers, site visitors, or AI providers.
         </li>
         <li>
-          <strong>CMS content</strong> — titles, fields, and text you choose to index,
-          stored as embeddings and search metadata to power search and related insights.
+          <strong>CMS content</strong> — the titles, fields and text from the collections you
+          choose to index, stored with AI embeddings so visitors can search them.
         </li>
         <li>
-          <strong>Visitor search data</strong> — by default, when a visitor uses the search
-          widget we collect: the search query text, result counts, and anonymous{" "}
-          <code>visitor</code> / <code>session</code> ids stored in the browser (local/session
-          storage) so Insights can estimate unique visitors and sessions. Site owners can
-          disable those ids by setting <code>data-search-analytics=&quot;off&quot;</code> on the
-          search root or the installed script (queries may still be logged without ids).
+          <strong>Visitor search data (on by default)</strong> — when a visitor searches on your
+          site we record the search text, the number of results, and random anonymous{" "}
+          <strong>visitor and session IDs</strong> that the search widget stores in the visitor’s
+          browser (local storage and session storage). These IDs let Insights count unique
+          visitors and sessions; they are not linked to names, emails or IP addresses. Site owners
+          can turn the IDs off with <code>data-search-analytics=&quot;off&quot;</code> (searches
+          are then still counted, without IDs).
         </li>
         <li>
-          <strong>Suggest / autocomplete</strong> — while a visitor types (unless suggest is
-          disabled with <code>data-search-suggest=&quot;off&quot;</code>), the widget may send the
-          current typed text to our suggest API to return autocomplete options. Suggest does
-          not send visitor/session ids.
+          <strong>Autocomplete (on by default)</strong> — while a visitor types, the widget sends
+          the partial text to our suggestion service to show autocomplete options. Suggestion
+          requests do not include visitor or session IDs. Site owners can turn autocomplete off
+          with <code>data-search-suggest=&quot;off&quot;</code>.
         </li>
       </ul>
 
       <h2 className="title-sm">How we use information</h2>
       <ul>
-        <li>Authenticate you and connect your Webflow site</li>
-        <li>Index selected CMS content and answer on-site search requests</li>
-        <li>Show prompt analytics, content-gap insights, and answer-readiness reports</li>
-        <li>Register, update, and remove the Talaash search script on your Webflow site</li>
-        <li>Operate, secure, and improve the service</li>
+        <li>Sign you in and connect your Webflow site</li>
+        <li>Index the CMS content you select and answer searches on your site</li>
+        <li>Show search analytics, content-gap insights and answer-readiness reports</li>
+        <li>Add, update and remove the Talaash search script on your Webflow site</li>
+        <li>Operate, secure and improve the service</li>
       </ul>
 
-      <h2 className="title-sm">AI providers (OpenAI)</h2>
+      <h2 className="title-sm">Where data is stored</h2>
+      <ul>
+        <li>
+          <strong>Database</strong> — account records, the encrypted Webflow token, indexed CMS
+          content and embeddings, field mappings, and search analytics are stored in a managed
+          PostgreSQL database provided by Supabase, hosted on Amazon Web Services{where}. Data is
+          encrypted in transit (TLS) and at rest.
+        </li>
+        <li>
+          <strong>Application servers</strong> — the Talaash dashboard and search API run on
+          Vercel. They process requests but do not keep your CMS content or analytics after a
+          request finishes.
+        </li>
+        <li>
+          <strong>AI processing</strong> — OpenAI processes text as described below; it is not
+          our storage location for your data.
+        </li>
+      </ul>
+
+      <h2 className="title-sm">AI provider (OpenAI)</h2>
       <p>
-        To provide semantic search, AI answers, content-drafting suggestions, and related
-        analysis, we send limited data to OpenAI as a processor:
+        To provide AI search, AI answers, content suggestions and related reports, we send
+        limited data to OpenAI as a processor:
       </p>
       <ul>
         <li>
-          <strong>CMS text you index</strong> — used to create embeddings and, when you use
-          AI answers or drafting features, short excerpts may be included in model prompts.
+          <strong>CMS text you index</strong> — to create embeddings; short excerpts may be
+          included when generating AI answers or drafting suggestions.
         </li>
         <li>
-          <strong>Visitor search queries</strong> — used to embed the query for retrieval
-          and, when AI answers are enabled, to generate a grounded answer from retrieved
-          CMS snippets.
+          <strong>Visitor search text</strong> — to find matching content and, when AI answers
+          are on, to write an answer from your CMS content.
         </li>
         <li>
-          <strong>Aggregated search patterns</strong> — when you run Content intelligence or
-          AEO analysis, sampled or summarized query/CMS signals may be sent to generate
-          reports.
+          <strong>Search patterns</strong> — when you run Content intelligence or AEO (answer
+          engine optimization) reports, sampled or summarized search and CMS signals.
         </li>
       </ul>
       <p>
-        We do not send your Webflow OAuth token or Talaash account passwords to OpenAI.
-        OpenAI processes data under their API terms; we use it only to operate advertised
-        features.
+        We never send your Webflow token, passwords or visitor/session IDs to OpenAI. Under
+        OpenAI’s API terms, API data is not used to train their models.
       </p>
 
       <h2 className="title-sm">Sharing</h2>
       <p>
-        We do not sell your data. We use subprocessors required to run the product (hosting,
-        database, embedding/AI providers). Public site visitors only call our search API with
-        a site-scoped search token — they never receive your Webflow OAuth token or service
-        keys.
+        We do not sell your data. We only use the subprocessors needed to run the product
+        (Vercel for hosting, Supabase for the database, OpenAI for AI features). Site visitors
+        only talk to our search service using a site-specific public search key — never your
+        Webflow token or our server keys.
       </p>
 
       <h2 className="title-sm">Retention &amp; deletion</h2>
-      <p>
-        You can disconnect Webflow from the dashboard, which removes Custom Code we applied
-        (when permissions allow), revokes the OAuth access token, and clears it from our
-        storage. Publish your Webflow site after disconnect so script removal goes live. If
-        Disconnect cannot call Webflow (token already revoked), remove the Talaash script
-        manually under Webflow Site settings → Custom Code, then publish — see{" "}
-        <a href="/support">Support</a>. You may request account or indexed-data deletion by
-        contacting support. We retain analytics and index data while your account remains
-        active unless you ask us to delete it.
-      </p>
+      <ul>
+        <li>
+          <strong>While connected</strong> — indexed content, mappings and search analytics are
+          kept while your Webflow site is connected so search and Insights keep working.
+        </li>
+        <li>
+          <strong>When you disconnect in Talaash</strong> (Setup → Disconnect Webflow) — we remove
+          the search script from your site, revoke our Webflow access, and{" "}
+          <strong>immediately and permanently delete</strong> the stored token and that
+          site’s indexed content, embeddings, field mappings and search analytics. Publish your
+          site afterward so script removal goes live.
+        </li>
+        <li>
+          <strong>When you uninstall or revoke Talaash from Webflow</strong> — the token stops
+          working immediately. Our daily cleanup job detects the revoked access and deletes the
+          stored token and that site’s indexed content, embeddings, mappings and analytics{" "}
+          <strong>within 24 hours</strong>. Because we no longer have access, remove the{" "}
+          <strong>TalaashSearch</strong> script yourself under Site settings → Custom code, then
+          publish (see <a href="/support">Support</a>).
+        </li>
+        <li>
+          <strong>Deletion requests</strong> — email us (address on <a href="/support">Support</a>
+          ) to delete your account or any site data. We complete requests within{" "}
+          <strong>30 days</strong> and confirm by email. Deleting your account also deletes all
+          connected sites’ data as described above.
+        </li>
+        <li>
+          <strong>Backups</strong> — our database provider keeps automatic backups for up to 7
+          days; deleted data disappears from backups when they expire.
+        </li>
+      </ul>
 
       <h2 className="title-sm">Contact</h2>
       <p>
-        Privacy questions: see <a href="/support">Support</a> or email the address listed
-        there.
+        Privacy questions: email the address on our <a href="/support">Support</a> page.
       </p>
     </LegalPage>
   );

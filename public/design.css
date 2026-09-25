@@ -382,6 +382,22 @@ select.text-input:focus {
   margin-top: var(--space-xs);
 }
 
+.btn-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--color-link, var(--color-ink));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.btn-link:focus-visible {
+  outline: 2px solid var(--color-info-border);
+  outline-offset: 2px;
+}
+
 /* Layout bands */
 
 .hero-band {

@@ -26,19 +26,37 @@ type RegisteredScript = {
   integrityHash?: string;
 };
 
-async function sriForUrl(url: string): Promise<{ integrityHash: string; version: string }> {
+async function fetchScript(url: string): Promise<Buffer> {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Could not fetch script for integrity hash (${res.status}): ${url}`);
   }
-  const buf = Buffer.from(await res.arrayBuffer());
-  const digest = createHash("sha256").update(buf).digest("base64");
-  const integrityHash = `sha256-${digest}`;
-  const patch = createHash("sha256").update(buf).digest("hex").slice(0, 8);
+  return Buffer.from(await res.arrayBuffer());
+}
+
+/**
+ * Resolve the immutable snapshot (`/search/v/<sha256-prefix>.js`, written by
+ * scripts/snapshot-search.mjs) for the current search.js, so a later deploy can never change
+ * the bytes behind a pinned SRI hash.
+ */
+async function pinnedScript(baseUrl: string): Promise<{
+  hostedLocation: string;
+  integrityHash: string;
+  version: string;
+}> {
+  const current = await fetchScript(baseUrl);
+  const hex = createHash("sha256").update(current).digest("hex");
+  const hostedLocation = new URL(`search/v/${hex.slice(0, 16)}.js`, baseUrl).toString();
+
+  const pinned = await fetchScript(hostedLocation);
+  if (!pinned.equals(current)) {
+    throw new Error(`Pinned snapshot does not match search.js: ${hostedLocation}`);
+  }
+  const integrityHash = `sha256-${createHash("sha256").update(pinned).digest("base64")}`;
   const version =
     process.env.SEARCH_SCRIPT_VERSION?.trim() ||
-    `1.0.${Number.parseInt(patch, 16) % 1_000_000_000}`;
-  return { integrityHash, version };
+    `1.0.${Number.parseInt(hex.slice(0, 8), 16) % 1_000_000_000}`;
+  return { hostedLocation, integrityHash, version };
 }
 
 async function wfJson<T>(
@@ -259,8 +277,7 @@ export async function installSearchScript(opts: {
   hostedLocation: string;
 }> {
   const baseUrl = opts.scriptUrl.replace(/[?#].*$/, "");
-  const { integrityHash, version } = await sriForUrl(baseUrl);
-  const hostedLocation = `${baseUrl}?v=${encodeURIComponent(version)}`;
+  const { hostedLocation, integrityHash, version } = await pinnedScript(baseUrl);
 
   const registered = await registerHostedScript(opts.accessToken, opts.siteId, {
     hostedLocation,

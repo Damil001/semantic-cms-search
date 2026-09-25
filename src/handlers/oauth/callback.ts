@@ -14,6 +14,7 @@ import { consumeOAuthState } from "../../app/oauth-state.js";
 import { listSites } from "../../app/webflow-admin.js";
 import { exchangeCode } from "../../app/webflow-oauth.js";
 import { getServiceClient } from "../../lib/supabase.js";
+import { encryptToken } from "../../lib/token-crypto.js";
 
 function failRedirect(res: VercelResponse, message: string): void {
   const q = new URLSearchParams({ oauth: "error", message });
@@ -47,7 +48,7 @@ async function finishInstall(
     site_name: primary.displayName ?? primary.shortName ?? primary.id,
     short_name: primary.shortName ?? null,
     preview_url: primary.previewUrl ?? null,
-    access_token: accessToken,
+    access_token: await encryptToken(accessToken),
     session_token: sessionToken,
     search_token: (existing?.search_token as string | undefined) || newToken(),
     updated_at: new Date().toISOString(),

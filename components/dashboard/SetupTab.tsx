@@ -25,6 +25,7 @@ type IndexProgress = {
   phase: "saving" | "indexing" | "success" | "error";
   mode: "save" | "index" | "reindex";
   message: string;
+  fix?: "refresh";
   collections: CollectionIndexRow[];
   totalProcessed: number;
   totalChunks: number;
@@ -137,8 +138,9 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   const [activeAction, setActiveAction] = useState<"save" | "index" | "reindex" | null>(null);
   const [indexProgress, setIndexProgress] = useState<IndexProgress | null>(null);
 
-  const loadCollections = useCallback(async () => {
+  const loadCollections = useCallback(async (): Promise<boolean> => {
     setLoading(true);
+    let needsRefresh = false;
     try {
       const controller = new AbortController();
       const timer = window.setTimeout(() => controller.abort(), 10_000);
@@ -148,7 +150,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         signal: controller.signal,
       });
       window.clearTimeout(timer);
-      if (!res.ok) return;
+      if (!res.ok) return true;
       const data = await res.json();
       const incoming = (data.collections ?? []) as Collection[];
       setCollections(
@@ -157,12 +159,13 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
           mapping: normalizeMapping(c.mapping),
         }))
       );
-      if (data.needsSchemaRefresh) {
-        setRefreshNotice("No cached CMS fields yet. Click Refresh fields to pull from Webflow.");
-      }
+      needsRefresh = Boolean(data.needsSchemaRefresh) || incoming.length === 0;
+    } catch {
+      needsRefresh = true;
     } finally {
       setLoading(false);
     }
+    return needsRefresh;
   }, []);
 
   const refreshFromWebflow = useCallback(async () => {
@@ -180,25 +183,51 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         return;
       }
       const incoming = (data.collections ?? []) as Collection[];
+      if (incoming.length === 0) {
+        setCollections([]);
+        setRefreshNotice(
+          "Webflow returned no CMS collections for this site. Add a CMS collection with at least one item in Webflow, then click Refresh fields."
+        );
+        return;
+      }
       let notice = "";
       setCollections((prev) => {
         const { collections: merged, newFieldCount } = mergeCollectionDrafts(incoming, prev);
         const count = data.newFieldCount ?? newFieldCount;
         notice =
-          count > 0
-            ? `Pulled ${count} new CMS field${count === 1 ? "" : "s"} from Webflow. Map them below, then re-index.`
-            : `Synced ${data.synced ?? incoming.length} collection${(data.synced ?? incoming.length) === 1 ? "" : "s"} from Webflow.`;
+          prev.length > 0 && count > 0
+            ? `Pulled ${count} new CMS field${count === 1 ? "" : "s"} from Webflow. Check them below, then re-index.`
+            : `Loaded ${incoming.length} collection${incoming.length === 1 ? "" : "s"} from Webflow. Review the fields below, then click Index CMS.`;
         return merged;
       });
       setRefreshNotice(notice);
+      setIndexProgress((prev) => (prev?.fix === "refresh" ? null : prev));
+    } catch {
+      setRefreshNotice("Could not refresh fields from Webflow. Check your connection and try again.");
     } finally {
       setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    loadCollections();
-  }, [loadCollections]);
+    void loadCollections().then((needsRefresh) => {
+      if (needsRefresh) void refreshFromWebflow();
+    });
+  }, [loadCollections, refreshFromWebflow]);
+
+  function noCollectionsError(mode: IndexProgress["mode"]): IndexProgress {
+    return {
+      phase: "error",
+      mode,
+      message:
+        "No CMS collections are loaded yet. Click Refresh fields to pull your collections from Webflow, then try again.",
+      fix: "refresh",
+      collections: [],
+      totalProcessed: 0,
+      totalChunks: 0,
+      percent: null,
+    };
+  }
 
   function updateCollection(i: number, patch: Partial<CollectionDraft>) {
     setCollections((prev) =>
@@ -269,12 +298,19 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
     trackEvent("setup_index", { mode });
     setBusy(true);
     setActiveAction(mode);
+    if (collections.length === 0) {
+      setIndexProgress(noCollectionsError(mode));
+      setBusy(false);
+      setActiveAction(null);
+      return;
+    }
     const enabled = readMaps().filter((m) => m.enabled);
     if (enabled.length === 0) {
       setIndexProgress({
         phase: "error",
         mode,
-        message: "Enable at least one collection before indexing.",
+        message:
+          "All collections are unticked. Tick the checkbox next to at least one collection name below, then click Index CMS.",
         collections: [],
         totalProcessed: 0,
         totalChunks: 0,
@@ -489,7 +525,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         <div className="setup-step-card setup-step-card--mustard">
           <span className="setup-step-card__num">3</span>
           <span className="setup-step-card__label">Install script</span>
-          <span className="setup-step-card__hint">Via Custom Code API</span>
+          <span className="setup-step-card__hint">One click, then publish</span>
         </div>
       </div>
 
@@ -497,10 +533,10 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         <div className="insights-panel__head">
           <h3 className="title-sm">Search on your Webflow site</h3>
           <p className="caption text-muted">
-            Talaash registers a pinned <code>search.js</code> through Webflow’s Custom Code API
-            (integrity hash). Default widget CSS is bundled inside that script (no separate CSS
-            fetch). Prefer the Designer Extension for layout — no Embed HTML paste. After widget
-            updates, click Install again to register a new script version.
+            Click <strong>Install search on site</strong> to add the Talaash search script to your
+            Webflow site (requires a paid Webflow site plan), then publish your site. Add the
+            search box on the page with the Talaash app in the Designer. When we release a widget
+            update, click Install again.
           </p>
         </div>
         <div className="btn-row" style={{ marginBottom: 16 }}>
@@ -554,8 +590,8 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         )}
 
         <div className="insights-callout mt-md" style={{ marginTop: 16 }}>
-          <strong>Credentials:</strong> After Install, site ID, search token, and endpoint are set on
-          the Custom Code script. Do not reuse values copied from another site’s Designer layout.
+          <strong>No keys to copy:</strong> Install connects the search box to this site
+          automatically. You don’t need to paste a site ID or token anywhere.
         </div>
 
         <div className="setup-embed-block mt-lg">
@@ -565,10 +601,9 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
                 Designer layout
               </h4>
               <p className="caption text-muted" style={{ margin: "4px 0 0" }}>
-                Preferred: open the <strong>Talaash</strong> Designer Extension and click{" "}
-                <strong>Insert search layout</strong> — it adds native elements and{" "}
-                <code>data-search-*</code> attributes via Designer APIs (no Embed HTML paste). Or
-                add attributes manually:{" "}
+                In the Webflow Designer, open <strong>Apps → Talaash</strong>, select the section
+                where search should go, and click <strong>Insert search layout</strong>. Advanced
+                users can build their own layout instead:{" "}
                 <a href="/docs/attributes" target="_blank" rel="noreferrer">
                   Search attributes
                 </a>
@@ -628,16 +663,16 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         </div>
         {!installedScript && (
           <p className="caption text-muted mt-md" style={{ marginBottom: 0 }}>
-            After <strong>Install search on site</strong>, this panel shows the exact pinned{" "}
-            <code>?v=…</code> URL and integrity hash Webflow registered.
+            After <strong>Install search on site</strong>, this panel shows the exact script
+            version installed on your site.
           </p>
         )}
 
         <div className="insights-callout mt-md" style={{ marginTop: 12 }}>
-          <strong>Disconnect cleanup:</strong> Disconnect Webflow removes the Custom Code script
-          Talaash applied when a valid token is available. Publish the site afterward so removal goes
-          live. If the token was already revoked, remove <strong>TalaashSearch</strong> under Webflow
-          Site settings → Custom Code, then publish — details on{" "}
+          <strong>Disconnecting:</strong> Disconnect Webflow removes the search script, revokes access
+          and deletes this site’s indexed content and analytics. Publish the site afterward. If you
+          already removed Talaash from Webflow’s side, delete <strong>TalaashSearch</strong> in
+          Webflow under Site settings → Custom code, then publish — details on{" "}
           <a href="/support" target="_blank" rel="noreferrer">
             Support
           </a>
@@ -674,7 +709,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             onClick={async () => {
               if (
                 !window.confirm(
-                  "Disconnect Webflow? This removes the Custom Code search script Talaash applied, revokes access, and clears the stored token.\n\nPublish your Webflow site afterward so removal goes live. Designer layout attributes are not deleted automatically."
+                  "Disconnect Webflow?\n\nThis removes the Talaash search script from your site, revokes Talaash’s Webflow access, and permanently deletes this site’s indexed content and search analytics.\n\nPublish your Webflow site afterward so the removal goes live. The search layout elements you added in the Designer stay on the page until you delete them."
                 )
               ) {
                 return;
@@ -710,9 +745,30 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         </div>
       </div>
 
-      {loading ? (
+      {loading || (refreshing && collections.length === 0) ? (
         <div className="insights-panel mb-lg skeleton-block">
+          <p className="caption text-muted" style={{ margin: 0 }}>
+            Loading your CMS collections from Webflow…
+          </p>
           <div className="skeleton-line skeleton-line--title" />
+        </div>
+      ) : collections.length === 0 ? (
+        <div className="insights-panel mb-lg">
+          <div className="insights-panel__head">
+            <h3 className="title-sm">No collections loaded yet</h3>
+            <p className="caption text-muted">
+              Click <strong>Refresh fields</strong> to load your CMS collections from Webflow. If
+              nothing appears, add a CMS collection with at least one item in Webflow first.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={refreshing}
+            onClick={() => refreshFromWebflow()}
+          >
+            Refresh fields
+          </button>
         </div>
       ) : (
         collections.map((c, i) => (
@@ -855,6 +911,10 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             disabled={busy}
             onClick={async () => {
               trackEvent("setup_save_mappings");
+              if (collections.length === 0) {
+                setIndexProgress(noCollectionsError("save"));
+                return;
+              }
               setBusy(true);
               setActiveAction("save");
               setIndexProgress({
@@ -868,10 +928,11 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
               });
               try {
                 await saveMaps();
+                const enabledCount = collections.filter((c) => c.enabled).length;
                 setIndexProgress({
                   phase: "success",
                   mode: "save",
-                  message: "Field mappings saved.",
+                  message: `Field mappings saved for ${enabledCount} enabled collection${enabledCount === 1 ? "" : "s"}. Next: click Index CMS.`,
                   collections: [],
                   totalProcessed: 0,
                   totalChunks: 0,
@@ -955,6 +1016,17 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
               )}
               <p className="index-progress__title">{indexProgress.message}</p>
             </div>
+            {indexProgress.phase === "error" && indexProgress.fix === "refresh" && (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                style={{ marginTop: 12 }}
+                disabled={refreshing}
+                onClick={() => refreshFromWebflow()}
+              >
+                {refreshing ? "Refreshing…" : "Refresh fields now"}
+              </button>
+            )}
 
             {showIndexDetails && (
               <>

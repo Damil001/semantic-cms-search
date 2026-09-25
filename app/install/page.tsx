@@ -42,9 +42,8 @@ export default async function InstallPage({
       <main className="container section--tight" style={{ maxWidth: 640, paddingBottom: 96 }}>
         <h1 className="title-lg">Install Talaash</h1>
         <p className="body-md text-muted mt-md">
-          Create a free Talaash account, connect your Webflow site, index CMS collections, and
-          install semantic search — the search script is applied through Webflow’s Custom Code
-          API.
+          Create a free Talaash account, connect your Webflow site, choose the CMS collections to
+          search, and add an AI search box to your site. Requires a paid Webflow Site plan.
         </p>
 
         {oauthStatus === "denied" && (
@@ -63,7 +62,8 @@ export default async function InstallPage({
         <ol className="body-md mt-lg" style={{ paddingLeft: 20, lineHeight: 1.7 }}>
           <li>Create a Talaash account (or sign in)</li>
           <li>Approve Webflow access when prompted</li>
-          <li>Map collections, index content, install the search script, then publish</li>
+          <li>In Setup, index your collections and click Install search on site</li>
+          <li>Add the search box with the Talaash app in the Designer, then publish</li>
         </ol>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 28 }}>

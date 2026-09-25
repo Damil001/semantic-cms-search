@@ -10,19 +10,18 @@ function LoginHero() {
   const mode = params.get("mode");
   const next = params.get("next") || "";
   const fromInstall = next.includes("/install") || next.includes("oauth");
-  const signupFirst = mode === "signup" || fromInstall;
+  const signupFirst = mode === "signup" || (fromInstall && mode !== "login");
 
   return (
     <div className="auth-card">
-      <h1 className="display-md mb-md">
-        {signupFirst ? "Create your Talaash account" : "Sign in"}
-      </h1>
-      <p className="body-md text-muted mb-lg">
-        {fromInstall
-          ? "After you create an account or sign in, we’ll continue installing Talaash on your Webflow site."
-          : "Connect Webflow and view search insights for your CMS site."}
-      </p>
-      <LoginForm preferSignup={signupFirst} />
+      <LoginForm
+        preferSignup={signupFirst}
+        intro={
+          fromInstall
+            ? "After you create an account or sign in, we’ll continue installing Talaash on your Webflow site."
+            : "Connect Webflow and view search insights for your CMS site."
+        }
+      />
     </div>
   );
 }

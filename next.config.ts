@@ -9,6 +9,17 @@ const nextConfig: NextConfig = {
     };
     return config;
   },
+  async headers() {
+    return [
+      {
+        source: "/search/v/:file*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+          { key: "Access-Control-Allow-Origin", value: "*" },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     return [
       { source: "/search", destination: "/api/search" },

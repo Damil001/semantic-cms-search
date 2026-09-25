@@ -46,7 +46,10 @@ export default async function handler(
     .eq("collection_id", collectionId)
     .maybeSingle();
   if (mapErr || !mapRow || !mapRow.enabled) {
-    res.status(400).json({ error: "Save and enable this collection first" });
+    res.status(400).json({
+      error:
+        "This collection isn’t set up yet. Click Refresh fields, tick the collection, then click Index CMS.",
+    });
     return;
   }
 

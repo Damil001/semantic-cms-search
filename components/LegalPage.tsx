@@ -4,9 +4,12 @@ import { TopNav } from "@/components/TopNav";
 
 export function LegalPage({
   title,
+  updated,
   children,
 }: {
   title: string;
+  /** Human-readable date of the last material edit to this page. */
+  updated: string;
   children: ReactNode;
 }) {
   return (
@@ -20,7 +23,7 @@ export function LegalPage({
           {title}
         </h1>
         <p className="caption text-muted" style={{ marginBottom: 32 }}>
-          Last updated: September 7, 2026
+          Last updated: {updated}
         </p>
         <div className="legal-prose body-md">{children}</div>
       </main>

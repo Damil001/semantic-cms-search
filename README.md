@@ -38,7 +38,7 @@ This is the Finsweet-like product flow: **you** deploy one backend. **They** ins
 
 **Marketplace:** see [`docs/MARKETPLACE.md`](docs/MARKETPLACE.md) for Install URL, legal pages, and the submission checklist.
 
-1. Create a [Webflow Hybrid App](https://developers.webflow.com/) (Data Client + Designer Extension) with scopes `sites:read`, `sites:write`, `cms:read`, `custom_code:read`, `custom_code:write` (do **not** enable `cms:write`).
+1. Create a [Webflow Hybrid App](https://developers.webflow.com/) (Data Client + Designer Extension) with scopes `sites:read`, `cms:read`, `custom_code:read`, `custom_code:write` (Sites **Read**, CMS **Read**, Custom code **Read and write** — do not enable any other write scope).
 2. Redirect URL: `https://www.talaash.org/api/oauth/callback` (or your production host)
 3. Application URL / App home: `https://www.talaash.org/app`
 4. **Install URL (Marketplace):** `https://www.talaash.org/install`

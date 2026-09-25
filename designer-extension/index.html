@@ -9,37 +9,42 @@
   <body>
     <main class="app">
       <header class="app__header">
-        <h1>Talaash</h1>
-        <p>Insert a minimum search layout onto the canvas with the required custom attributes.</p>
+        <h1>Talaash search</h1>
+        <p>Add a ready-made search box and results area to this page.</p>
       </header>
 
       <section class="app__card">
-        <h2>Search layout</h2>
-        <p>
-          Select a parent element on the canvas (or the Body), then insert the layout. Uses a Custom
-          Element <code>&lt;input&gt;</code> (not a Webflow Form). Credentials come from
-          <strong>Install search on site</strong> in the Talaash dashboard.
-        </p>
-        <button id="insert-layout" type="button" class="btn btn-primary">
+        <h2>1. Choose where it goes</h2>
+        <p>Click an element on the canvas. The search layout will be added:</p>
+        <p id="target" class="target" aria-live="polite">Checking selection…</p>
+        <ul class="rules">
+          <li><strong>Section or Div selected:</strong> inside it, after its content.</li>
+          <li><strong>Text, image or button selected:</strong> directly below it.</li>
+          <li><strong>Body selected:</strong> at the top of the page.</li>
+        </ul>
+      </section>
+
+      <section class="app__card">
+        <h2>2. Insert</h2>
+        <button id="insert-layout" type="button" class="btn btn-primary" disabled>
           Insert search layout
         </button>
         <p id="status" class="status" role="status" aria-live="polite"></p>
       </section>
 
       <section class="app__card app__card--muted">
-        <h2>After insert</h2>
+        <h2>3. Finish</h2>
         <ol>
-          <li>Style the input and result card in the Designer.</li>
+          <li>Style the search box and result card like any other element.</li>
           <li>
-            In Talaash Setup, run <strong>Install search on site</strong> (if you have not already).
+            In your Talaash dashboard (Setup), click <strong>Install search on site</strong> if you
+            haven’t yet.
           </li>
-          <li>Publish the site.</li>
+          <li>Publish your site.</li>
         </ol>
         <p class="hint">
-          Docs:
-          <a href="https://www.talaash.org/docs/attributes" target="_blank" rel="noreferrer"
-            >Search attributes</a
-          >
+          Help:
+          <a href="https://www.talaash.org/support" target="_blank" rel="noreferrer">Setup guide</a>
         </p>
       </section>
     </main>

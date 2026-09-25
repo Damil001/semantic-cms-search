@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { setAuthCookiesOnResponse } from "@/src/app/auth-cookies";
 import {
   AuthTimeoutError,
+  AuthUserError,
   getUserFromAccessTokenFast,
   refreshSessionFast,
-  signInWithPasswordFast,
+  signInFriendly,
   signUpFast,
 } from "@/src/app/goauth";
 
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
     const result =
       action === "signup"
         ? await signUpFast(email, password)
-        : await signInWithPasswordFast(email, password);
+        : await signInFriendly(email, password);
 
     const response = NextResponse.json({
       ok: true,
@@ -81,6 +82,9 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     if (err instanceof AuthTimeoutError) {
       return NextResponse.json({ error: err.message }, { status: 504 });
+    }
+    if (err instanceof AuthUserError) {
+      return NextResponse.json({ error: err.message, code: err.code }, { status: 400 });
     }
     const message = err instanceof Error ? err.message : "Auth failed";
     console.error("auth session error", action, message);

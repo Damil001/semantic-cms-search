@@ -1,4 +1,5 @@
 import { getServiceClient } from "../lib/supabase.js";
+import { decryptToken } from "../lib/token-crypto.js";
 
 const API = "https://api.webflow.com/v2";
 
@@ -16,13 +17,28 @@ export async function clearInstallAccessTokenByToken(
   if (!accessToken) return;
   try {
     const supabase = getServiceClient();
+    const { data } = await supabase
+      .from("webflow_installs")
+      .select("id, access_token")
+      .neq("access_token", "");
+    const ids: string[] = [];
+    for (const row of data ?? []) {
+      try {
+        if ((await decryptToken(row.access_token as string)) === accessToken) {
+          ids.push(row.id as string);
+        }
+      } catch {
+        /* undecryptable rows are handled by the purge job */
+      }
+    }
+    if (ids.length === 0) return;
     await supabase
       .from("webflow_installs")
       .update({
         access_token: "",
         updated_at: new Date().toISOString(),
       })
-      .eq("access_token", accessToken);
+      .in("id", ids);
   } catch (err) {
     console.error("failed to clear revoked Webflow token", err);
   }

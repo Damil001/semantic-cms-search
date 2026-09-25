@@ -8,6 +8,7 @@ import {
 import { revokeAccessToken } from "../../app/webflow-oauth.js";
 import { uninstallSearchScript } from "../../app/webflow-custom-code.js";
 import { getServiceClient } from "../../lib/supabase.js";
+import { purgeInstallData } from "../../app/purge.js";
 
 /**
  * Disconnect Webflow: remove Custom Code we applied, revoke token, clear DB.
@@ -56,18 +57,21 @@ export default async function handler(
     await revokeAccessToken(install.access_token);
   }
 
-  const supabase = getServiceClient();
-  const { error } = await supabase
-    .from("webflow_installs")
-    .update({
-      access_token: "",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", install.id)
-    .eq("user_id", user.id);
-
-  if (error) {
-    res.status(500).json({ error: error.message });
+  try {
+    await purgeInstallData(install);
+  } catch (err) {
+    console.error("disconnect purge failed", err);
+    // Never keep a usable token if the full purge failed; the daily cleanup job retries the rest.
+    await getServiceClient()
+      .from("webflow_installs")
+      .update({ access_token: "", updated_at: new Date().toISOString() })
+      .eq("id", install.id)
+      .eq("user_id", user.id);
+    res.status(500).json({
+      error:
+        "Webflow access was revoked, but some site data could not be deleted right now. It will be removed automatically within 24 hours.",
+      customCodeRemoved,
+    });
     return;
   }
 
@@ -78,7 +82,7 @@ export default async function handler(
     customCodeRemoved,
     customCodeError,
     message: customCodeRemoved
-      ? "Disconnected. Publish your Webflow site so script removal goes live."
-      : "Disconnected. Custom Code may still be on the site — remove TalaashSearch under Site settings → Custom Code, then publish. See /support.",
+      ? "Disconnected. Your Webflow token and this site’s indexed content and search analytics were deleted. Publish your Webflow site so the search script removal goes live."
+      : "Disconnected and site data deleted. The search script may still be on your site — in Webflow open Site settings → Custom code, remove TalaashSearch, then publish. See /support.",
   });
 }
