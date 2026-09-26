@@ -12,8 +12,8 @@ const outDir = join(root, "public", "search", "v");
 const bytes = readFileSync(src);
 const hex = createHash("sha256").update(bytes).digest("hex").slice(0, 16);
 const out = join(outDir, `${hex}.js`);
-const mapSrc = join(root, "public", "search.js.map");
-const mapOut = join(outDir, `${hex}.js.map`);
+const mapSrc = join(root, "public", "search", "runtime.map.json");
+const mapOut = join(outDir, `${hex}.map.json`);
 
 mkdirSync(outDir, { recursive: true });
 if (!existsSync(out)) {
