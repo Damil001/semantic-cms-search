@@ -156,7 +156,18 @@ export function LoginForm({
         </div>
         {mode !== "forgot" && (
           <div className="form-field">
-            <label htmlFor="password">Password</label>
+            <div className="label-row">
+              <label htmlFor="password">Password</label>
+              {mode === "login" && (
+                <button
+                  type="button"
+                  className="btn-link btn-link--strong"
+                  onClick={() => switchMode("forgot")}
+                >
+                  Forgot password?
+                </button>
+              )}
+            </div>
             <div className="password-field">
               <input
                 className="text-input"
@@ -227,33 +238,20 @@ export function LoginForm({
           </button>
         </div>
 
-        <p className="body-sm text-muted" style={{ marginTop: 20, textAlign: "center" }}>
-          {mode === "signup" && (
-            <>
-              Already have an account?{" "}
-              <button type="button" className="btn-link" onClick={() => switchMode("login")}>
-                Sign in
-              </button>
-            </>
-          )}
-          {mode === "login" && (
-            <>
-              New to Talaash?{" "}
-              <button type="button" className="btn-link" onClick={() => switchMode("signup")}>
-                Create an account
-              </button>
-              {" · "}
-              <button type="button" className="btn-link" onClick={() => switchMode("forgot")}>
-                Forgot password?
-              </button>
-            </>
-          )}
-          {mode === "forgot" && (
-            <button type="button" className="btn-link" onClick={() => switchMode("login")}>
-              Back to sign in
-            </button>
-          )}
-        </p>
+        <div className="auth-switch">
+          <p className="body-sm text-muted">
+            {mode === "signup" && "Already have an account?"}
+            {mode === "login" && "New to Talaash?"}
+            {mode === "forgot" && "Remembered your password?"}
+          </p>
+          <button
+            type="button"
+            className="btn btn-secondary btn-block"
+            onClick={() => switchMode(mode === "login" ? "signup" : "login")}
+          >
+            {mode === "login" ? "Create an account" : "Sign in"}
+          </button>
+        </div>
       </form>
     </>
   );
