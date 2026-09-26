@@ -300,7 +300,7 @@ export async function requestPasswordReset(rawEmail: string, redirectTo: string)
     }
   );
   if (!res.ok && res.status !== 429) {
-    console.error("password recover failed", res.status, await res.text().catch(() => ""));
+    console.error("password recover failed", res.status);
   }
   if (res.status === 429) {
     throw new Error("Too many reset requests. Wait a few minutes and try again.");

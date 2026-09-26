@@ -14,7 +14,8 @@ const frontendPath = join(root, "frontend", "search.js");
 const MAP_URL = "/search/runtime.map.json";
 const MAP_COMMENT = `\n//# sourceMappingURL=${MAP_URL}\n`;
 
-let source = readFileSync(jsPath, "utf8");
+// Normalize to LF so the snapshot hash (and SRI) is identical on Windows and Linux builds.
+let source = readFileSync(jsPath, "utf8").replace(/\r\n/g, "\n");
 source = source.replace(/\n?\/\/# sourceMappingURL=.*\n?/g, "");
 if (!source.endsWith("\n")) source += "\n";
 

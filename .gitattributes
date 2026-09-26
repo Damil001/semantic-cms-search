@@ -1,0 +1,4 @@
+# Pinned widget snapshots are referenced by SRI hash; their bytes must not change per OS.
+public/search.js text eol=lf
+frontend/search.js text eol=lf
+public/search/** -text

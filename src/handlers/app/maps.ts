@@ -39,6 +39,14 @@ export default async function handler(
     ])
   );
 
+  const unknown = maps.filter((m) => !schemaById.has(String(m.collectionId ?? "")));
+  if (unknown.length) {
+    res.status(400).json({
+      error: "One or more collections aren’t on this site. Click Refresh fields and try again.",
+    });
+    return;
+  }
+
   const rows = maps.map((m) => {
     const cached = schemaById.get(m.collectionId);
     return {

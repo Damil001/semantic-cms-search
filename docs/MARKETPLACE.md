@@ -21,6 +21,9 @@ Do every step in **A** before pasting **B–F** into the submission.
 3. **Supabase → Authentication → URL Configuration**: add
    `https://www.talaash.org/reset-password` to **Redirect URLs**; Site URL `https://www.talaash.org`.
    (Optional but recommended: custom SMTP so reset emails aren't rate-limited.)
+   **Google sign-in**: Supabase → Authentication → Providers → Google enabled with the same client ID;
+   Google Cloud OAuth client redirect URI `https://www.talaash.org/api/auth/callback`; Vercel env vars
+   `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`. Test "Sign up with Google" in a private window.
 4. **Webflow App settings → Scopes** — must match code exactly:
    | Building block | Setting |
    |---|---|
@@ -63,7 +66,7 @@ not requested anywhere.
 
 **4. Data disclosures.** The listing now states that visitor/session IDs and autocomplete are on by
 default and how to turn them off. The Privacy Policy now states where data is stored (Supabase-managed
-PostgreSQL on AWS; app servers on Vercel), that Disconnect deletes the token, indexed content,
+PostgreSQL on AWS in Singapore, ap-southeast-1; app servers on Vercel), that Disconnect deletes the token, indexed content,
 embeddings, mappings and analytics **immediately**, that revocation from Webflow triggers the same
 deletion **within 24 hours** (daily cleanup job), and that deletion requests complete within **30 days**.
 
@@ -185,9 +188,9 @@ Do **not** show: Copy HTML, Embed, raw script URLs, integrity hashes, or `search
 ## F. Review notes (single, consistent)
 
 ```
-Test site (published, paid Site plan): https://<YOUR-SITE>.webflow.io
+Test site (published, paid Site plan): https://damils-exceptional-site.webflow.io/search-page
 Reviewer login: marketplaceteam@webflow.com / <ONE PASSWORD>
-(Or create a new account at https://www.talaash.org/install — signup and password reset both work.)
+(Or create a new account at https://www.talaash.org/install — email signup, Google signup and password reset all work.)
 
 Setup sequence:
 1. https://www.talaash.org/install → Create account (or sign in with the credentials above)
@@ -201,5 +204,28 @@ Remove: Setup → Disconnect Webflow → publish.
 Evidence: video <LINK> covering signup, OAuth approve + deny, index, install, extension insert,
 live search, script update (Install again), disconnect + removal after publish, password reset.
 Designer Extension source/maps: review-package.zip (includes package.json + package-lock.json).
-Preflight receipt: wfpre_<…>
+Site runtime: https://www.talaash.org/search/v/dfb01618b39c7e2a.js
+  sha256 dfb01618b39c7e2ab5e34fb3cfd8b439e7e81e10d365a0224ac847060bb972b7
+  SRI sha256-37AWGLOcfiq140+zz9i0OefoHhDTZaAiSshHBgu5crc=
+  source map https://www.talaash.org/search/runtime.map.json
+Preflight receipt: wfpre_3ca54cf6ca889110d832b5486d5a7c46
+Pricing: Talaash is a paid, done-for-you service billed by Talaash outside Webflow (see listing).
 ```
+
+---
+
+## G. Security & lifecycle evidence (for reviewer questions)
+
+| Check | Evidence |
+|---|---|
+| Endpoint auth | Every `/api/app/*` route resolves the user from the server-side session cookie (`getAuthUser` / `requireAuthInstall`) and the install from that user — never from a client-supplied site ID. Unauthenticated calls return 401 (`/api/app/me` returns only `{"authenticated":false}`). |
+| Object-level auth | Collection mappings and indexing are filtered by the caller's own `install.site_id`; `PUT /api/app/maps` rejects collection IDs not synced from that site's Webflow account. `select-site` only accepts sites the caller's Webflow token can list. |
+| CORS | App/dashboard endpoints send no CORS headers (same-origin only). `/api/search` sends `Access-Control-Allow-Origin: *` without credentials because it is called by the widget on customers' own domains; it requires a per-site public search token and only returns published CMS content. |
+| OAuth `state` | Stored server-side (`oauth_states`), bound to the user, 15-minute TTL, single-use (atomic `used_at` update). |
+| Tokens | AES-256-GCM at rest; decrypted only server-side; never returned to the browser or extension. |
+| Revocation | A 401 from Webflow on a stored token clears it and stops calls; a daily job introspects tokens and purges revoked installs and their data. |
+| Cleanup scopes | Removal uses `PUT /sites/{id}/custom_code`, which needs only `custom_code:write` (plus `custom_code:read` to find our script). Talaash applies code at site level only, never page level, so page-level removal is N/A. `sites:write` is not needed. |
+| Publish prompt | Install and Disconnect both tell the user to publish; the app never auto-publishes. |
+| Dependencies | `npm audit --omit=dev`: 0 vulnerabilities (app and Designer Extension). |
+| Artifacts | `bundle.zip` 4 KB, one `webflow.json` (`name: Talaash`, `apiVersion: 2`, no telemetry block); no `eval`, `new Function`, localhost, staging or tunnel hosts in the bundle or site runtime. |
+| Logs | No emails, tokens or search text written to server logs. |
