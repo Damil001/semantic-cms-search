@@ -21,7 +21,8 @@ export default function PrivacyPage() {
       <ul>
         <li>
           <strong>Account data</strong> — your email address and a hashed password for your
-          Talaash account.
+          Talaash account. If you sign in with Google, we receive your Google account’s email
+          address, name and profile picture URL from Google; we never see your Google password.
         </li>
         <li>
           <strong>Webflow authorization</strong> — an OAuth access token that lets us read your

@@ -382,6 +382,31 @@ select.text-input:focus {
   margin-top: var(--space-xs);
 }
 
+.google-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--color-muted, #6b7280);
+  font-size: 13px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-hairline);
+}
+
 .btn-link {
   background: none;
   border: 0;

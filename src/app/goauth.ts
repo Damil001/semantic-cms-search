@@ -204,6 +204,52 @@ export async function signUpFast(
     : new Error("Account created, but sign-in failed. Try signing in.");
 }
 
+function b64url(bytes: Uint8Array): string {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/** PKCE verifier + S256 challenge for the Supabase OAuth (e.g. Google) redirect. */
+export async function createPkcePair(): Promise<{ verifier: string; challenge: string }> {
+  const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  return { verifier, challenge: b64url(new Uint8Array(digest)) };
+}
+
+export function oauthProviderUrl(
+  provider: "google",
+  redirectTo: string,
+  codeChallenge: string
+): string {
+  const { url } = requireSupabaseAuthEnv();
+  const u = new URL(`${url}/auth/v1/authorize`);
+  u.searchParams.set("provider", provider);
+  u.searchParams.set("redirect_to", redirectTo);
+  u.searchParams.set("code_challenge", codeChallenge);
+  u.searchParams.set("code_challenge_method", "s256");
+  return u.toString();
+}
+
+/** Exchange the `code` Supabase returns after Google sign-in for a session. */
+export async function exchangePkceCode(
+  authCode: string,
+  codeVerifier: string
+): Promise<{ user: { id: string; email?: string }; accessToken: string; refreshToken: string }> {
+  const { url, anonKey } = requireSupabaseAuthEnv();
+  const res = await fetch(`${url}/auth/v1/token?grant_type=pkce`, {
+    method: "POST",
+    headers: authHeaders(anonKey),
+    body: JSON.stringify({ auth_code: authCode, code_verifier: codeVerifier }),
+    signal: AbortSignal.timeout(AUTH_TIMEOUT_MS),
+  });
+  const parsed = await readAuthResponse(res);
+  if (!parsed.ok || !parsed.accessToken || !parsed.refreshToken || !parsed.user) {
+    throw new Error(parsed.message || "Google sign-in failed");
+  }
+  return { user: parsed.user, accessToken: parsed.accessToken, refreshToken: parsed.refreshToken };
+}
+
 /** Send a password-reset email. Always resolves so callers can't enumerate accounts. */
 export async function requestPasswordReset(rawEmail: string, redirectTo: string): Promise<void> {
   const { url, anonKey } = requireSupabaseAuthEnv();

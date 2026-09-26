@@ -30,9 +30,10 @@ export default function SupportPage() {
         <li>
           <strong>Create your Talaash account</strong> — Open{" "}
           <a href="/install">https://www.talaash.org/install</a> (or click Install on the Webflow
-          Marketplace), choose <strong>Create account</strong>, enter your email and a password
-          (at least 6 characters) and click <strong>Create account</strong>. Already have an
-          account? Click <strong>Sign in</strong> instead.
+          Marketplace), choose <strong>Create account</strong>, then either click{" "}
+          <strong>Sign up with Google</strong> or enter your email and a password (at least 6
+          characters) and click <strong>Create account</strong>. Already have an account? Click{" "}
+          <strong>Sign in</strong> instead.
         </li>
         <li>
           <strong>Approve Webflow access</strong> — Webflow asks you to choose a site and allow
@@ -114,6 +115,14 @@ export default function SupportPage() {
           <strong>“An account with this email already exists”</strong> — click{" "}
           <strong>Sign in instead</strong>, or <strong>Reset password</strong> if you’ve forgotten
           it.
+        </li>
+        <li>
+          <strong>Signed up with Google?</strong> — use <strong>Continue with Google</strong> to
+          sign in; there is no separate Talaash password unless you set one with Forgot password.
+        </li>
+        <li>
+          <strong>“Google sign-in expired” or “cancelled”</strong> — click{" "}
+          <strong>Continue with Google</strong> again and finish within 10 minutes.
         </li>
         <li>
           <strong>Forgot your password</strong> — on the{" "}
