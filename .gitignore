@@ -10,6 +10,7 @@ dist/
 designer-extension/bundle.zip
 designer-extension/dist/
 designer-extension/review/
+designer-extension/maps/
 designer-extension/review-package.zip
 
 # Webflow-provided local toolkit — do not publish to GitHub

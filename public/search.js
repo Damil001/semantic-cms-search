@@ -861,11 +861,24 @@
     document.head.appendChild(style);
   }
 
+  /** Webflow App Review Preflight looks for [data-runtime-ready] after the widget is usable. */
+  function markRuntimeReady() {
+    try {
+      document.documentElement.setAttribute("data-runtime-ready", "true");
+      if (BOOT_SCRIPT && BOOT_SCRIPT.setAttribute) {
+        BOOT_SCRIPT.setAttribute("data-runtime-ready", "true");
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
   function boot() {
     ensureDefaultStyles();
     all(document, ['[data-search]', '[fs-cmssearch-element="root"]']).forEach(
       initRoot
     );
+    markRuntimeReady();
   }
 
   if (document.readyState === "loading") {
@@ -874,3 +887,5 @@
     boot();
   }
 })();
+
+//# sourceMappingURL=/search.js.map

@@ -10,12 +10,21 @@ const nextConfig: NextConfig = {
     return config;
   },
   async headers() {
+    const cors = { key: "Access-Control-Allow-Origin", value: "*" };
     return [
+      {
+        source: "/search.js",
+        headers: [cors, { key: "Cache-Control", value: "public, max-age=0, must-revalidate" }],
+      },
+      {
+        source: "/search.js.map",
+        headers: [cors, { key: "Cache-Control", value: "public, max-age=0, must-revalidate" }],
+      },
       {
         source: "/search/v/:file*",
         headers: [
+          cors,
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-          { key: "Access-Control-Allow-Origin", value: "*" },
         ],
       },
     ];

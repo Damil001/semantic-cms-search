@@ -1,16 +1,20 @@
 import * as esbuild from "esbuild";
-import { copyFileSync, mkdirSync, rmSync } from "node:fs";
+import { copyFileSync, mkdirSync, renameSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
-const withMaps = process.argv.includes("--sourcemap");
-const dist = join(root, process.argv.includes("--out-review") ? "review/dist" : "dist");
+const dist = join(root, "dist");
+const maps = join(root, "maps");
 
 rmSync(dist, { recursive: true, force: true });
+rmSync(maps, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
+mkdirSync(maps, { recursive: true });
 
-// Production bundle.zip must not ship source maps; the review package builds with --sourcemap.
+// "external": the map is written without a sourceMappingURL comment, so dist/bundle.js is
+// byte-identical whether or not the map ships. The map is moved out of dist so bundle.zip
+// never contains it; review-package.zip pairs it with this exact bundle.js.
 await esbuild.build({
   entryPoints: [join(root, "src/main.ts")],
   bundle: true,
@@ -18,10 +22,12 @@ await esbuild.build({
   format: "iife",
   target: ["es2020"],
   minify: false,
-  sourcemap: withMaps,
+  sourcemap: "external",
+  sourcesContent: true,
 });
+renameSync(join(dist, "bundle.js.map"), join(maps, "bundle.js.map"));
 
 copyFileSync(join(root, "index.html"), join(dist, "index.html"));
 copyFileSync(join(root, "styles.css"), join(dist, "styles.css"));
 
-console.log(`Built ${dist}${withMaps ? " (with source maps)" : ""}`);
+console.log("Built dist/ (production) and maps/bundle.js.map");
