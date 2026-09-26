@@ -210,37 +210,74 @@ function b64url(bytes: Uint8Array): string {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-/** PKCE verifier + S256 challenge for the Supabase OAuth (e.g. Google) redirect. */
-export async function createPkcePair(): Promise<{ verifier: string; challenge: string }> {
-  const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
-  return { verifier, challenge: b64url(new Uint8Array(digest)) };
+export const GOOGLE_REDIRECT_URI = "https://www.talaash.org/api/auth/callback";
+
+function googleClient(): { clientId: string; clientSecret: string } {
+  const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+  if (!clientId || !clientSecret) {
+    throw new Error("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set");
+  }
+  return { clientId, clientSecret };
 }
 
-export function oauthProviderUrl(
-  provider: "google",
-  redirectTo: string,
-  codeChallenge: string
-): string {
-  const { url } = requireSupabaseAuthEnv();
-  const u = new URL(`${url}/auth/v1/authorize`);
-  u.searchParams.set("provider", provider);
-  u.searchParams.set("redirect_to", redirectTo);
-  u.searchParams.set("code_challenge", codeChallenge);
-  u.searchParams.set("code_challenge_method", "s256");
-  return u.toString();
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/** Exchange the `code` Supabase returns after Google sign-in for a session. */
-export async function exchangePkceCode(
-  authCode: string,
-  codeVerifier: string
+/**
+ * Google sign-in goes straight to Google (not via Supabase's /authorize) so Google's
+ * consent screen shows talaash.org instead of the Supabase project domain.
+ * Supabase requires the ID token's nonce to be sha256(raw nonce).
+ */
+export async function googleAuthorizeUrl(): Promise<{ url: string; state: string; nonce: string }> {
+  const { clientId } = googleClient();
+  const state = b64url(crypto.getRandomValues(new Uint8Array(24)));
+  const nonce = b64url(crypto.getRandomValues(new Uint8Array(24)));
+  const u = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  u.searchParams.set("client_id", clientId);
+  u.searchParams.set("redirect_uri", GOOGLE_REDIRECT_URI);
+  u.searchParams.set("response_type", "code");
+  u.searchParams.set("scope", "openid email profile");
+  u.searchParams.set("state", state);
+  u.searchParams.set("nonce", await sha256Hex(nonce));
+  u.searchParams.set("prompt", "select_account");
+  return { url: u.toString(), state, nonce };
+}
+
+/** Exchange Google's code for an ID token, then turn it into a Supabase session. */
+export async function signInWithGoogleCode(
+  code: string,
+  nonce: string
 ): Promise<{ user: { id: string; email?: string }; accessToken: string; refreshToken: string }> {
+  const { clientId, clientSecret } = googleClient();
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: GOOGLE_REDIRECT_URI,
+      grant_type: "authorization_code",
+    }),
+    signal: AbortSignal.timeout(AUTH_TIMEOUT_MS),
+  });
+  const google = (await tokenRes.json().catch(() => ({}))) as {
+    id_token?: string;
+    error_description?: string;
+    error?: string;
+  };
+  if (!tokenRes.ok || !google.id_token) {
+    throw new Error(google.error_description || google.error || "Google token exchange failed");
+  }
+
   const { url, anonKey } = requireSupabaseAuthEnv();
-  const res = await fetch(`${url}/auth/v1/token?grant_type=pkce`, {
+  const res = await fetch(`${url}/auth/v1/token?grant_type=id_token`, {
     method: "POST",
     headers: authHeaders(anonKey),
-    body: JSON.stringify({ auth_code: authCode, code_verifier: codeVerifier }),
+    body: JSON.stringify({ provider: "google", id_token: google.id_token, nonce }),
     signal: AbortSignal.timeout(AUTH_TIMEOUT_MS),
   });
   const parsed = await readAuthResponse(res);
