@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
 import { trackEvent } from "@/lib/analytics";
 import {
   isCheckoutAvailable,
+  isSandbox,
   openCheckout,
   type BillingCycle,
   type PaidPlan,
@@ -124,55 +125,121 @@ function formatPrice(tier: Tier, cycle: BillingCycle, extras: number) {
   return `$${total.toLocaleString("en-US")}`;
 }
 
-function TierCheckout({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
-  const [extras, setExtras] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const buttonClass = tier.featured
+function tierButtonClass(tier: Tier): string {
+  return tier.featured
     ? "btn btn-pricing-pill btn-pricing-pill--filled mt-lg"
     : "btn btn-pricing-pill mt-lg";
+}
 
-  if (tier.id === "scale" || !tier.price) {
-    return (
-      <>
-        <div className="pricing-price pricing-display" style={{ fontSize: 36 }}>
-          Custom
-        </div>
-        <p className="caption text-muted">From $149 / mo, billed monthly or yearly</p>
-        <ul>
-          {tier.features.map((f) => (
-            <li key={f}>{f}</li>
-          ))}
-        </ul>
-        <Link
-          className={buttonClass}
-          href="/support"
-          onClick={() => trackEvent("cta_click", { location: "pricing_tier", target: "scale" })}
-        >
-          Contact us
-        </Link>
-      </>
-    );
-  }
+function ScaleTier({ tier }: { tier: Tier }) {
+  return (
+    <>
+      <div className="pricing-price pricing-display" style={{ fontSize: 36 }}>
+        Custom
+      </div>
+      <p className="caption text-muted">From $149 / mo, billed monthly or yearly</p>
+      <ul>
+        {tier.features.map((f) => (
+          <li key={f}>{f}</li>
+        ))}
+      </ul>
+      <Link
+        className={tierButtonClass(tier)}
+        href="/support"
+        onClick={() => trackEvent("cta_click", { location: "pricing_tier", target: "scale" })}
+      >
+        Contact us
+      </Link>
+    </>
+  );
+}
 
-  const plan = tier.id;
+type Account =
+  | { authenticated: false }
+  | {
+      authenticated: true;
+      userId: string;
+      email: string | null;
+      active: boolean;
+      plan: "starter" | "growth" | "scale" | null;
+      source: "paddle" | "grant" | null;
+    };
+
+type Intent = { plan: PaidPlan; cycle: BillingCycle; extras: number };
+
+function readIntent(): Intent | null {
+  const params = new URLSearchParams(window.location.search);
+  const plan = params.get("plan");
+  if (plan !== "starter" && plan !== "growth") return null;
+  const cycle: BillingCycle = params.get("cycle") === "yearly" ? "yearly" : "monthly";
+  const n = Number.parseInt(params.get("extras") ?? "0", 10);
+  const extras = Number.isFinite(n) ? Math.min(MAX_EXTRA_COLLECTIONS, Math.max(0, n)) : 0;
+  return { plan, cycle, extras };
+}
+
+function signupUrl(plan: PaidPlan, cycle: BillingCycle, extras: number): string {
+  const next = `/pricing?plan=${plan}&cycle=${cycle}&extras=${extras}`;
+  return `/login?mode=signup&next=${encodeURIComponent(next)}`;
+}
+
+function TierCheckout({
+  tier,
+  cycle,
+  account,
+  intent,
+}: {
+  tier: Tier;
+  cycle: BillingCycle;
+  account: Account | null;
+  intent: Intent | null;
+}) {
+  const [extras, setExtras] = useState(
+    intent && intent.plan === tier.id ? intent.extras : 0
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const autoOpened = useRef(false);
+
+  const buttonClass = tierButtonClass(tier);
+  const plan = tier.id as PaidPlan;
+  const price = tier.price!;
   const available = isCheckoutAvailable(plan, cycle, extras);
   const perExtra = EXTRA_COLLECTION[cycle];
   const cycleLabel = cycle === "monthly" ? "/ mo" : "/ yr";
+  const paying = account?.authenticated && account.active && account.source === "paddle";
 
   async function subscribe() {
+    if (!account) return;
+    trackEvent("cta_click", { location: "pricing_tier", target: `${plan}_${cycle}` });
+    if (!account.authenticated) {
+      window.location.href = signupUrl(plan, cycle, extras);
+      return;
+    }
     setError(null);
     setBusy(true);
-    trackEvent("cta_click", { location: "pricing_tier", target: `${plan}_${cycle}` });
     try {
-      await openCheckout({ plan, cycle, extraCollections: extras });
+      await openCheckout({
+        plan,
+        cycle,
+        extraCollections: extras,
+        userId: account.userId,
+        email: account.email,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout could not open. Try again.");
     } finally {
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (autoOpened.current || !intent || intent.plan !== plan || intent.cycle !== cycle) return;
+    if (!account?.authenticated || paying || !available) return;
+    autoOpened.current = true;
+    window.history.replaceState({}, "", "/pricing#plans");
+    void subscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account, intent, plan, cycle, available, paying]);
 
   return (
     <>
@@ -181,8 +248,8 @@ function TierCheckout({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
       </div>
       <p className="caption text-muted">
         {cycle === "yearly"
-          ? `2 months free vs. monthly ($${tier.price.monthly}/mo)`
-          : `or $${tier.price.yearly}/yr — 2 months free`}
+          ? `2 months free vs. monthly ($${price.monthly}/mo)`
+          : `or $${price.yearly}/yr — 2 months free`}
       </p>
 
       <div className="qty-stepper mt-md">
@@ -219,9 +286,22 @@ function TierCheckout({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
         ))}
       </ul>
 
-      {available ? (
-        <button type="button" className={buttonClass} disabled={busy} onClick={subscribe}>
-          {busy ? "Opening checkout…" : `Subscribe to ${tier.name}`}
+      {paying ? (
+        <Link className={buttonClass} href="/app?tab=billing">
+          {account?.authenticated && account.plan === plan ? "Your current plan" : "Change plan"}
+        </Link>
+      ) : available ? (
+        <button
+          type="button"
+          className={buttonClass}
+          disabled={busy || !account}
+          onClick={subscribe}
+        >
+          {busy
+            ? "Opening checkout…"
+            : account && !account.authenticated
+              ? `Create account & subscribe`
+              : `Subscribe to ${tier.name}`}
         </button>
       ) : (
         <Link
@@ -243,11 +323,19 @@ function TierCheckout({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
 
 export function PricingPage() {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
-  const [checkoutDone, setCheckoutDone] = useState(false);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [intent, setIntent] = useState<Intent | null>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("checkout") === "success") setCheckoutDone(true);
+    const found = readIntent();
+    if (found) {
+      setIntent(found);
+      setCycle(found.cycle);
+    }
+    fetch("/api/billing/status", { credentials: "same-origin", cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : { authenticated: false }))
+      .then((data: Account) => setAccount(data))
+      .catch(() => setAccount({ authenticated: false }));
   }, []);
 
   return (
@@ -287,12 +375,17 @@ export function PricingPage() {
 
       <section className="landing-band landing-band--soft" id="plans">
         <div className="container" style={{ padding: 0 }}>
-          {checkoutDone ? (
-            <div className="checkout-notice mb-lg" role="status">
-              <strong>Thanks — your subscription is confirmed.</strong> Paddle has emailed your
-              receipt. If you haven’t connected your site yet,{" "}
-              <Link href="/install">install Talaash</Link>.
+          {isSandbox ? (
+            <div className="checkout-notice mb-lg" role="note">
+              <strong>Test mode.</strong> Checkout uses the Paddle sandbox — no real charges. Pay
+              with card 4242 4242 4242 4242, any future expiry and any CVC.
             </div>
+          ) : null}
+          {account && !account.authenticated ? (
+            <p className="body-md text-muted mb-md">
+              Already have an account? <Link href="/login?next=/pricing">Sign in</Link> so your
+              plan is added to it.
+            </p>
           ) : null}
 
           <h2 className="pricing-section mb-md">Plans</h2>
@@ -330,7 +423,11 @@ export function PricingPage() {
                 <h3 className="pricing-card-title">{tier.name}</h3>
                 <p className="body-md text-muted mt-sm">{tier.blurb}</p>
                 <p className="caption text-muted mt-sm">{tier.scope}</p>
-                <TierCheckout tier={tier} cycle={cycle} />
+                {tier.price ? (
+                  <TierCheckout tier={tier} cycle={cycle} account={account} intent={intent} />
+                ) : (
+                  <ScaleTier tier={tier} />
+                )}
               </div>
             ))}
           </div>

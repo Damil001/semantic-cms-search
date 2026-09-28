@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type { CollectionConfig } from "../../config/webflow.js";
+import { getEntitlement, planRequiredMessage } from "../../app/billing.js";
 import { requireAuthInstall } from "../../app/guard.js";
 import { fetchCollectionPage } from "../../ingest/webflow-api.js";
 import { mapCmsItem, upsertItemWithChunks } from "../../ingest/upsert.js";
@@ -39,6 +40,27 @@ export default async function handler(
   }
 
   const supabase = getServiceClient();
+
+  const ent = await getEntitlement(ctx.user.id);
+  if (!ent.active) {
+    res.status(402).json({ error: planRequiredMessage(ent), code: "plan_required" });
+    return;
+  }
+  if (ent.collectionLimit != null) {
+    const { count } = await supabase
+      .from("webflow_collection_maps")
+      .select("collection_id", { count: "exact", head: true })
+      .eq("site_id", install.site_id)
+      .eq("enabled", true);
+    if ((count ?? 0) > ent.collectionLimit) {
+      res.status(402).json({
+        error: `Your plan includes ${ent.collectionLimit} collections and ${count} are ticked. Untick some, or add extra collections on the Billing tab.`,
+        code: "collection_limit",
+      });
+      return;
+    }
+  }
+
   const { data: mapRow, error: mapErr } = await supabase
     .from("webflow_collection_maps")
     .select("*")

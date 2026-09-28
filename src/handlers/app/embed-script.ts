@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthUser } from "../../app/auth.js";
+import { getEntitlement, planRequiredMessage } from "../../app/billing.js";
 import { getInstallForUser } from "../../app/session.js";
 import { installSearchScript } from "../../app/webflow-custom-code.js";
 
@@ -30,6 +31,12 @@ export default async function handler(
   const install = await getInstallForUser(req, user.id);
   if (!install?.access_token || !install.site_id || !install.search_token) {
     res.status(400).json({ error: "Connect Webflow first" });
+    return;
+  }
+
+  const ent = await getEntitlement(user.id);
+  if (!ent.active) {
+    res.status(402).json({ error: planRequiredMessage(ent), code: "plan_required" });
     return;
   }
 

@@ -20,7 +20,10 @@ export function LoginForm({
   intro?: string;
 }) {
   const params = useSearchParams();
-  const next = params.get("next") || "/app";
+  const rawNext = params.get("next") ?? "";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.includes("\\")
+    ? rawNext
+    : "/app";
   const [mode, setMode] = useState<Mode>(
     params.get("mode") === "forgot" ? "forgot" : preferSignup ? "signup" : "login"
   );

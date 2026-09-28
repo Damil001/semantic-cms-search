@@ -1,40 +1,14 @@
 "use client";
 
+import { initializePaddle, type Environments, type Paddle } from "@paddle/paddle-js";
+
 export type BillingCycle = "monthly" | "yearly";
 export type PaidPlan = "starter" | "growth";
 
-type PaddleItem = { priceId: string; quantity: number };
-
-type PaddleGlobal = {
-  Environment: { set(env: "sandbox"): void };
-  Initialize(opts: { token: string }): void;
-  Checkout: {
-    open(opts: {
-      items: PaddleItem[];
-      customer?: { email: string };
-      customData?: Record<string, string>;
-      settings?: {
-        displayMode?: "overlay";
-        theme?: "light" | "dark";
-        locale?: string;
-        successUrl?: string;
-        allowLogout?: boolean;
-      };
-    }): void;
-  };
-};
-
-declare global {
-  interface Window {
-    Paddle?: PaddleGlobal;
-  }
-}
-
-const PADDLE_JS = "https://cdn.paddle.com/paddle/v2/paddle.js";
-
 // NEXT_PUBLIC_* values are inlined at build time, so each must be referenced literally.
 const CLIENT_TOKEN = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "";
-const ENVIRONMENT = process.env.NEXT_PUBLIC_PADDLE_ENV === "sandbox" ? "sandbox" : "production";
+const ENVIRONMENT: Environments =
+  process.env.NEXT_PUBLIC_PADDLE_ENV === "sandbox" ? "sandbox" : "production";
 
 const PRICE_IDS: Record<PaidPlan | "extra_collection", Record<BillingCycle, string>> = {
   starter: {
@@ -51,6 +25,8 @@ const PRICE_IDS: Record<PaidPlan | "extra_collection", Record<BillingCycle, stri
   },
 };
 
+export const isSandbox = ENVIRONMENT === "sandbox";
+
 export function isCheckoutAvailable(
   plan: PaidPlan,
   cycle: BillingCycle,
@@ -60,42 +36,38 @@ export function isCheckoutAvailable(
   return extraCollections === 0 || Boolean(PRICE_IDS.extra_collection[cycle]);
 }
 
-let loading: Promise<PaddleGlobal> | null = null;
+// initializePaddle refuses a second call, so share one instance across the page.
+let paddlePromise: Promise<Paddle> | null = null;
 
-function loadPaddle(): Promise<PaddleGlobal> {
-  if (window.Paddle) return Promise.resolve(window.Paddle);
-  if (loading) return loading;
-  loading = new Promise<PaddleGlobal>((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = PADDLE_JS;
-    script.async = true;
-    script.onload = () => {
-      const paddle = window.Paddle;
-      if (!paddle) {
-        reject(new Error("Paddle failed to load"));
-        return;
-      }
-      if (ENVIRONMENT === "sandbox") paddle.Environment.set("sandbox");
-      paddle.Initialize({ token: CLIENT_TOKEN });
-      resolve(paddle);
-    };
-    script.onerror = () => {
-      loading = null;
-      reject(new Error("Could not reach Paddle checkout"));
-    };
-    document.head.appendChild(script);
-  });
-  return loading;
+function getPaddle(): Promise<Paddle> {
+  if (!paddlePromise) {
+    paddlePromise = initializePaddle({
+      token: CLIENT_TOKEN,
+      environment: ENVIRONMENT,
+      eventCallback: (event) => {
+        if (event.name === "checkout.error") console.error("Paddle checkout error", event.data);
+      },
+    }).then((paddle) => {
+      if (!paddle) throw new Error("Could not reach Paddle checkout");
+      return paddle;
+    });
+    paddlePromise.catch(() => {
+      paddlePromise = null;
+    });
+  }
+  return paddlePromise;
 }
 
+/** Opens checkout for a signed-in account; `userId` links the subscription to it via webhook. */
 export async function openCheckout(opts: {
   plan: PaidPlan;
   cycle: BillingCycle;
   extraCollections: number;
-  email?: string;
+  userId: string;
+  email: string | null;
 }): Promise<void> {
-  const paddle = await loadPaddle();
-  const items: PaddleItem[] = [{ priceId: PRICE_IDS[opts.plan][opts.cycle], quantity: 1 }];
+  const paddle = await getPaddle();
+  const items = [{ priceId: PRICE_IDS[opts.plan][opts.cycle], quantity: 1 }];
   if (opts.extraCollections > 0) {
     items.push({
       priceId: PRICE_IDS.extra_collection[opts.cycle],
@@ -104,13 +76,15 @@ export async function openCheckout(opts: {
   }
   paddle.Checkout.open({
     items,
-    customer: opts.email ? { email: opts.email } : undefined,
-    customData: { plan: opts.plan, cycle: opts.cycle },
+    ...(opts.email ? { customer: { email: opts.email } } : {}),
+    customData: { user_id: opts.userId, plan: opts.plan, cycle: opts.cycle },
     settings: {
       displayMode: "overlay",
+      variant: "one-page",
       theme: "light",
       locale: "en",
-      successUrl: `${window.location.origin}/pricing?checkout=success`,
+      allowLogout: !opts.email,
+      successUrl: `${window.location.origin}/app?tab=billing&checkout=success`,
     },
   });
 }

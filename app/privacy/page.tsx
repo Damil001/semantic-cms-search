@@ -10,7 +10,7 @@ const DATA_REGION = "Singapore (AWS ap-southeast-1)";
 export default function PrivacyPage() {
   const where = DATA_REGION ? ` in ${DATA_REGION}` : "";
   return (
-    <LegalPage title="Privacy Policy" updated="September 26, 2026">
+    <LegalPage title="Privacy Policy" updated="September 29, 2026">
       <p>
         Talaash (“we”, “our”) provides AI-powered search and search analytics for Webflow CMS
         sites. This policy explains what we collect, where it is stored, and when it is deleted
@@ -49,6 +49,13 @@ export default function PrivacyPage() {
           requests do not include visitor or session IDs. Site owners can turn autocomplete off
           with <code>data-search-suggest=&quot;off&quot;</code>.
         </li>
+        <li>
+          <strong>Billing data</strong> — payments are handled by Paddle.com, our merchant of
+          record. Paddle collects your card or other payment details, billing address and tax
+          information; we never see or store card numbers. From Paddle we keep your subscription
+          and customer IDs, plan, billing period, extra collections, subscription status and
+          renewal or cancellation dates, linked to your Talaash account.
+        </li>
       </ul>
 
       <h2 className="title-sm">How we use information</h2>
@@ -57,6 +64,7 @@ export default function PrivacyPage() {
         <li>Index the CMS content you select and answer searches on your site</li>
         <li>Show search analytics, content-gap insights and answer-readiness reports</li>
         <li>Add, update and remove the Talaash search script on your Webflow site</li>
+        <li>Check which plan you are on and turn features on or off to match it</li>
         <li>Operate, secure and improve the service</li>
       </ul>
 
@@ -106,7 +114,8 @@ export default function PrivacyPage() {
       <h2 className="title-sm">Sharing</h2>
       <p>
         We do not sell your data. We only use the subprocessors needed to run the product
-        (Vercel for hosting, Supabase for the database, OpenAI for AI features). Site visitors
+        (Vercel for hosting, Supabase for the database, OpenAI for AI features, Paddle for
+        payments). Site visitors
         only talk to our search service using a site-specific public search key — never your
         Webflow token or our server keys.
       </p>
@@ -137,6 +146,15 @@ export default function PrivacyPage() {
           ) to delete your account or any site data. We complete requests within{" "}
           <strong>30 days</strong> and confirm by email. Deleting your account also deletes all
           connected sites’ data as described above.
+        </li>
+        <li>
+          <strong>Billing records</strong> — subscription and payment records are kept for as
+          long as tax and accounting law requires, even after you delete your account. Once the
+          account is deleted they are no longer linked to it. Paddle keeps its own records under{" "}
+          <a href="https://www.paddle.com/legal/privacy" rel="noopener noreferrer" target="_blank">
+            Paddle’s privacy policy
+          </a>
+          .
         </li>
         <li>
           <strong>Backups</strong> — our database provider keeps automatic backups for up to 7

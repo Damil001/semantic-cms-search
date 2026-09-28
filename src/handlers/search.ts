@@ -3,6 +3,7 @@ import { logSearchEvent } from "../analytics/log.js";
 import { generateSearchAnswer } from "../search/answer.js";
 import {
   extractSearchCredentials,
+  searchPlanActive,
   verifySearchAuth,
 } from "../search/auth.js";
 import { runSearch } from "../search/run.js";
@@ -69,6 +70,11 @@ export default async function handler(
   const auth = await verifySearchAuth(siteId, token);
   if (!auth) {
     res.status(403).json({ error: "Invalid site or search token" });
+    return;
+  }
+
+  if (!(await searchPlanActive(auth.userId))) {
+    res.status(402).json({ error: "Search is paused for this site.", code: "plan_required" });
     return;
   }
 

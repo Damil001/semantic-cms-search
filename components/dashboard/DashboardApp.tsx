@@ -7,9 +7,11 @@ import { InsightsTab } from "./InsightsTab";
 import { IntelligenceTab } from "./IntelligenceTab";
 import { AeoTab } from "./AeoTab";
 import { SetupTab } from "./SetupTab";
+import { BillingTab } from "./BillingTab";
 
 const STALE_MS = 2 * 60 * 1000;
-type Tab = "insights" | "intelligence" | "aeo" | "setup";
+const TABS = ["insights", "intelligence", "aeo", "setup", "billing"] as const;
+type Tab = (typeof TABS)[number];
 
 async function fetchJson<T>(url: string, timeoutMs = 15_000): Promise<T | null> {
   const controller = new AbortController();
@@ -91,15 +93,21 @@ export function DashboardApp() {
 
     (async () => {
       const params = new URLSearchParams(window.location.search);
+      const requestedTab = params.get("tab");
       if (params.get("connected") === "1") {
         setTab("setup");
+      } else if (TABS.includes(requestedTab as Tab)) {
+        setTab(requestedTab as Tab);
       }
+      const loginUrl = `/login?next=${encodeURIComponent(
+        window.location.pathname + window.location.search
+      )}`;
 
       const auth = await fetchJson<{ authenticated?: boolean }>("/api/auth/session");
       if (cancelled) return;
 
       if (!auth?.authenticated) {
-        window.location.replace("/login?next=/app");
+        window.location.replace(loginUrl);
         return;
       }
 
@@ -107,7 +115,7 @@ export function DashboardApp() {
       if (cancelled) return;
 
       if (!meData?.authenticated) {
-        window.location.replace("/login?next=/app");
+        window.location.replace(loginUrl);
         return;
       }
 
@@ -213,6 +221,7 @@ export function DashboardApp() {
             </a>
           </div>
         </div>
+        <BillingTab />
       </div>
     );
   }
@@ -228,6 +237,7 @@ export function DashboardApp() {
             ["intelligence", "Content intelligence"],
             ["aeo", "AEO"],
             ["setup", "Setup & index"],
+            ["billing", "Billing"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -305,6 +315,7 @@ export function DashboardApp() {
           <SetupTab me={me} onSiteMetaChange={() => {}} />
         </div>
       )}
+      {tab === "billing" && <BillingTab />}
     </div>
   );
 }

@@ -23,6 +23,11 @@ export default function SupportPage() {
         <li>At least one CMS collection with published items you want visitors to search</li>
         <li>Permission to install apps on the site and to open it in the Webflow Designer</li>
         <li>Permission to publish the site</li>
+        <li>
+          A Talaash plan (see <a href="/pricing">Pricing</a>) for indexing, installing search on
+          your site and live search. You can create an account, connect Webflow and explore the
+          dashboard before choosing one.
+        </li>
       </ul>
 
       <h2 className="title-sm">Setup guide</h2>
@@ -178,6 +183,32 @@ export default function SupportPage() {
         <li>
           <strong>Insights empty</strong> — analytics appear after visitors search on the
           published site.
+        </li>
+        <li>
+          <strong>“A Talaash plan is required”</strong> or search stopped working — open the
+          dashboard’s <strong>Billing</strong> tab. If a payment failed, search keeps working for
+          7 days; click <strong>Update payment method</strong> to fix it.
+        </li>
+        <li>
+          <strong>“Your plan includes N collections”</strong> — untick collections on Setup, or
+          add extra collections on the Billing tab, then click Index CMS again.
+        </li>
+      </ul>
+
+      <h2 className="title-sm">Plans &amp; billing</h2>
+      <ul>
+        <li>
+          Subscribe on <a href="/pricing">Pricing</a> while signed in. The plan is added to the
+          Talaash account you’re signed in to.
+        </li>
+        <li>
+          In the dashboard, the <strong>Billing</strong> tab lets you switch between Starter and
+          Growth or change extra collections (prorated). <strong>Manage billing</strong> opens
+          Paddle, where you can update your card, download invoices or cancel.
+        </li>
+        <li>
+          If you cancel, everything keeps working until the end of the period you paid for.
+          Refunds are covered by our <a href="/refunds">refund policy</a>.
         </li>
       </ul>
 

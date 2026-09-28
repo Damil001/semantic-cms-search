@@ -25,12 +25,14 @@ type IndexProgress = {
   phase: "saving" | "indexing" | "success" | "error";
   mode: "save" | "index" | "reindex";
   message: string;
-  fix?: "refresh";
+  fix?: "refresh" | "plan";
   collections: CollectionIndexRow[];
   totalProcessed: number;
   totalChunks: number;
   percent: number | null;
 };
+
+class PlanRequiredError extends Error {}
 
 function StatusIcon({ status }: { status: CollectionIndexRow["status"] }) {
   if (status === "indexing") return <span className="index-spinner" aria-hidden />;
@@ -129,6 +131,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
   const [disconnecting, setDisconnecting] = useState(false);
   const [installingScript, setInstallingScript] = useState(false);
   const [scriptNotice, setScriptNotice] = useState<string | null>(null);
+  const [scriptNeedsPlan, setScriptNeedsPlan] = useState(false);
   const [installedScript, setInstalledScript] = useState<{
     hostedLocation: string;
     integrityHash: string;
@@ -356,6 +359,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             body: JSON.stringify({ collectionId: m.collectionId, offset }),
           });
           const data = await res.json();
+          if (res.status === 402) throw new PlanRequiredError(data.error || "A plan is required.");
           if (!res.ok) throw new Error(data.error || "Index failed");
 
           setIndexProgress((prev) => {
@@ -420,6 +424,7 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         phase: "error",
         mode,
         message,
+        fix: err instanceof PlanRequiredError ? "plan" : undefined,
         collections: prev?.collections ?? [],
         totalProcessed: prev?.totalProcessed ?? 0,
         totalChunks: prev?.totalChunks ?? 0,
@@ -547,11 +552,13 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
             onClick={async () => {
               setInstallingScript(true);
               setScriptNotice(null);
+              setScriptNeedsPlan(false);
               trackEvent("setup_install_script");
               try {
                 const res = await fetch("/api/app/embed-script", { method: "POST" });
                 const data = (await res.json().catch(() => ({}))) as EmbedScriptResult;
                 if (!res.ok) {
+                  setScriptNeedsPlan(res.status === 402);
                   setScriptNotice(data.error || "Could not install search script.");
                   return;
                 }
@@ -586,6 +593,12 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
         {scriptNotice && (
           <p className="insights-callout" role="status">
             {scriptNotice}
+            {scriptNeedsPlan ? (
+              <>
+                {" "}
+                <a href="/app?tab=billing">Go to Billing</a>
+              </>
+            ) : null}
           </p>
         )}
 
@@ -1026,6 +1039,11 @@ export function SetupTab({ me, onSiteMetaChange }: Props) {
               >
                 {refreshing ? "Refreshing…" : "Refresh fields now"}
               </button>
+            )}
+            {indexProgress.phase === "error" && indexProgress.fix === "plan" && (
+              <a className="btn btn-primary btn-sm" style={{ marginTop: 12 }} href="/app?tab=billing">
+                Go to Billing
+              </a>
             )}
 
             {showIndexDetails && (

@@ -41,7 +41,15 @@ Do every step in **A** before pasting **B–F** into the submission.
    Index CMS → Install search on site → Designer: Launch Talaash → select a Section → Insert →
    Publish → search on live site → Forgot password flow → Disconnect → confirm script gone after publish.
 8. **Reviewer account** — create ONE account for `marketplaceteam@webflow.com` with ONE password.
-   Use that single password everywhere in the notes.
+   Use that single password everywhere in the notes. Then give it complimentary access (Supabase →
+   SQL Editor), otherwise Index CMS / Install search show "A Talaash plan is required":
+   ```sql
+   insert into plan_grants (user_id, plan, note)
+   select id, 'growth', 'Webflow Marketplace review' from auth.users
+   where email = 'marketplaceteam@webflow.com'
+   on conflict (user_id) do update set plan = excluded.plan, expires_at = null;
+   ```
+   Sign in as the reviewer → Billing tab must say **Growth · complimentary**.
 9. **Preflight** — run the App Review Preflight and paste the `wfpre_…` receipt.
 10. **Carousel** — recapture (see E).
 
@@ -209,7 +217,7 @@ Site runtime: https://www.talaash.org/search/v/dfb01618b39c7e2a.js
   SRI sha256-37AWGLOcfiq140+zz9i0OefoHhDTZaAiSshHBgu5crc=
   source map https://www.talaash.org/search/runtime.map.json
 Preflight receipt: wfpre_3ca54cf6ca889110d832b5486d5a7c46
-Pricing: paid subscription (monthly/yearly) sold on https://www.talaash.org/pricing via Paddle, outside Webflow. The review account can use every feature without paying.
+Pricing: paid subscription (monthly/yearly) sold on https://www.talaash.org/pricing via Paddle, outside Webflow. The review account above has complimentary Growth access, so every feature works without paying. A brand-new account can connect Webflow and browse the dashboard; Index CMS, Install search and live search ask for a plan (Billing tab).
 ```
 
 ---
@@ -229,3 +237,4 @@ Pricing: paid subscription (monthly/yearly) sold on https://www.talaash.org/pric
 | Dependencies | `npm audit --omit=dev`: 0 vulnerabilities (app and Designer Extension). |
 | Artifacts | `bundle.zip` 4 KB, one `webflow.json` (`name: Talaash`, `apiVersion: 2`, no telemetry block); no `eval`, `new Function`, localhost, staging or tunnel hosts in the bundle or site runtime. |
 | Logs | No emails, tokens or search text written to server logs. |
+| Billing | Plans are enforced server-side (`getEntitlement`) on indexing, script install and `/api/search`. Subscriptions are linked to the signed-in account via Paddle `custom_data.user_id` and recorded only from signature-verified webhooks (`/api/paddle/webhook`). Paddle API key and webhook secret are server-only. |
