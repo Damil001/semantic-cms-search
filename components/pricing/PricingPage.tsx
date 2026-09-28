@@ -1,22 +1,42 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
 import { trackEvent } from "@/lib/analytics";
+import {
+  isCheckoutAvailable,
+  openCheckout,
+  type BillingCycle,
+  type PaidPlan,
+} from "@/lib/paddle";
 
-const TIERS = [
+/** Price per extra CMS collection beyond a plan's included collections. */
+const EXTRA_COLLECTION = { monthly: 5, yearly: 50 } as const;
+const MAX_EXTRA_COLLECTIONS = 50;
+
+type Tier = {
+  id: PaidPlan | "scale";
+  name: string;
+  blurb: string;
+  price: { monthly: number; yearly: number } | null;
+  includedCollections: number | null;
+  featured: boolean;
+  scope: string;
+  features: readonly string[];
+};
+
+const TIERS: readonly Tier[] = [
   {
     id: "starter",
     name: "Starter",
     blurb: "One site, core search — ideal to prove value quickly.",
-    setup: "$499",
-    mrr: "$49",
+    price: { monthly: 49, yearly: 490 },
+    includedCollections: 10,
     featured: false,
-    cta: "Get started",
-    href: "/install",
-    scope: "≤10 collections · 1 search page · 2 re-indexes/mo",
+    scope: "10 collections · 1 search page · 2 re-indexes/mo",
     features: [
-      "Webflow OAuth, field mapping, and Custom Code install",
+      "Connect Webflow, automatic field mapping, one-click script install",
       "Semantic + keyword search across your CMS",
       "Hosted search API, embeddings, and index",
       "Designer-native result cards",
@@ -28,12 +48,10 @@ const TIERS = [
     id: "growth",
     name: "Growth",
     blurb: "More collections and polish — the plan most sites choose.",
-    setup: "$749",
-    mrr: "$79",
+    price: { monthly: 79, yearly: 790 },
+    includedCollections: 25,
     featured: true,
-    cta: "Get started",
-    href: "/install",
-    scope: "≤25 collections · filters · 4 re-indexes/mo",
+    scope: "25 collections · filters · 4 re-indexes/mo",
     features: [
       "Everything in Starter",
       "Type filters and styled result cards",
@@ -46,23 +64,21 @@ const TIERS = [
   {
     id: "scale",
     name: "Scale",
-    blurb: "Custom scope for agencies, multi-brand, or high volume.",
-    setup: "$999",
-    mrr: "$149",
+    blurb: "For agencies, multi-brand sites, or high search volume.",
+    price: null,
+    includedCollections: null,
     featured: false,
-    cta: "Contact us",
-    href: "/support",
-    scope: "Unlimited collections · SLA · quarterly review",
+    scope: "Unlimited collections · SLA",
     features: [
       "Everything in Growth",
-      "Custom relevance tuning and thresholds",
+      "Unlimited CMS collections",
+      "Custom relevance thresholds",
       "Agency / multi-brand options",
-      "Dedicated support and SLA",
+      "Priority support and uptime SLA",
       "Extra locales and search surfaces",
-      "Roadmap input for advanced needs",
     ],
   },
-] as const;
+];
 
 const INCLUDED = [
   {
@@ -75,41 +91,165 @@ const INCLUDED = [
   },
   {
     title: "Webflow-native",
-    body: "OAuth connect, Custom Code install, and Designer-styled result cards.",
+    body: "Connect with Webflow, install the script in one click, and style results in the Designer.",
   },
   {
     title: "Hosted index",
-    body: "Embeddings, search API, and re-indexing managed for you — no infra to run.",
+    body: "Embeddings, search API, and re-indexing run on our infrastructure — nothing to host.",
   },
-] as const;
-
-const ADDONS = [
-  { item: "Extra CMS collection (mapping + index)", price: "$150–300 each" },
-  { item: "Extra re-index (beyond plan)", price: "$50 each" },
-  { item: "Second search page / locale", price: "$400" },
-  { item: "Custom relevance thresholds", price: "$300 one-time" },
 ] as const;
 
 const FAQS = [
   {
-    q: "What’s included in setup?",
-    a: "Webflow connection, CMS field mapping, first index, search script install via Custom Code, and a working search experience on your site.",
+    q: "How does billing work?",
+    a: "Plans are subscriptions billed monthly or yearly. Payments are processed by Paddle, our reseller and merchant of record, which also handles sales tax and VAT and sends your receipts.",
   },
   {
-    q: "What does the monthly fee cover?",
-    a: "Hosted embeddings and search API, index hosting, analytics dashboard access, and the re-indexes included in your plan.",
+    q: "What if I need more collections?",
+    a: "Add extra collections to Starter or Growth at checkout for $5/month each ($50/year). Your subscription price increases by that amount.",
   },
   {
-    q: "Can I start on Starter and upgrade?",
-    a: "Yes. Move to Growth or Scale when you need more collections, filters, priority indexing, or agency support.",
+    q: "Can I cancel or change plans?",
+    a: "Yes. Cancel anytime and your plan stays active until the end of the period you paid for. You can move between plans when you need more collections or features.",
   },
   {
     q: "Is there a free trial?",
-    a: "You can create a Talaash account and connect Webflow to explore the product. Paid plans cover production setup, hosting, and ongoing indexing.",
+    a: "Creating an account and connecting Webflow to explore the product is free. A paid plan is required to run search on your live site. See our refund policy for refunds.",
   },
 ] as const;
 
+function formatPrice(tier: Tier, cycle: BillingCycle, extras: number) {
+  if (!tier.price) return null;
+  const total = tier.price[cycle] + extras * EXTRA_COLLECTION[cycle];
+  return `$${total.toLocaleString("en-US")}`;
+}
+
+function TierCheckout({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
+  const [extras, setExtras] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const buttonClass = tier.featured
+    ? "btn btn-pricing-pill btn-pricing-pill--filled mt-lg"
+    : "btn btn-pricing-pill mt-lg";
+
+  if (tier.id === "scale" || !tier.price) {
+    return (
+      <>
+        <div className="pricing-price pricing-display" style={{ fontSize: 36 }}>
+          Custom
+        </div>
+        <p className="caption text-muted">From $149 / mo, billed monthly or yearly</p>
+        <ul>
+          {tier.features.map((f) => (
+            <li key={f}>{f}</li>
+          ))}
+        </ul>
+        <Link
+          className={buttonClass}
+          href="/support"
+          onClick={() => trackEvent("cta_click", { location: "pricing_tier", target: "scale" })}
+        >
+          Contact us
+        </Link>
+      </>
+    );
+  }
+
+  const plan = tier.id;
+  const available = isCheckoutAvailable(plan, cycle, extras);
+  const perExtra = EXTRA_COLLECTION[cycle];
+  const cycleLabel = cycle === "monthly" ? "/ mo" : "/ yr";
+
+  async function subscribe() {
+    setError(null);
+    setBusy(true);
+    trackEvent("cta_click", { location: "pricing_tier", target: `${plan}_${cycle}` });
+    try {
+      await openCheckout({ plan, cycle, extraCollections: extras });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Checkout could not open. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <div className="pricing-price pricing-display" style={{ fontSize: 36 }}>
+        {formatPrice(tier, cycle, extras)} <span>{cycleLabel}</span>
+      </div>
+      <p className="caption text-muted">
+        {cycle === "yearly"
+          ? `2 months free vs. monthly ($${tier.price.monthly}/mo)`
+          : `or $${tier.price.yearly}/yr — 2 months free`}
+      </p>
+
+      <div className="qty-stepper mt-md">
+        <span className="qty-stepper__label">
+          Extra collections
+          <span className="caption text-muted">
+            {tier.includedCollections} included · +${perExtra} {cycleLabel} each
+          </span>
+        </span>
+        <div className="qty-stepper__controls">
+          <button
+            type="button"
+            aria-label={`Remove an extra collection from ${tier.name}`}
+            disabled={extras === 0}
+            onClick={() => setExtras((n) => Math.max(0, n - 1))}
+          >
+            −
+          </button>
+          <output aria-live="polite">{extras}</output>
+          <button
+            type="button"
+            aria-label={`Add an extra collection to ${tier.name}`}
+            disabled={extras >= MAX_EXTRA_COLLECTIONS}
+            onClick={() => setExtras((n) => Math.min(MAX_EXTRA_COLLECTIONS, n + 1))}
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <ul>
+        {tier.features.map((f) => (
+          <li key={f}>{f}</li>
+        ))}
+      </ul>
+
+      {available ? (
+        <button type="button" className={buttonClass} disabled={busy} onClick={subscribe}>
+          {busy ? "Opening checkout…" : `Subscribe to ${tier.name}`}
+        </button>
+      ) : (
+        <Link
+          className={buttonClass}
+          href="/support"
+          onClick={() => trackEvent("cta_click", { location: "pricing_tier", target: plan })}
+        >
+          Contact us to subscribe
+        </Link>
+      )}
+      {error ? (
+        <p className="caption mt-sm" role="alert" style={{ color: "var(--color-error)" }}>
+          {error}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export function PricingPage() {
+  const [cycle, setCycle] = useState<BillingCycle>("monthly");
+  const [checkoutDone, setCheckoutDone] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "success") setCheckoutDone(true);
+  }, []);
+
   return (
     <div className="landing">
       <TopNav showAuth={false} />
@@ -125,7 +265,7 @@ export function PricingPage() {
             style={{ maxWidth: "56ch", animationDelay: "120ms" }}
           >
             Natural-language search for your Webflow site — plus the insights that turn visitor
-            queries into better SEO and AEO content.
+            queries into better SEO and AEO content. No setup fees.
           </p>
           <div
             className="landing-hero__actions mt-lg landing-fade-up"
@@ -147,11 +287,34 @@ export function PricingPage() {
 
       <section className="landing-band landing-band--soft" id="plans">
         <div className="container" style={{ padding: 0 }}>
-          <h2 className="pricing-section mb-md">Client plans</h2>
+          {checkoutDone ? (
+            <div className="checkout-notice mb-lg" role="status">
+              <strong>Thanks — your subscription is confirmed.</strong> Paddle has emailed your
+              receipt. If you haven’t connected your site yet,{" "}
+              <Link href="/install">install Talaash</Link>.
+            </div>
+          ) : null}
+
+          <h2 className="pricing-section mb-md">Plans</h2>
           <p className="body-md text-muted mb-lg" style={{ maxWidth: "52ch" }}>
-            One-time setup to go live, then a simple monthly fee for hosting, search, and
-            intelligence.
+            One subscription covers hosting, search, and intelligence. Pay monthly, or yearly
+            and get 2 months free.
           </p>
+
+          <div className="billing-toggle mb-lg" role="radiogroup" aria-label="Billing period">
+            {(["monthly", "yearly"] as const).map((c) => (
+              <button
+                key={c}
+                type="button"
+                role="radio"
+                aria-checked={cycle === c}
+                className={cycle === c ? "active" : undefined}
+                onClick={() => setCycle(c)}
+              >
+                {c === "monthly" ? "Monthly" : "Yearly · 2 months free"}
+              </button>
+            ))}
+          </div>
 
           <div className="pricing-grid mb-lg">
             {TIERS.map((tier) => (
@@ -163,42 +326,19 @@ export function PricingPage() {
                     : "pricing-tier-card"
                 }
               >
-                {tier.featured ? (
-                  <span className="pricing-badge">Most popular</span>
-                ) : null}
+                {tier.featured ? <span className="pricing-badge">Most popular</span> : null}
                 <h3 className="pricing-card-title">{tier.name}</h3>
                 <p className="body-md text-muted mt-sm">{tier.blurb}</p>
                 <p className="caption text-muted mt-sm">{tier.scope}</p>
-                <div className="pricing-price pricing-display" style={{ fontSize: 36 }}>
-                  {tier.setup} <span>setup</span>
-                </div>
-                <div className="pricing-price title-md">
-                  {tier.mrr} <span>/ mo</span>
-                </div>
-                <ul>
-                  {tier.features.map((f) => (
-                    <li key={f}>{f}</li>
-                  ))}
-                </ul>
-                <Link
-                  className={
-                    tier.featured
-                      ? "btn btn-pricing-pill btn-pricing-pill--filled mt-lg"
-                      : "btn btn-pricing-pill mt-lg"
-                  }
-                  href={tier.href}
-                  onClick={() =>
-                    trackEvent("cta_click", {
-                      location: "pricing_tier",
-                      target: tier.id,
-                    })
-                  }
-                >
-                  {tier.cta}
-                </Link>
+                <TierCheckout tier={tier} cycle={cycle} />
               </div>
             ))}
           </div>
+          <p className="caption text-muted">
+            Prices in USD. Sales tax or VAT is added at checkout where applicable. Payments are
+            processed by Paddle.com, our merchant of record. See our{" "}
+            <Link href="/refunds">refund policy</Link> and <Link href="/terms">terms</Link>.
+          </p>
         </div>
       </section>
 
@@ -217,33 +357,6 @@ export function PricingPage() {
                 <p className="body-md">{item.body}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section--tight">
-        <div className="container" style={{ padding: 0 }}>
-          <h2 className="pricing-section mb-md">Add-ons</h2>
-          <p className="body-md text-muted mb-lg" style={{ maxWidth: "52ch" }}>
-            Extend any plan when you need more collections, locales, or indexing.
-          </p>
-          <div className="feature-card mb-lg">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ADDONS.map((row) => (
-                  <tr key={row.item}>
-                    <td>{row.item}</td>
-                    <td>{row.price}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
       </section>

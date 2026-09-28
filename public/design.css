@@ -2012,6 +2012,97 @@ select.text-input:focus {
   color: var(--color-muted);
 }
 
+.billing-toggle {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  background: var(--color-canvas);
+}
+
+.billing-toggle button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.billing-toggle button.active {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.billing-toggle button:focus-visible,
+.qty-stepper__controls button:focus-visible {
+  outline: 2px solid var(--color-info-border);
+  outline-offset: 2px;
+}
+
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--color-canvas);
+}
+
+.qty-stepper__label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-ink);
+}
+
+.qty-stepper__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.qty-stepper__controls button {
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.qty-stepper__controls button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qty-stepper__controls output {
+  min-width: 2ch;
+  text-align: center;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.checkout-notice {
+  padding: var(--space-md);
+  border: 1px solid var(--color-info-border);
+  border-radius: var(--radius-md);
+  background: var(--color-canvas);
+  color: var(--color-body);
+}
+
 .grid-2 {
   display: grid;
   gap: var(--space-lg);

@@ -1,6 +1,10 @@
-import { redirect } from "next/navigation";
+import { PricingPage } from "@/components/pricing/PricingPage";
 
-/** Pricing is hidden for now (Webflow review). Restore PricingPage when ready. */
+export const metadata = {
+  title: "Pricing",
+  description: "Talaash plans for Webflow CMS search, billed monthly or yearly through Paddle.",
+};
+
 export default function PricingRoute() {
-  redirect("/");
+  return <PricingPage />;
 }

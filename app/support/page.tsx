@@ -224,7 +224,8 @@ export default function SupportPage() {
       </p>
 
       <p>
-        Also see <a href="/privacy">Privacy</a>, <a href="/terms">Terms</a> and{" "}
+        Also see <a href="/pricing">Pricing</a>, <a href="/privacy">Privacy</a>,{" "}
+        <a href="/terms">Terms</a>, <a href="/refunds">Refund policy</a> and{" "}
         <a href="/docs/attributes">Search attributes</a> (for custom layouts).
       </p>
     </LegalPage>

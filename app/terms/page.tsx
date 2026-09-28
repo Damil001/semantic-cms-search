@@ -6,7 +6,7 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of Use" updated="September 7, 2026">
+    <LegalPage title="Terms of Use" updated="September 29, 2026">
       <p>
         By creating a Talaash account or installing the Talaash Webflow App, you agree to
         these terms.
@@ -30,6 +30,29 @@ export default function TermsPage() {
         </li>
         <li>Do not abuse the API, attempt unauthorized access, or reverse engineer the service.</li>
         <li>Keep your account credentials secure.</li>
+      </ul>
+
+      <h2 className="title-sm">Plans, billing and payments</h2>
+      <p>
+        Paid plans are subscriptions billed monthly or yearly at the prices shown on our{" "}
+        <a href="/pricing">pricing page</a>. Our order process is conducted by our online
+        reseller Paddle.com. Paddle.com is the merchant of record for all our orders and
+        provides all customer service inquiries and handles returns. Paddle’s{" "}
+        <a href="https://www.paddle.com/legal/checkout-buyer-terms" rel="noopener noreferrer" target="_blank">
+          buyer terms
+        </a>{" "}
+        apply to your purchase.
+      </p>
+      <ul>
+        <li>Subscriptions renew automatically until cancelled.</li>
+        <li>
+          You can cancel anytime; your plan stays active until the end of the paid period.
+        </li>
+        <li>Extra collections are added to your subscription price for the same period.</li>
+        <li>Sales tax or VAT is calculated and collected by Paddle where applicable.</li>
+        <li>
+          Refunds follow our <a href="/refunds">Refund Policy</a>.
+        </li>
       </ul>
 
       <h2 className="title-sm">Webflow &amp; third parties</h2>

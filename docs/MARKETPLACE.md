@@ -131,11 +131,11 @@ REQUIREMENTS
 • Permission to install apps and publish the site
 
 PRICING
-Talaash is a paid app. Creating an account and connecting your site to try the product is free; running search on a live site requires a paid plan:
-• Starter: $499 one-time setup + $49/month (up to 10 collections, 1 search page, 2 re-indexes a month)
-• Growth: $749 one-time setup + $79/month (up to 25 collections, filters, AI answers, content and AEO reports, 4 re-indexes a month)
-• Scale: $999 one-time setup + $149/month (unlimited collections, SLA, agency options)
-Setup covers connecting your site, mapping your CMS fields, the first index and a working search experience. Add-ons such as extra collections or re-indexes are listed on our pricing page. To purchase, contact us through our Support page; plans are billed by Talaash, not through Webflow.
+Talaash is a paid app. Creating an account and connecting your site to try the product is free; running search on a live site requires a paid subscription. No setup fees; pay monthly, or yearly and get 2 months free:
+• Starter: $49/month or $490/year (10 collections, 1 search page, 2 re-indexes a month)
+• Growth: $79/month or $790/year (25 collections, filters, AI answers, content and AEO reports, 4 re-indexes a month)
+• Scale: from $149/month, custom quote (unlimited collections, SLA, agency options)
+Need more collections? Add extra collections to Starter or Growth for $5/month ($50/year) each. Subscribe on https://www.talaash.org/pricing. Payments are processed by Paddle (merchant of record), not through Webflow. Cancel anytime; see https://www.talaash.org/refunds.
 
 YOUR VISITORS' DATA
 By default the search box stores a random, anonymous visitor ID and session ID in the visitor's browser so you can see unique-visitor counts, and it shows autocomplete suggestions while visitors type (the typed text is sent to Talaash to fetch suggestions). No names, emails or IP addresses are linked to searches. You can turn off the IDs, autocomplete, or both with one setting each; see our Support page.
@@ -209,7 +209,7 @@ Site runtime: https://www.talaash.org/search/v/dfb01618b39c7e2a.js
   SRI sha256-37AWGLOcfiq140+zz9i0OefoHhDTZaAiSshHBgu5crc=
   source map https://www.talaash.org/search/runtime.map.json
 Preflight receipt: wfpre_3ca54cf6ca889110d832b5486d5a7c46
-Pricing: Talaash is a paid, done-for-you service billed by Talaash outside Webflow (see listing).
+Pricing: paid subscription (monthly/yearly) sold on https://www.talaash.org/pricing via Paddle, outside Webflow. The review account can use every feature without paying.
 ```
 
 ---
