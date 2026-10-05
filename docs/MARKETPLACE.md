@@ -50,6 +50,14 @@ Do every step in **A** before pasting **B–F** into the submission.
    on conflict (user_id) do update set plan = excluded.plan, expires_at = null;
    ```
    Sign in as the reviewer → Billing tab must say **Growth · complimentary**.
+   Also make the **test site owner's** access permanent, or live search on the test site stops when
+   the 30-day launch grant expires mid-review:
+   ```sql
+   insert into plan_grants (user_id, plan, note)
+   select id, 'growth', 'Owner / Marketplace test site' from auth.users
+   where email = '<YOUR EMAIL>'
+   on conflict (user_id) do update set plan = excluded.plan, expires_at = null;
+   ```
 9. **Preflight** — run the App Review Preflight and paste the `wfpre_…` receipt.
 10. **Carousel** — recapture (see E).
 
@@ -198,7 +206,7 @@ Do **not** show: Copy HTML, Embed, raw script URLs, integrity hashes, or `search
 ```
 Test site (published, paid Site plan): https://damils-exceptional-site.webflow.io/search-page
 Reviewer login: marketplaceteam@webflow.com / <ONE PASSWORD>
-(Or create a new account at https://www.talaash.org/install — email signup, Google signup and password reset all work.)
+This account has complimentary Growth access, so indexing, Install search and live search work without paying. Please use it for the setup sequence. Email signup, Google signup and password reset can be tried with any new account, but a new account needs a plan before Index CMS and Install search (by design; see Pricing below).
 
 Setup sequence:
 1. https://www.talaash.org/install → Create account (or sign in with the credentials above)
