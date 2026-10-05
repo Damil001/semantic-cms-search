@@ -24,9 +24,9 @@ export default function SupportPage() {
         <li>Permission to install apps on the site and to open it in the Webflow Designer</li>
         <li>Permission to publish the site</li>
         <li>
-          A Talaash plan (see <a href="/pricing">Pricing</a>) for indexing, installing search on
-          your site and live search. You can create an account, connect Webflow and explore the
-          dashboard before choosing one.
+          Nothing to pay up front: every new account gets a 14-day free trial with full access.
+          After that, a plan (see <a href="/pricing">Pricing</a>) keeps indexing, script install
+          and live search running.
         </li>
       </ul>
 

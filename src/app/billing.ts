@@ -18,6 +18,11 @@ export const PLAN_COLLECTIONS: Record<Plan, number> = {
 export const PAST_DUE_GRACE_DAYS = 7;
 const GRACE_MS = PAST_DUE_GRACE_DAYS * 24 * 60 * 60 * 1000;
 
+/** Every new account gets full Growth access for this long, starting at signup. */
+export const TRIAL_DAYS = 14;
+const TRIAL_MS = TRIAL_DAYS * 24 * 60 * 60 * 1000;
+const TRIAL_PLAN: Plan = "growth";
+
 const PLAN_RANK: Record<Plan, number> = { starter: 1, growth: 2, scale: 3 };
 
 export interface SubscriptionRow {
@@ -45,7 +50,7 @@ interface GrantRow {
 export interface Entitlement {
   active: boolean;
   plan: Plan | null;
-  source: "paddle" | "grant" | null;
+  source: "paddle" | "grant" | "trial" | null;
   /** Included + extra collections; `null` means unlimited. */
   collectionLimit: number | null;
   extraCollections: number;
@@ -56,6 +61,7 @@ export interface Entitlement {
   /** Set while a renewal payment is failing; access ends at this time. */
   graceEndsAt: string | null;
   grantExpiresAt: string | null;
+  trialEndsAt: string | null;
   customerId: string | null;
   subscriptionId: string | null;
 }
@@ -72,6 +78,7 @@ const NONE: Entitlement = {
   cancelsAt: null,
   graceEndsAt: null,
   grantExpiresAt: null,
+  trialEndsAt: null,
   customerId: null,
   subscriptionId: null,
 };
@@ -109,6 +116,7 @@ function fromSubscription(row: SubscriptionRow, active: boolean): Entitlement {
     cancelsAt: row.scheduled_change_action === "cancel" ? row.scheduled_change_at : null,
     graceEndsAt: end != null ? new Date(end).toISOString() : null,
     grantExpiresAt: null,
+    trialEndsAt: null,
     customerId: row.paddle_customer_id,
     subscriptionId: row.paddle_subscription_id,
   };
@@ -154,7 +162,23 @@ export async function getEntitlement(userId: string): Promise<Entitlement> {
       subscriptionId: rows[0]?.paddle_subscription_id ?? null,
     };
   }
-  return rows[0] ? fromSubscription(rows[0], false) : NONE;
+  if (rows[0]) return fromSubscription(rows[0], false);
+
+  const { data: account, error: accountErr } = await supabase.auth.admin.getUserById(userId);
+  if (accountErr) throw new Error(`account lookup failed: ${accountErr.message}`);
+  const createdAt = Date.parse(account.user?.created_at ?? "");
+  if (!Number.isFinite(createdAt)) return NONE;
+  const trialEndsAt = new Date(createdAt + TRIAL_MS).toISOString();
+  if (now >= createdAt + TRIAL_MS) return { ...NONE, status: "trial_ended", trialEndsAt };
+  return {
+    ...NONE,
+    active: true,
+    plan: TRIAL_PLAN,
+    source: "trial",
+    collectionLimit: limitFor(TRIAL_PLAN, 0),
+    status: "trialing",
+    trialEndsAt,
+  };
 }
 
 export function planRequiredMessage(ent: Entitlement): string {
@@ -163,6 +187,9 @@ export function planRequiredMessage(ent: Entitlement): string {
   }
   if (ent.status === "paused") {
     return "Your Talaash subscription is paused. Resume it on the Billing tab to continue.";
+  }
+  if (ent.status === "trial_ended") {
+    return `Your ${TRIAL_DAYS}-day free trial has ended. Choose a plan on the Billing tab to continue.`;
   }
   if (ent.status === "canceled") {
     return "Your Talaash subscription has ended. Choose a plan on the Billing tab to continue.";

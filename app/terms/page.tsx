@@ -44,6 +44,11 @@ export default function TermsPage() {
         apply to your purchase.
       </p>
       <ul>
+        <li>
+          New accounts get a 14-day free trial of the Growth plan. No payment details are needed
+          and nothing is charged when it ends; indexing, script install and live search pause
+          until you choose a plan.
+        </li>
         <li>Subscriptions renew automatically until cancelled.</li>
         <li>
           You can cancel anytime; your plan stays active until the end of the paid period.

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getAuthUser } from "../../app/auth.js";
-import { getEntitlement, PAST_DUE_GRACE_DAYS, PLAN_LABELS } from "../../app/billing.js";
+import { getEntitlement, PAST_DUE_GRACE_DAYS, PLAN_LABELS, TRIAL_DAYS } from "../../app/billing.js";
 import { getInstallForUser } from "../../app/session.js";
 import { getServiceClient } from "../../lib/supabase.js";
 
@@ -49,6 +49,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     graceEndsAt: ent.graceEndsAt,
     graceDays: PAST_DUE_GRACE_DAYS,
     grantExpiresAt: ent.grantExpiresAt,
+    trialEndsAt: ent.trialEndsAt,
+    trialDays: TRIAL_DAYS,
     canManage: Boolean(ent.customerId),
   });
 }

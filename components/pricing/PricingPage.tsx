@@ -115,7 +115,7 @@ const FAQS = [
   },
   {
     q: "Is there a free trial?",
-    a: "Creating an account and connecting Webflow to explore the product is free. A paid plan is required to run search on your live site. See our refund policy for refunds.",
+    a: "Yes. Every new account gets 14 days of Growth free — index your CMS, install search on your live site and use every report. No card needed. Choose a plan before the trial ends to keep search running.",
   },
 ] as const;
 
@@ -162,7 +162,7 @@ type Account =
       email: string | null;
       active: boolean;
       plan: "starter" | "growth" | "scale" | null;
-      source: "paddle" | "grant" | null;
+      source: "paddle" | "grant" | "trial" | null;
     };
 
 type Intent = { plan: PaidPlan; cycle: BillingCycle; extras: number };
@@ -353,7 +353,8 @@ export function PricingPage() {
             style={{ maxWidth: "56ch", animationDelay: "120ms" }}
           >
             Natural-language search for your Webflow site — plus the insights that turn visitor
-            queries into better SEO and AEO content. No setup fees.
+            queries into better SEO and AEO content. Every new account starts with a 14-day free
+            trial — no card needed, no setup fees.
           </p>
           <div
             className="landing-hero__actions mt-lg landing-fade-up"

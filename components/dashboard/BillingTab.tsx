@@ -9,7 +9,7 @@ type BillingStatus = {
   active: boolean;
   plan: "starter" | "growth" | "scale" | null;
   planLabel: string | null;
-  source: "paddle" | "grant" | null;
+  source: "paddle" | "grant" | "trial" | null;
   status: string | null;
   billingCycle: "month" | "year" | null;
   collectionLimit: number | null;
@@ -20,6 +20,8 @@ type BillingStatus = {
   graceEndsAt: string | null;
   graceDays: number;
   grantExpiresAt: string | null;
+  trialEndsAt: string | null;
+  trialDays: number;
   canManage: boolean;
 };
 
@@ -189,19 +191,31 @@ export function BillingTab() {
             <p className="title-lg" style={{ margin: "0 0 4px" }}>
               {status.planLabel}
               {status.source === "grant" ? " · complimentary" : ""}
+              {status.source === "trial" ? " · free trial" : ""}
             </p>
             <p className="body-md text-muted" style={{ margin: 0 }}>
               {isPaddle && status.billingCycle
                 ? `Billed ${status.billingCycle === "year" ? "yearly" : "monthly"}. `
                 : ""}
-              {status.cancelsAt
-                ? `Cancels on ${formatDate(status.cancelsAt)}. You keep access until then.`
-                : status.renewsAt
-                  ? `Renews on ${formatDate(status.renewsAt)}.`
-                  : status.grantExpiresAt
-                    ? `Access until ${formatDate(status.grantExpiresAt)}.`
-                    : ""}
+              {status.source === "trial" && status.trialEndsAt
+                ? `Your ${status.trialDays}-day trial ends on ${formatDate(status.trialEndsAt)}. Choose a plan before then to keep search running on your site.`
+                : status.cancelsAt
+                  ? `Cancels on ${formatDate(status.cancelsAt)}. You keep access until then.`
+                  : status.renewsAt
+                    ? `Renews on ${formatDate(status.renewsAt)}.`
+                    : status.grantExpiresAt
+                      ? `Access until ${formatDate(status.grantExpiresAt)}.`
+                      : ""}
             </p>
+            {status.source === "trial" ? (
+              <a
+                className="btn btn-primary mt-md"
+                href="/pricing#plans"
+                onClick={() => trackEvent("cta_click", { location: "billing_tab", target: "pricing_trial" })}
+              >
+                Choose a plan
+              </a>
+            ) : null}
             <p className="body-md mt-md" style={{ marginBottom: 0 }}>
               Collections: <strong>{status.collectionsInUse}</strong>
               {status.collectionLimit == null ? " (unlimited)" : ` of ${status.collectionLimit}`}
@@ -217,10 +231,14 @@ export function BillingTab() {
         ) : (
           <>
             <p className="title-lg" style={{ margin: "0 0 4px" }}>
-              {status.status === "canceled" ? "Subscription ended" : "No plan yet"}
+              {status.status === "canceled"
+                ? "Subscription ended"
+                : status.status === "trial_ended"
+                  ? "Free trial ended"
+                  : "No plan yet"}
             </p>
             <p className="body-md text-muted" style={{ margin: 0, maxWidth: "60ch" }}>
-              You can connect Webflow and explore the dashboard for free. Indexing your CMS,
+              You can still connect Webflow and explore the dashboard. Indexing your CMS,
               installing search on your site and live search need a plan.
             </p>
             <a

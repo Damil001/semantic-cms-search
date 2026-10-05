@@ -147,7 +147,7 @@ REQUIREMENTS
 • Permission to install apps and publish the site
 
 PRICING
-Talaash is a paid app. Creating an account and connecting your site to try the product is free; running search on a live site requires a paid subscription. No setup fees; pay monthly, or yearly and get 2 months free:
+Talaash is a paid app with a 14-day free trial: every new account gets full Growth access, no card needed. After the trial, running search on a live site requires a paid subscription. No setup fees; pay monthly, or yearly and get 2 months free:
 • Starter: $49/month or $490/year (10 collections, 1 search page, 2 re-indexes a month)
 • Growth: $79/month or $790/year (25 collections, filters, AI answers, content and AEO reports, 4 re-indexes a month)
 • Scale: from $149/month, custom quote (unlimited collections, SLA, agency options)
@@ -206,7 +206,7 @@ Do **not** show: Copy HTML, Embed, raw script URLs, integrity hashes, or `search
 ```
 Test site (published, paid Site plan): https://damils-exceptional-site.webflow.io/search-page
 Reviewer login: marketplaceteam@webflow.com / <ONE PASSWORD>
-This account has complimentary Growth access, so indexing, Install search and live search work without paying. Please use it for the setup sequence. Email signup, Google signup and password reset can be tried with any new account, but a new account needs a plan before Index CMS and Install search (by design; see Pricing below).
+(Or create a new account at https://www.talaash.org/install. Every new account gets a 14-day free trial with full access, no card needed, so email signup, Google signup, password reset and the whole setup sequence below work end to end.)
 
 Setup sequence:
 1. https://www.talaash.org/install → Create account (or sign in with the credentials above)
@@ -225,7 +225,7 @@ Site runtime: https://www.talaash.org/search/v/dfb01618b39c7e2a.js
   SRI sha256-37AWGLOcfiq140+zz9i0OefoHhDTZaAiSshHBgu5crc=
   source map https://www.talaash.org/search/runtime.map.json
 Preflight receipt: wfpre_3ca54cf6ca889110d832b5486d5a7c46
-Pricing: paid subscription (monthly/yearly) sold on https://www.talaash.org/pricing via Paddle, outside Webflow. The review account above has complimentary Growth access, so every feature works without paying. A brand-new account can connect Webflow and browse the dashboard; Index CMS, Install search and live search ask for a plan (Billing tab).
+Pricing: paid subscription (monthly/yearly) sold on https://www.talaash.org/pricing via Paddle, outside Webflow. New accounts (including any you create) get a 14-day free trial with every feature; the review account above also has permanent complimentary access. No payment is needed to review. After a trial ends, Index CMS, Install search and live search ask for a plan (Billing tab).
 ```
 
 ---
