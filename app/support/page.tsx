@@ -1,4 +1,5 @@
 import { LegalPage } from "@/components/LegalPage";
+import { BILLING_ENABLED } from "@/lib/billing-flag";
 
 export const metadata = {
   title: "Support · Talaash",
@@ -23,11 +24,13 @@ export default function SupportPage() {
         <li>At least one CMS collection with published items you want visitors to search</li>
         <li>Permission to install apps on the site and to open it in the Webflow Designer</li>
         <li>Permission to publish the site</li>
-        <li>
-          Nothing to pay up front: every new account gets a 14-day free trial with full access.
-          After that, a plan (see <a href="/pricing">Pricing</a>) keeps indexing, script install
-          and live search running.
-        </li>
+        {BILLING_ENABLED ? (
+          <li>
+            Nothing to pay up front: every new account gets a 14-day free trial with full access.
+            After that, a plan (see <a href="/pricing">Pricing</a>) keeps indexing, script install
+            and live search running.
+          </li>
+        ) : null}
       </ul>
 
       <h2 className="title-sm">Setup guide</h2>
@@ -184,6 +187,8 @@ export default function SupportPage() {
           <strong>Insights empty</strong> — analytics appear after visitors search on the
           published site.
         </li>
+        {BILLING_ENABLED ? (
+          <>
         <li>
           <strong>“A Talaash plan is required”</strong> or search stopped working — open the
           dashboard’s <strong>Billing</strong> tab. If a payment failed, search keeps working for
@@ -193,8 +198,12 @@ export default function SupportPage() {
           <strong>“Your plan includes N collections”</strong> — untick collections on Setup, or
           add extra collections on the Billing tab, then click Index CMS again.
         </li>
+          </>
+        ) : null}
       </ul>
 
+      {BILLING_ENABLED ? (
+        <>
       <h2 className="title-sm">Plans &amp; billing</h2>
       <ul>
         <li>
@@ -211,6 +220,8 @@ export default function SupportPage() {
           Refunds are covered by our <a href="/refunds">refund policy</a>.
         </li>
       </ul>
+        </>
+      ) : null}
 
       <h2 className="title-sm">Disconnect &amp; remove</h2>
       <ol>
@@ -256,7 +267,13 @@ export default function SupportPage() {
 
       <p>
         Also see <a href="/pricing">Pricing</a>, <a href="/privacy">Privacy</a>,{" "}
-        <a href="/terms">Terms</a>, <a href="/refunds">Refund policy</a> and{" "}
+        <a href="/terms">Terms</a>,{" "}
+        {BILLING_ENABLED ? (
+          <>
+            <a href="/refunds">Refund policy</a>,{" "}
+          </>
+        ) : null}
+        and{" "}
         <a href="/docs/attributes">Search attributes</a> (for custom layouts).
       </p>
     </LegalPage>

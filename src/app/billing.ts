@@ -122,8 +122,11 @@ function fromSubscription(row: SubscriptionRow, active: boolean): Entitlement {
   };
 }
 
+const UNLIMITED: Entitlement = { ...NONE, active: true, plan: "scale", collectionLimit: null, status: "active" };
+
 /** What this account may use right now. Reads only our own tables (no Paddle API call). */
 export async function getEntitlement(userId: string): Promise<Entitlement> {
+  if (process.env.NEXT_PUBLIC_BILLING_ENABLED !== "true") return UNLIMITED;
   const supabase = getServiceClient();
   const [subs, grant] = await Promise.all([
     supabase

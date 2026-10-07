@@ -1,10 +1,13 @@
+import { notFound } from "next/navigation";
 import { LegalPage } from "@/components/LegalPage";
+import { BILLING_ENABLED } from "@/lib/billing-flag";
 
 export const metadata = {
   title: "Refund Policy · Talaash",
 };
 
 export default function RefundsPage() {
+  if (!BILLING_ENABLED) notFound();
   return (
     <LegalPage title="Refund Policy" updated="September 29, 2026">
       <p>

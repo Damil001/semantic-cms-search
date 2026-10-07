@@ -8,10 +8,12 @@ import { IntelligenceTab } from "./IntelligenceTab";
 import { AeoTab } from "./AeoTab";
 import { SetupTab } from "./SetupTab";
 import { BillingTab } from "./BillingTab";
+import { BILLING_ENABLED } from "@/lib/billing-flag";
 
 const STALE_MS = 2 * 60 * 1000;
-const TABS = ["insights", "intelligence", "aeo", "setup", "billing"] as const;
-type Tab = (typeof TABS)[number];
+const ALL_TABS = ["insights", "intelligence", "aeo", "setup", "billing"] as const;
+type Tab = (typeof ALL_TABS)[number];
+const TABS: readonly Tab[] = BILLING_ENABLED ? ALL_TABS : ALL_TABS.filter((t) => t !== "billing");
 
 async function fetchJson<T>(url: string, timeoutMs = 15_000): Promise<T | null> {
   const controller = new AbortController();
@@ -221,7 +223,7 @@ export function DashboardApp() {
             </a>
           </div>
         </div>
-        <BillingTab />
+        {BILLING_ENABLED ? <BillingTab /> : null}
       </div>
     );
   }
@@ -239,7 +241,7 @@ export function DashboardApp() {
             ["setup", "Setup & index"],
             ["billing", "Billing"],
           ] as const
-        ).map(([id, label]) => (
+        ).filter(([id]) => TABS.includes(id)).map(([id, label]) => (
           <button
             key={id}
             type="button"
@@ -315,7 +317,7 @@ export function DashboardApp() {
           <SetupTab me={me} onSiteMetaChange={() => {}} />
         </div>
       )}
-      {tab === "billing" && <BillingTab />}
+      {BILLING_ENABLED && tab === "billing" && <BillingTab />}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { LegalPage } from "@/components/LegalPage";
+import { BILLING_ENABLED } from "@/lib/billing-flag";
 
 export const metadata = {
   title: "Terms of Use · Talaash",
@@ -32,6 +33,8 @@ export default function TermsPage() {
         <li>Keep your account credentials secure.</li>
       </ul>
 
+      {BILLING_ENABLED ? (
+        <>
       <h2 className="title-sm">Plans, billing and payments</h2>
       <p>
         Paid plans are subscriptions billed monthly or yearly at the prices shown on our{" "}
@@ -59,6 +62,8 @@ export default function TermsPage() {
           Refunds follow our <a href="/refunds">Refund Policy</a>.
         </li>
       </ul>
+        </>
+      ) : null}
 
       <h2 className="title-sm">Webflow &amp; third parties</h2>
       <p>

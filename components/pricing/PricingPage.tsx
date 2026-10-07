@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
 import { trackEvent } from "@/lib/analytics";
+import { BILLING_ENABLED } from "@/lib/billing-flag";
 import {
   isCheckoutAvailable,
   isSandbox,
@@ -116,6 +117,17 @@ const FAQS = [
   {
     q: "Is there a free trial?",
     a: "Yes. Every new account gets 14 days of Growth free — index your CMS, install search on your live site and use every report. No card needed. Choose a plan before the trial ends to keep search running.",
+  },
+] as const;
+
+const FAQS_NO_BILLING = [
+  {
+    q: "How do I get started?",
+    a: "Create an account, connect your Webflow site, and Talaash maps and indexes your CMS. Install search on your site in one click, then style results in the Designer.",
+  },
+  {
+    q: "What if I need more collections?",
+    a: "Starter includes 10 CMS collections and Growth includes 25. Contact us if you need more, or ask about Scale for unlimited collections.",
   },
 ] as const;
 
@@ -233,6 +245,7 @@ function TierCheckout({
   }
 
   useEffect(() => {
+    if (!BILLING_ENABLED) return;
     if (autoOpened.current || !intent || intent.plan !== plan || intent.cycle !== cycle) return;
     if (!account?.authenticated || paying || !available) return;
     autoOpened.current = true;
@@ -252,6 +265,7 @@ function TierCheckout({
           : `or $${price.yearly}/yr — 2 months free`}
       </p>
 
+      {BILLING_ENABLED ? (
       <div className="qty-stepper mt-md">
         <span className="qty-stepper__label">
           Extra collections
@@ -279,6 +293,7 @@ function TierCheckout({
           </button>
         </div>
       </div>
+      ) : null}
 
       <ul>
         {tier.features.map((f) => (
@@ -286,7 +301,15 @@ function TierCheckout({
         ))}
       </ul>
 
-      {paying ? (
+      {!BILLING_ENABLED ? (
+        <Link
+          className={buttonClass}
+          href="/install"
+          onClick={() => trackEvent("cta_click", { location: "pricing_tier", target: plan })}
+        >
+          Get started
+        </Link>
+      ) : paying ? (
         <Link className={buttonClass} href="/app?tab=billing">
           {account?.authenticated && account.plan === plan ? "Your current plan" : "Change plan"}
         </Link>
@@ -332,6 +355,7 @@ export function PricingPage() {
       setIntent(found);
       setCycle(found.cycle);
     }
+    if (!BILLING_ENABLED) return;
     fetch("/api/billing/status", { credentials: "same-origin", cache: "no-store" })
       .then((res) => (res.ok ? res.json() : { authenticated: false }))
       .then((data: Account) => setAccount(data))
@@ -353,8 +377,10 @@ export function PricingPage() {
             style={{ maxWidth: "56ch", animationDelay: "120ms" }}
           >
             Natural-language search for your Webflow site — plus the insights that turn visitor
-            queries into better SEO and AEO content. Every new account starts with a 14-day free
-            trial — no card needed, no setup fees.
+            queries into better SEO and AEO content.
+            {BILLING_ENABLED
+              ? " Every new account starts with a 14-day free trial — no card needed, no setup fees."
+              : " No setup fees."}
           </p>
           <div
             className="landing-hero__actions mt-lg landing-fade-up"
@@ -376,7 +402,7 @@ export function PricingPage() {
 
       <section className="landing-band landing-band--soft" id="plans">
         <div className="container" style={{ padding: 0 }}>
-          {isSandbox ? (
+          {BILLING_ENABLED && isSandbox ? (
             <div className="checkout-notice mb-lg" role="note">
               <strong>Test mode.</strong> Checkout uses the Paddle sandbox — no real charges. Pay
               with card 4242 4242 4242 4242, any future expiry and any CVC.
@@ -432,11 +458,17 @@ export function PricingPage() {
               </div>
             ))}
           </div>
-          <p className="caption text-muted">
-            Prices in USD. Sales tax or VAT is added at checkout where applicable. Payments are
-            processed by Paddle.com, our merchant of record. See our{" "}
-            <Link href="/refunds">refund policy</Link> and <Link href="/terms">terms</Link>.
-          </p>
+          {BILLING_ENABLED ? (
+            <p className="caption text-muted">
+              Prices in USD. Sales tax or VAT is added at checkout where applicable. Payments are
+              processed by Paddle.com, our merchant of record. See our{" "}
+              <Link href="/refunds">refund policy</Link> and <Link href="/terms">terms</Link>.
+            </p>
+          ) : (
+            <p className="caption text-muted">
+              Prices in USD. See our <Link href="/terms">terms</Link>.
+            </p>
+          )}
         </div>
       </section>
 
@@ -463,7 +495,7 @@ export function PricingPage() {
         <div className="container" style={{ padding: 0 }}>
           <h2 className="pricing-section mb-lg">FAQ</h2>
           <div className="pricing-faq-grid">
-            {FAQS.map((item) => (
+            {(BILLING_ENABLED ? FAQS : FAQS_NO_BILLING).map((item) => (
               <div key={item.q} className="feature-card">
                 <h3 className="pricing-card-title mb-md">{item.q}</h3>
                 <p className="body-md text-muted" style={{ margin: 0 }}>

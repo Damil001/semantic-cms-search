@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
+import { BILLING_ENABLED } from "@/lib/billing-flag";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -77,7 +78,7 @@ export default function RootLayout({
               <Link href="/support">Support</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
-              <Link href="/refunds">Refund policy</Link>
+              {BILLING_ENABLED ? <Link href="/refunds">Refund policy</Link> : null}
             </div>
           </div>
         </footer>

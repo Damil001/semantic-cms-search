@@ -1,4 +1,5 @@
 import { LegalPage } from "@/components/LegalPage";
+import { BILLING_ENABLED } from "@/lib/billing-flag";
 
 export const metadata = {
   title: "Privacy Policy · Talaash",
@@ -49,13 +50,15 @@ export default function PrivacyPage() {
           requests do not include visitor or session IDs. Site owners can turn autocomplete off
           with <code>data-search-suggest=&quot;off&quot;</code>.
         </li>
-        <li>
-          <strong>Billing data</strong> — payments are handled by Paddle.com, our merchant of
-          record. Paddle collects your card or other payment details, billing address and tax
-          information; we never see or store card numbers. From Paddle we keep your subscription
-          and customer IDs, plan, billing period, extra collections, subscription status and
-          renewal or cancellation dates, linked to your Talaash account.
-        </li>
+        {BILLING_ENABLED ? (
+          <li>
+            <strong>Billing data</strong> — payments are handled by Paddle.com, our merchant of
+            record. Paddle collects your card or other payment details, billing address and tax
+            information; we never see or store card numbers. From Paddle we keep your
+            subscription and customer IDs, plan, billing period, extra collections, subscription
+            status and renewal or cancellation dates, linked to your Talaash account.
+          </li>
+        ) : null}
       </ul>
 
       <h2 className="title-sm">How we use information</h2>
@@ -64,7 +67,9 @@ export default function PrivacyPage() {
         <li>Index the CMS content you select and answer searches on your site</li>
         <li>Show search analytics, content-gap insights and answer-readiness reports</li>
         <li>Add, update and remove the Talaash search script on your Webflow site</li>
-        <li>Check which plan you are on and turn features on or off to match it</li>
+        {BILLING_ENABLED ? (
+          <li>Check which plan you are on and turn features on or off to match it</li>
+        ) : null}
         <li>Operate, secure and improve the service</li>
       </ul>
 
@@ -114,8 +119,8 @@ export default function PrivacyPage() {
       <h2 className="title-sm">Sharing</h2>
       <p>
         We do not sell your data. We only use the subprocessors needed to run the product
-        (Vercel for hosting, Supabase for the database, OpenAI for AI features, Paddle for
-        payments). Site visitors
+        (Vercel for hosting, Supabase for the database, OpenAI for AI features
+        {BILLING_ENABLED ? ", Paddle for payments" : ""}). Site visitors
         only talk to our search service using a site-specific public search key — never your
         Webflow token or our server keys.
       </p>
@@ -147,15 +152,18 @@ export default function PrivacyPage() {
           <strong>30 days</strong> and confirm by email. Deleting your account also deletes all
           connected sites’ data as described above.
         </li>
-        <li>
-          <strong>Billing records</strong> — subscription and payment records are kept for as
-          long as tax and accounting law requires, even after you delete your account. Once the
-          account is deleted they are no longer linked to it. Paddle keeps its own records under{" "}
-          <a href="https://www.paddle.com/legal/privacy" rel="noopener noreferrer" target="_blank">
-            Paddle’s privacy policy
-          </a>
-          .
-        </li>
+        {BILLING_ENABLED ? (
+          <li>
+            <strong>Billing records</strong> — subscription and payment records are kept for as
+            long as tax and accounting law requires, even after you delete your account. Once the
+            account is deleted they are no longer linked to it. Paddle keeps its own records
+            under{" "}
+            <a href="https://www.paddle.com/legal/privacy" rel="noopener noreferrer" target="_blank">
+              Paddle’s privacy policy
+            </a>
+            .
+          </li>
+        ) : null}
         <li>
           <strong>Backups</strong> — our database provider keeps automatic backups for up to 7
           days; deleted data disappears from backups when they expire.
